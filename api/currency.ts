@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { callLLM, CURRENCY_SYSTEM } from './_shared';
+import { callLLM, CURRENCY_SYSTEM } from './_shared.js';
 
 async function getCountryMeta(countryName: string) {
   try {

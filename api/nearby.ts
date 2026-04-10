@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { callLLM, NEARBY_SYSTEM, determineEntryCity, orderDestinations, computeSchedule } from './_shared';
+import { callLLM, NEARBY_SYSTEM, determineEntryCity, orderDestinations, computeSchedule } from './_shared.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });

@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { callLLM } from './_shared';
+import { callLLM } from './_shared.js';
 
 const DESTINATIONS_SYSTEM = `You are a travel destination expert. Generate a comprehensive list of tourist destinations for the specified country.
 

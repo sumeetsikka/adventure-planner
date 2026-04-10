@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { callLLM, determineEntryCity, orderDestinations, computeSchedule } from './_shared';
+import { callLLM, determineEntryCity, orderDestinations, computeSchedule } from './_shared.js';
 
 const TRANSPORT_SYSTEM = `You are a transport and logistics expert for travellers. Generate inter-city transport recommendations as a JSON array.
 
