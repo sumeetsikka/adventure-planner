@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "Bash(npx tsc:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsx:*)",
+      "Bash(curl -s http://localhost:3001/api/packages -X POST -H \"Content-Type: application/json\" -d '{}')",
+      "Bash(kill %1)",
+      "Bash(pkill -f \"tsx server/index\")"
+    ]
+  }
+}

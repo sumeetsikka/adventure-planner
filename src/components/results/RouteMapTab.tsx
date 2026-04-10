@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import type { TravelConfig, GenerationResults } from '../../types';
-import { formatDateAU } from '../../lib/dateUtils';
 import { geocodeDestination } from '../../lib/geocode';
 
 // Fix Leaflet default marker icons (broken in bundlers)

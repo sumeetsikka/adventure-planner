@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { DestinationHotels, HotelRec, Destination, TravelConfig } from '../../types';
+import type { DestinationHotels, Destination, TravelConfig } from '../../types';
 import { formatDateAU } from '../../lib/dateUtils';
 import { getHotelLinks } from '../../lib/bookingLinks';
 
@@ -120,7 +120,6 @@ export default function HotelsTab({ hotels, destinations, config }: Props) {
         {hotels.map((dest, di) => {
           const info = getDestInfo(dest.destination, destinations);
           const isExpanded = expandedDest === di;
-          const topPick = dest.hotels.find((h) => h.recommended) || dest.hotels[0];
 
           return (
             <div key={di} className="rounded-2xl border border-white/8 bg-[#131B2E] overflow-hidden">
