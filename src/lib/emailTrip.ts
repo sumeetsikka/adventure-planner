@@ -51,6 +51,17 @@ export function generateEmailBody(config: TravelConfig, results: GenerationResul
     lines.push('');
   }
 
+  // Transport
+  if (results.transport.length > 0) {
+    lines.push('INTER-CITY TRANSPORT TO BOOK');
+    lines.push('-'.repeat(20));
+    for (const t of results.transport) {
+      lines.push(`${t.from} to ${t.to} | ${formatDateAU(t.date)} | ${t.mode} | ${t.duration} | ${t.price_estimate_aud}/person`);
+      if (t.operator) lines.push(`  Operator: ${t.operator}`);
+    }
+    lines.push('');
+  }
+
   // Budget
   if (results.budget.length > 0) {
     lines.push('BUDGET (per person)');

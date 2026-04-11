@@ -126,6 +126,67 @@ export default function BudgetTab({ budget, config, onUpdate }: Props) {
         })}
       </div>
 
+      {/* Cost Comparison */}
+      {perPersonTotal > 0 && (() => {
+        // Average daily spend benchmarks (AUD, mid-range traveller, excludes international flights)
+        const benchmarks: Record<string, number> = {
+          vietnam: 80, thailand: 90, japan: 180, indonesia: 100, philippines: 85, cambodia: 70,
+          italy: 200, france: 220, spain: 170, portugal: 150, greece: 160, switzerland: 300,
+          germany: 180, netherlands: 190, belgium: 175, austria: 190, norway: 250, sweden: 220,
+          morocco: 90, egypt: 80, turkey: 100, mauritius: 180, peru: 100, mexico: 110,
+          newzealand: 180, maldives: 350, croatia: 150, iceland: 280, fiji: 200,
+        };
+        const countryId = config.country?.id || '';
+        const avgDaily = benchmarks[countryId];
+        if (!avgDaily) return null;
+
+        const totalDays = Math.round(
+          (new Date(config.returnDate).getTime() - new Date(config.departureDate).getTime()) / (1000 * 60 * 60 * 24)
+        );
+        const avgTotal = avgDaily * totalDays;
+        const diff = perPersonTotal - avgTotal;
+        const diffPct = Math.round((diff / avgTotal) * 100);
+        const isBelow = diff < 0;
+        const isAbove = diff > 0;
+
+        return (
+          <div className="mt-6 rounded-2xl border border-white/8 bg-[#131B2E] p-5">
+            <h3 className="text-white font-semibold text-sm mb-3">How does your trip compare?</h3>
+            <div className="flex items-center gap-4 mb-3">
+              <div className="flex-1">
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="text-gray-500">Average for {config.country?.name}</span>
+                  <span className="text-gray-400">${avgTotal.toLocaleString()}/person</span>
+                </div>
+                <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full bg-gray-500" style={{ width: '100%' }} />
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="text-gray-500">Your trip</span>
+                  <span className={isBelow ? 'text-[#2D936C]' : 'text-[#E6A817]'}>${perPersonTotal.toLocaleString()}/person</span>
+                </div>
+                <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full ${isBelow ? 'bg-[#2D936C]' : 'bg-[#E6A817]'}`}
+                    style={{ width: `${Math.min(100, (perPersonTotal / avgTotal) * 100)}%` }} />
+                </div>
+              </div>
+            </div>
+            <p className={`text-xs mt-3 font-semibold ${isBelow ? 'text-[#2D936C]' : isAbove ? 'text-[#E6A817]' : 'text-gray-400'}`}>
+              {isBelow ? `${Math.abs(diffPct)}% below average. Great value! 🎉` :
+               isAbove ? `${diffPct}% above average. You're going premium! ✨` :
+               'Right on the average.'}
+            </p>
+            <p className="text-gray-600 text-[9px] mt-1">
+              Based on ~${avgDaily}/day average for mid-range Australian travellers in {config.country?.name} ({totalDays} days).
+            </p>
+          </div>
+        );
+      })()}
+
       <p className="text-gray-600 text-[10px] text-center mt-4">
         Estimates based on typical costs for Australian travellers. Actual prices vary by season and availability.
       </p>

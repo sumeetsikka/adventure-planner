@@ -22,6 +22,7 @@ const TABS: { key: ResultsTab; label: string; icon: string }[] = [
   { key: 'checklist', label: 'Checklist', icon: '✅' },
   { key: 'photos', label: 'Photos', icon: '📸' },
   { key: 'tips', label: 'Tips', icon: '📋' },
+  { key: 'chat', label: 'Ask AI', icon: '💬' },
 ];
 
 export default function TabNav({ active, onChange }: Props) {

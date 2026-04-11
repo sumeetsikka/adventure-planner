@@ -12,6 +12,7 @@ import visaRouter from './routes/visa';
 import currencyRouter from './routes/currency';
 import nearbyRouter from './routes/nearby';
 import transportRouter from './routes/transport';
+import chatRouter from './routes/chat';
 
 const app = express();
 const PORT = 3173;
@@ -31,6 +32,7 @@ app.use('/api/visa', visaRouter);
 app.use('/api/currency', currencyRouter);
 app.use('/api/nearby', nearbyRouter);
 app.use('/api/transport', transportRouter);
+app.use('/api/chat', chatRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

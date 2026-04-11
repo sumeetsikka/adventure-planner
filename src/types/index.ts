@@ -168,4 +168,9 @@ export interface GenerationResults {
 
 export type AppView = 'country' | 'wizard' | 'loading' | 'results';
 export type WizardStep = 1 | 2 | 3;
-export type ResultsTab = 'dashboard' | 'itinerary' | 'flights' | 'hotels' | 'transport' | 'bookings' | 'map' | 'budget' | 'tips' | 'packing' | 'weather' | 'visa' | 'currency' | 'nearby' | 'checklist' | 'photos';
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export type ResultsTab = 'dashboard' | 'itinerary' | 'flights' | 'hotels' | 'transport' | 'bookings' | 'map' | 'budget' | 'tips' | 'packing' | 'weather' | 'visa' | 'currency' | 'nearby' | 'checklist' | 'photos' | 'chat';

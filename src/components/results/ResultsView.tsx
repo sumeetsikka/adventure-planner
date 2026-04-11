@@ -20,6 +20,7 @@ import TransportTab from './TransportTab';
 import DashboardTab from './DashboardTab';
 import BookingTrackerTab from './BookingTrackerTab';
 import RouteMapTab from './RouteMapTab';
+import ChatTab from './ChatTab';
 import { encodeTripToUrl, copyToClipboard } from '../../lib/tripUrl';
 
 interface Props {
@@ -214,6 +215,7 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
           )}
           {activeTab === 'checklist' && <ChecklistTab config={config} />}
           {activeTab === 'photos' && <PhotosTab destinations={config.destinations} />}
+          {activeTab === 'chat' && <ChatTab config={config} />}
         </div>
       </div>
     </div>
