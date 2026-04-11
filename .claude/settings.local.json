@@ -9,5 +9,18 @@
       "Bash(kill %1)",
       "Bash(pkill -f \"tsx server/index\")"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/sumeet/sumeet/Projects/Holiday-Planner && git add -A && git diff --cached --quiet || (git commit -m 'Auto-commit: file changes' --no-verify && git push origin main --quiet 2>/dev/null &)"
+          }
+        ]
+      }
+    ]
   }
 }
