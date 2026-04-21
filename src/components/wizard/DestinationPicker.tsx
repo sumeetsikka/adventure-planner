@@ -156,7 +156,7 @@ export default function DestinationPicker({ selected, onSelect, onNext, country,
 
       {/* Fixed bottom bar */}
       <div className="fixed bottom-0 left-0 right-0 z-50">
-        <div className="bg-gradient-to-t from-[#0B1120] via-[#0B1120]/98 to-transparent pt-8 pb-5 px-4">
+        <div className="bg-gradient-to-t from-[#0B1120] via-[#0B1120]/98 to-transparent pt-8 px-4" style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}>
           <div className="max-w-lg mx-auto">
             <div className="glass rounded-2xl px-6 py-4 flex items-center justify-between shadow-2xl shadow-black/30">
               <div>
