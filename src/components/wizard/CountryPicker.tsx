@@ -102,7 +102,7 @@ export default function CountryPicker({ onSelect }: Props) {
               <h2 className="text-sm font-bold text-gray-500 tracking-[3px] uppercase">{region.name}</h2>
               <div className="flex-1 h-px bg-white/5" />
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-3">
               {region.countries.map((country) => (
                 <button
                   key={country.id}
