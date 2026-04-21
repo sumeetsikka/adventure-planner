@@ -121,7 +121,7 @@ export default function ChatTab({ config }: Props) {
       )}
 
       {/* Input */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 chat-input-fixed">
         <input
           type="text"
           value={input}
