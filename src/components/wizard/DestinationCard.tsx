@@ -20,7 +20,7 @@ export default function DestinationCard({ destination, selected, onToggle }: Pro
       type="button"
       onClick={() => onToggle(d.id)}
       className={`
-        group relative w-full text-left rounded-2xl p-5 transition-all duration-500 cursor-pointer overflow-hidden
+        group relative w-full text-left rounded-2xl p-4 sm:p-5 transition-all duration-500 cursor-pointer overflow-hidden
         ${selected ? 'scale-[1.02] ring-2 shadow-xl' : 'hover:-translate-y-1.5 hover:shadow-2xl'}
         ${isMustVisit && !selected ? 'must-visit-glow border border-[#E6A817]/20' : ''}
       `}
