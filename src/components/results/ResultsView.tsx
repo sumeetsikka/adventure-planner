@@ -99,9 +99,8 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
       <div className="relative max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8 animate-fade-up">
-          <div className="flex items-center justify-between mb-6 print:hidden">
-            <div />
-            <div className="flex gap-2">
+          <div className="flex items-center justify-end mb-6 print:hidden">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-end">
               <button onClick={async () => {
                   const url = encodeTripToUrl(config);
                   await copyToClipboard(url);
