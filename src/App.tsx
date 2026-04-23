@@ -213,7 +213,7 @@ export default function App() {
   };
 
   const themeToggle = <ThemeToggle theme={theme} onToggle={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} />;
-  const bg = theme === 'dark' ? 'bg-[#0B1120]' : 'bg-gray-50';
+  const bg = 'bg-[var(--ink)] grain';
 
   if (view === 'country') {
     return <div className={`min-h-screen ${bg}`}>{themeToggle}<CountryPicker onSelect={handleCountrySelect} /></div>;
