@@ -227,15 +227,17 @@ function CountryTile({ country, onSelect, onHover }: { country: Country; onSelec
       }}
     >
       {/* Photo layer (if it loads, blends on top) */}
-      <img
-        src={photo}
-        alt={country.name}
-        loading="lazy"
-        className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-all duration-[1.2s] group-hover:scale-105"
-        onError={(e) => {
-          (e.target as HTMLImageElement).style.display = 'none';
-        }}
-      />
+      {photo && (
+        <img
+          src={photo}
+          alt={country.name}
+          loading="lazy"
+          className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:opacity-90 transition-all duration-[1.2s] group-hover:scale-105"
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = 'none';
+          }}
+        />
+      )}
 
       {/* Readability overlays */}
       <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(10,8,6,0.1) 0%, rgba(10,8,6,0.65) 70%, rgba(10,8,6,0.95) 100%)' }} />
