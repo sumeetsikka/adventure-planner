@@ -37,15 +37,17 @@ export default function DestinationCard({ destination, selected, onToggle }: Pro
       } as React.CSSProperties}
     >
       {/* Photo */}
-      <img
-        src={photo}
-        alt={d.name}
-        loading="lazy"
-        className="absolute inset-0 w-full h-full object-cover opacity-65 group-hover:opacity-85 transition-all duration-[1.2s] group-hover:scale-105"
-        onError={(e) => {
-          (e.target as HTMLImageElement).style.display = 'none';
-        }}
-      />
+      {photo && (
+        <img
+          src={photo}
+          alt={d.name}
+          loading="lazy"
+          className="absolute inset-0 w-full h-full object-cover opacity-75 group-hover:opacity-95 transition-all duration-[1.2s] group-hover:scale-105"
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = 'none';
+          }}
+        />
+      )}
 
       {/* Readability overlays */}
       <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(10,8,6,0.15) 0%, rgba(10,8,6,0.55) 50%, rgba(10,8,6,0.95) 100%)' }} />
