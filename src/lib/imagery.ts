@@ -55,7 +55,7 @@ export function getDestinationThumbnail(destinationName: string): string {
   return getDestinationPhoto(destinationName, 600, 400);
 }
 
-export function getHotelPhoto(hotelName: string, destination: string, width = 800, height = 600): string {
+export function getHotelPhoto(_hotelName: string, destination: string, width = 800, height = 600): string {
   // Combine hotel + destination so photos look location-relevant
   const query = `${cleanQuery(destination)} hotel`;
   return loremflickr(query, width, height, 'hotel');
