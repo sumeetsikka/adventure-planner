@@ -36,15 +36,18 @@ export default function DestinationCard({ destination, selected, onToggle }: Pro
         boxShadow: selected ? `0 20px 40px -20px ${d.colour}70` : undefined,
       } as React.CSSProperties}
     >
-      {/* Photo */}
+      {/* Photo — instant Loremflickr fallback, upgrades to Wikipedia when ready */}
       {photo && (
         <img
           src={photo}
           alt={d.name}
           loading="lazy"
-          className="absolute inset-0 w-full h-full object-cover opacity-75 group-hover:opacity-95 transition-all duration-[1.2s] group-hover:scale-105"
+          className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all duration-[1.2s] group-hover:scale-105"
           onError={(e) => {
-            (e.target as HTMLImageElement).style.display = 'none';
+            const img = e.currentTarget;
+            if (img.dataset.fell) { img.style.display = 'none'; return; }
+            img.dataset.fell = 'true';
+            img.src = `https://picsum.photos/seed/${encodeURIComponent(d.id)}/800/600`;
           }}
         />
       )}
