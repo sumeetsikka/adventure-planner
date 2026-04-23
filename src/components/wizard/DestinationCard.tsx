@@ -16,7 +16,7 @@ export default function DestinationCard({ destination, selected, onToggle }: Pro
       : `${d.recommendedDays[0]}–${d.recommendedDays[1]} days`;
 
   const isMustVisit = !!d.mustVisit;
-  const photo = getDestinationPhoto(d.name, 800, 600);
+  const photo = useWikiImage(d.name);
 
   return (
     <motion.button
