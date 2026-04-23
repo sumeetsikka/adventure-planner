@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import type { ItineraryDay as DayType, TravelConfig, DestinationHotels } from '../../types';
 import { generateItinerary } from '../../lib/api';
 import { formatDateAU, addDaysISO } from '../../lib/dateUtils';
-import { VIBE_COLOURS, VIBE_LABELS } from '../../lib/constants';
+import { VIBE_LABELS } from '../../lib/constants';
+import { getDestinationPhoto } from '../../lib/imagery';
 
 interface Props {
   itinerary: DayType[];
@@ -26,6 +28,8 @@ function findHotelForLocation(location: string, hotels: DestinationHotels[]): De
   }) || null;
 }
 
+const EASE = [0.16, 1, 0.3, 1] as const;
+
 export default function ItineraryTab({ itinerary, config, hotels, onUpdate }: Props) {
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [regenerating, setRegenerating] = useState(false);
@@ -39,7 +43,6 @@ export default function ItineraryTab({ itinerary, config, hotels, onUpdate }: Pr
     if (swapIdx < 0 || swapIdx >= itinerary.length) return;
     const newItinerary = [...itinerary];
     [newItinerary[idx], newItinerary[swapIdx]] = [newItinerary[swapIdx], newItinerary[idx]];
-    // Renumber days sequentially
     const renumbered = newItinerary.map((d, i) => ({ ...d, day: i + 1 }));
     onUpdate(renumbered);
   };
@@ -58,7 +61,6 @@ export default function ItineraryTab({ itinerary, config, hotels, onUpdate }: Pr
     }
   };
 
-  // Group consecutive days by location
   const locationGroups = useMemo(() => {
     const groups: { location: string; days: DayType[]; hotelMatch: DestinationHotels | null; isTravel: boolean }[] = [];
     let currentGroup: typeof groups[0] | null = null;
@@ -87,249 +89,277 @@ export default function ItineraryTab({ itinerary, config, hotels, onUpdate }: Pr
 
   if (itinerary.length === 0) {
     return (
-      <div className="text-center py-16">
-        <span className="text-5xl block mb-4">🗺️</span>
-        <p className="text-[var(--cream)] font-medium mb-2">No itinerary generated yet</p>
-        <p className="text-[var(--text-muted)] text-sm mb-6">Click below to generate your day-by-day plan.</p>
-        <button onClick={regenerate} disabled={regenerating}
-          className="px-6 py-3 rounded-xl font-semibold text-[var(--cream)] bg-gradient-to-r from-[#C65D3B] to-[#B04E2E] hover:shadow-lg transition-all disabled:opacity-50">
-          {regenerating ? 'Generating...' : 'Generate Itinerary'}
+      <div className="text-center py-20">
+        <p className="eyebrow mb-4">The journey</p>
+        <h2 className="font-display text-3xl text-[var(--cream)] mb-3">No <em>itinerary</em> yet.</h2>
+        <p className="text-[var(--text-muted)] text-sm mb-8 max-w-md mx-auto">Generate a bespoke day-by-day plan shaped around your destinations and pace.</p>
+        <button
+          onClick={regenerate}
+          disabled={regenerating}
+          className="px-7 py-3 rounded-full font-medium text-[var(--ink)] bg-[var(--cream)] hover:opacity-90 transition-all disabled:opacity-50"
+        >
+          {regenerating ? 'Composing…' : 'Generate itinerary'}
         </button>
-        {error && <p className="text-red-400 text-sm mt-4">{error}</p>}
+        {error && <p className="text-[var(--terracotta)] text-sm mt-6">{error}</p>}
       </div>
     );
   }
 
   return (
-    <div>
-      {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: EASE }}>
+      {/* Editorial header */}
+      <div className="flex flex-wrap items-end justify-between gap-4 mb-10">
         <div>
-          <h2 className="text-[var(--cream)] font-bold text-xl mb-1">Your {itinerary.length}-Day Itinerary</h2>
-          <p className="text-[var(--text-muted)] text-sm">Tap any day card for the full plan and hotel details.</p>
+          <p className="eyebrow mb-3">Day by day · {itinerary.length} days</p>
+          <h2 className="font-display text-4xl sm:text-5xl text-[var(--cream)] leading-[1.05] tracking-tight">
+            The <em className="italic text-[var(--gold)]">journey</em>.
+          </h2>
+          <p className="text-[var(--text-muted)] text-sm mt-3 max-w-md">Tap any day for the full plan and where you'll rest your head.</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setReorderMode(!reorderMode)}
-            className={`text-xs rounded-lg px-3 py-2 transition-all ${
+          <button
+            onClick={() => setReorderMode(!reorderMode)}
+            className={`text-xs rounded-full px-4 py-2 transition-all border ${
               reorderMode
-                ? 'bg-[#C65D3B]/15 text-[#C65D3B] border border-[#C65D3B]/30'
-                : 'text-[var(--text-muted)] bg-[var(--ink-3)]/80 backdrop-blur-md border border-[var(--line)] hover:bg-[var(--ink-4)] hover:text-[var(--cream)]'
-            }`}>
-            {reorderMode ? '✓ Done' : '↕ Reorder'}
+                ? 'border-[var(--gold)]/40 bg-[var(--gold)]/10 text-[var(--gold)]'
+                : 'border-[var(--line)] text-[var(--text-muted)] hover:text-[var(--cream)] hover:border-[var(--line-strong)]'
+            }`}
+          >
+            {reorderMode ? 'Done' : 'Reorder'}
           </button>
-          <button onClick={regenerate} disabled={regenerating}
-            className="text-xs text-[var(--text-muted)] bg-[var(--ink-3)]/80 backdrop-blur-md border border-[var(--line)] rounded-lg px-3 py-2 hover:bg-[var(--ink-4)] hover:text-[var(--cream)] transition-all disabled:opacity-50">
-            {regenerating ? '...' : '🔄 Regenerate'}
+          <button
+            onClick={regenerate}
+            disabled={regenerating}
+            className="text-xs rounded-full px-4 py-2 border border-[var(--line)] text-[var(--text-muted)] hover:text-[var(--cream)] hover:border-[var(--line-strong)] transition-all disabled:opacity-50"
+          >
+            {regenerating ? '…' : 'Regenerate'}
           </button>
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 mb-4">
-          <p className="text-red-400 text-sm">{error}</p>
+        <div className="surface-soft rounded-2xl p-4 mb-6 border border-[var(--terracotta)]/30">
+          <p className="text-[var(--terracotta)] text-sm">{error}</p>
         </div>
       )}
 
-      {/* Selected day detail panel */}
+      {/* Selected day detail */}
       {selectedDayData && (() => {
-        const vibeColour = VIBE_COLOURS[selectedDayData.vibe] || '#888';
         const hotelMatch = findHotelForLocation(selectedDayData.location, hotels);
         const topPick = hotelMatch ? getTopPick(hotelMatch) : null;
         const dayDate = addDaysISO(config.departureDate, selectedDayData.day - 1);
+        const photo = getDestinationPhoto(selectedDayData.location, 1200, 500);
 
         return (
-          <div className="mb-8 rounded-2xl overflow-hidden border-2" style={{ borderColor: `${vibeColour}40` }}>
-            {/* Coloured header bar */}
-            <div className="px-6 py-5" style={{ background: `linear-gradient(135deg, ${vibeColour}20, ${vibeColour}08)` }}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <span className="text-5xl">{selectedDayData.icon}</span>
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full text-[var(--cream)]" style={{ background: vibeColour }}>
-                        DAY {selectedDayData.day}
-                      </span>
-                      <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full" style={{ background: `${vibeColour}20`, color: vibeColour }}>
-                        {VIBE_LABELS[selectedDayData.vibe] || selectedDayData.vibe}
-                      </span>
-                    </div>
-                    <h3 className="text-[var(--cream)] font-bold text-xl">{selectedDayData.title}</h3>
-                    <p className="text-[var(--text-muted)] text-sm mt-0.5">{selectedDayData.location} · {formatDateAU(dayDate)}</p>
-                  </div>
-                </div>
-                <button onClick={() => setSelectedDay(null)}
-                  className="text-[var(--text-muted)] hover:text-[var(--cream)] w-10 h-10 rounded-xl hover:bg-[var(--ink-4)] flex items-center justify-center transition-all text-xl">×</button>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: EASE }}
+            className="surface-card rounded-3xl overflow-hidden mb-10"
+          >
+            {/* Photo header */}
+            <div className="relative h-56 overflow-hidden">
+              <img src={photo} alt={selectedDayData.location} className="w-full h-full object-cover animate-ken-burns" />
+              <div
+                className="absolute inset-0"
+                style={{ background: 'linear-gradient(180deg, transparent 30%, rgba(10,8,6,0.95) 100%)' }}
+              />
+              <button
+                onClick={() => setSelectedDay(null)}
+                className="absolute top-4 right-4 w-9 h-9 rounded-full bg-[var(--ink)]/60 backdrop-blur-sm text-[var(--cream)] hover:bg-[var(--ink)]/80 transition-all flex items-center justify-center"
+                aria-label="Close"
+              >
+                ×
+              </button>
+              <div className="absolute bottom-6 left-8 right-8">
+                <p className="eyebrow mb-2">Day {selectedDayData.day} · {VIBE_LABELS[selectedDayData.vibe] || selectedDayData.vibe}</p>
+                <h3 className="font-display text-3xl sm:text-4xl text-[var(--cream)] leading-tight">{selectedDayData.title}</h3>
+                <p className="text-[var(--text-muted)] text-sm mt-2">{selectedDayData.location} · {formatDateAU(dayDate)}</p>
               </div>
             </div>
 
             {/* Activities */}
-            <div className="bg-[var(--ink-3)] px-6 py-5">
-              <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-3">What you'll do</p>
-              <div className="space-y-3">
+            <div className="px-8 py-7">
+              <p className="eyebrow mb-5">What you'll do</p>
+              <ol className="space-y-4">
                 {selectedDayData.activities.map((activity, i) => (
-                  <div key={i} className="flex items-start gap-3 bg-[var(--ink-2)] rounded-xl p-4">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold text-[var(--cream)] flex-shrink-0"
-                      style={{ background: vibeColour }}>{i + 1}</div>
-                    <p className="text-gray-200 text-sm leading-relaxed pt-0.5">{activity}</p>
-                  </div>
+                  <li key={i} className="flex gap-5">
+                    <span className="font-display text-2xl text-[var(--gold)] leading-none w-8 flex-shrink-0">
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                    <p className="text-[var(--text)] text-[15px] leading-relaxed pt-1">{activity}</p>
+                  </li>
                 ))}
-              </div>
+              </ol>
 
-              {/* Hotel */}
               {topPick && selectedDayData.vibe !== 'travel' && (
-                <div className="mt-5 pt-5 border-t border-[var(--line)]">
-                  <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-3">Where you're staying tonight</p>
-                  <div className="flex items-center gap-4 bg-[var(--ink-2)] rounded-xl p-4">
-                    <span className="text-3xl">🏨</span>
-                    <div className="flex-1">
-                      <p className="text-[var(--cream)] font-bold text-sm">{topPick.name}</p>
-                      <p className="text-[var(--text-muted)] text-xs">{topPick.area} · {'★'.repeat(topPick.stars)} · {topPick.style}</p>
+                <div className="mt-8 pt-7 border-t border-[var(--line)]">
+                  <p className="eyebrow mb-4">Where you'll sleep</p>
+                  <div className="flex items-baseline justify-between gap-4">
+                    <div>
+                      <p className="font-display text-xl text-[var(--cream)]">{topPick.name}</p>
+                      <p className="text-[var(--text-muted)] text-xs mt-1 tracking-wide">
+                        {topPick.area} · {'★'.repeat(topPick.stars)} · {topPick.style}
+                      </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[#7A9082] font-bold">{topPick.price_per_night_aud}</p>
-                      <p className="text-[var(--text-dim)] text-[10px]">/night</p>
+                      <p className="font-display text-2xl text-[var(--gold)]">{topPick.price_per_night_aud}</p>
+                      <p className="text-[var(--text-dim)] text-[10px] uppercase tracking-wider">per night</p>
                     </div>
                   </div>
                 </div>
               )}
             </div>
-          </div>
+          </motion.div>
         );
       })()}
 
-      {/* Day cards grouped by location */}
-      <div className="space-y-6">
+      {/* Location groups */}
+      <div className="space-y-12">
         {locationGroups.map((group, gi) => {
           const topPick = group.hotelMatch ? getTopPick(group.hotelMatch) : null;
 
-          // Travel day: render as a thin connector
           if (group.isTravel) {
             const day = group.days[0];
-            const vibeColour = VIBE_COLOURS[day.vibe] || '#0077B6';
             const dayDate = addDaysISO(config.departureDate, day.day - 1);
             const isSelected = selectedDay === day.day;
 
             return (
-              <div key={gi} className="flex justify-center">
-                <div
+              <motion.div
+                key={gi}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.6, delay: gi * 0.05, ease: EASE }}
+                className="flex justify-center"
+              >
+                <button
                   onClick={() => setSelectedDay(isSelected ? null : day.day)}
-                  className={`flex items-center gap-3 rounded-full px-5 py-2.5 cursor-pointer transition-all duration-300 border ${
+                  className={`flex items-center gap-4 rounded-full px-6 py-3 transition-all border ${
                     isSelected
-                      ? 'border-[#0077B6]/40 bg-[#0077B6]/15 shadow-lg'
-                      : 'border-dashed border-[var(--line)] bg-[#0E1525] hover:border-[var(--line-strong)] hover:bg-[var(--ink-3)]'
+                      ? 'border-[var(--gold)]/50 bg-[var(--gold)]/10'
+                      : 'border-dashed border-[var(--line)] hover:border-[var(--line-strong)]'
                   }`}
                 >
-                  <span>{day.icon}</span>
-                  <div>
-                    <p className="text-[var(--cream)] text-xs font-semibold">{day.title}</p>
-                    <p className="text-[var(--text-muted)] text-[10px]">Day {day.day} · {formatDateAU(dayDate)}</p>
-                  </div>
-                  <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full" style={{ background: `${vibeColour}20`, color: vibeColour }}>
-                    {VIBE_LABELS[day.vibe] || 'Travel'}
-                  </span>
-                </div>
-              </div>
+                  <span className="eyebrow">In transit</span>
+                  <span className="divider w-12" />
+                  <span className="text-[var(--cream)] text-sm font-display">{day.title}</span>
+                  <span className="text-[var(--text-dim)] text-[11px]">Day {day.day} · {formatDateAU(dayDate)}</span>
+                </button>
+              </motion.div>
             );
           }
 
-          // Destination group: header + card grid
           return (
-            <div key={gi}>
-              {/* Destination header with hotel */}
-              <div className="flex items-center gap-3 mb-3 px-1">
-                <h3 className="text-[var(--cream)] font-bold text-base">{group.location}</h3>
-                <div className="flex-1 h-px bg-[var(--ink-4)]" />
-                {topPick && (
-                  <div className="hidden sm:flex items-center gap-1.5">
-                    <span className="text-xs">🏨</span>
-                    <span className="text-[var(--text-muted)] text-[10px]">{topPick.name}</span>
-                  </div>
-                )}
-                <span className="text-[var(--text-dim)] text-[10px]">{group.days.length} day{group.days.length > 1 ? 's' : ''}</span>
+            <motion.div
+              key={gi}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: gi * 0.06, ease: EASE }}
+            >
+              {/* Location headline */}
+              <div className="flex items-end justify-between mb-6 gap-4">
+                <div>
+                  <p className="eyebrow mb-2">Chapter {String(gi + 1).padStart(2, '0')}</p>
+                  <h3 className="font-display text-2xl sm:text-3xl text-[var(--cream)] leading-tight">{group.location}</h3>
+                </div>
+                <div className="text-right">
+                  <p className="text-[var(--text-dim)] text-[11px] uppercase tracking-wider">
+                    {group.days.length} day{group.days.length > 1 ? 's' : ''}
+                  </p>
+                  {topPick && (
+                    <p className="text-[var(--text-muted)] text-[11px] mt-1">Stay · {topPick.name}</p>
+                  )}
+                </div>
               </div>
+              <div className="divider mb-6" />
 
               {/* Day cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {group.days.map((day) => {
-                  const vibeColour = VIBE_COLOURS[day.vibe] || '#888';
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {group.days.map((day, di) => {
                   const vibeLabel = VIBE_LABELS[day.vibe] || day.vibe;
                   const dayDate = addDaysISO(config.departureDate, day.day - 1);
                   const isSelected = selectedDay === day.day;
+                  const dayPhoto = getDestinationPhoto(day.location, 600, 400);
 
                   return (
-                    <div key={day.day}
+                    <motion.div
+                      key={day.day}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: di * 0.04, ease: EASE }}
                       onClick={() => setSelectedDay(isSelected ? null : day.day)}
-                      className={`group rounded-2xl border cursor-pointer transition-all duration-300 overflow-hidden ${
-                        isSelected
-                          ? 'ring-2 shadow-xl'
-                          : 'hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20'
+                      className={`surface-card rounded-3xl overflow-hidden cursor-pointer transition-all ${
+                        isSelected ? 'ring-1 ring-[var(--gold)]/50' : ''
                       }`}
-                      style={{
-                        borderColor: isSelected ? vibeColour : 'rgba(255,255,255,0.08)',
-                        boxShadow: isSelected ? `0 4px 20px ${vibeColour}20` : undefined,
-                      }}
                     >
-                      {/* Coloured top strip */}
-                      <div className="h-1" style={{ background: `linear-gradient(90deg, ${vibeColour}, ${vibeColour}60)` }} />
-
-                      <div className="bg-[var(--ink-3)] group-hover:bg-[#162033] transition-colors p-4">
-                        {/* Header row */}
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            <span className="text-2xl">{day.icon}</span>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-[var(--cream)]" style={{ background: vibeColour }}>
-                              Day {day.day}
-                            </span>
-                          </div>
-                          <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full" style={{ background: `${vibeColour}15`, color: vibeColour }}>
-                            {vibeLabel}
+                      {/* Photo */}
+                      <div className="relative h-36 overflow-hidden">
+                        <img src={dayPhoto} alt={day.location} className="w-full h-full object-cover" />
+                        <div
+                          className="absolute inset-0"
+                          style={{ background: 'linear-gradient(180deg, transparent 30%, rgba(10,8,6,0.9) 100%)' }}
+                        />
+                        <div className="absolute top-4 left-4">
+                          <span className="font-display text-3xl text-[var(--cream)] leading-none">
+                            {String(day.day).padStart(2, '0')}
                           </span>
                         </div>
+                        <div className="absolute bottom-3 left-4 right-4 flex items-baseline justify-between">
+                          <p className="eyebrow text-[var(--gold)]">{vibeLabel}</p>
+                          <p className="text-[var(--text-dim)] text-[10px] tracking-wider uppercase">{formatDateAU(dayDate)}</p>
+                        </div>
+                      </div>
 
-                        {/* Title and date */}
-                        <h4 className="text-[var(--cream)] font-bold text-[15px] mb-1 leading-snug">{day.title}</h4>
-                        <p className="text-[var(--text-muted)] text-[11px] mb-3">{formatDateAU(dayDate)}</p>
+                      <div className="p-5">
+                        <h4 className="font-display text-lg text-[var(--cream)] mb-3 leading-snug">{day.title}</h4>
 
-                        {/* Activity previews */}
-                        <div className="space-y-2 mb-3">
+                        <ul className="space-y-1.5 mb-4">
                           {day.activities.slice(0, 2).map((a, i) => (
-                            <div key={i} className="flex items-start gap-2">
-                              <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 opacity-60" style={{ background: vibeColour }} />
-                              <p className="text-[var(--text-muted)] text-[12px] leading-relaxed line-clamp-1">{a}</p>
-                            </div>
+                            <li key={i} className="text-[var(--text-muted)] text-[12.5px] leading-relaxed line-clamp-1">
+                              — {a}
+                            </li>
                           ))}
                           {day.activities.length > 2 && (
-                            <p className="text-[var(--text-dim)] text-[10px] pl-3.5">+{day.activities.length - 2} more</p>
+                            <li className="text-[var(--text-dim)] text-[10px] tracking-wider uppercase pt-1">
+                              +{day.activities.length - 2} more
+                            </li>
                           )}
-                        </div>
+                        </ul>
 
-                        {/* Footer */}
-                        <div className="pt-2.5 border-t border-[var(--line)] flex items-center justify-between">
+                        <div className="pt-3 border-t border-[var(--line)] flex items-center justify-between">
                           {reorderMode ? (
                             <div className="flex items-center gap-2 w-full justify-center">
-                              <button onClick={(e) => { e.stopPropagation(); moveDay(day.day, 'up'); }}
+                              <button
+                                onClick={(e) => { e.stopPropagation(); moveDay(day.day, 'up'); }}
                                 disabled={day.day === 1}
-                                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--ink-3)] border border-[var(--line)] hover:bg-[var(--ink-4)] disabled:opacity-20 transition-all" title="Move up">↑ Up</button>
-                              <button onClick={(e) => { e.stopPropagation(); moveDay(day.day, 'down'); }}
+                                className="px-3 py-1.5 rounded-full text-[10px] uppercase tracking-wider border border-[var(--line)] text-[var(--text-muted)] hover:text-[var(--cream)] disabled:opacity-20 transition-all"
+                              >
+                                ↑ Up
+                              </button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); moveDay(day.day, 'down'); }}
                                 disabled={day.day === itinerary.length}
-                                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--ink-3)] border border-[var(--line)] hover:bg-[var(--ink-4)] disabled:opacity-20 transition-all" title="Move down">↓ Down</button>
+                                className="px-3 py-1.5 rounded-full text-[10px] uppercase tracking-wider border border-[var(--line)] text-[var(--text-muted)] hover:text-[var(--cream)] disabled:opacity-20 transition-all"
+                              >
+                                ↓ Down
+                              </button>
                             </div>
                           ) : (
                             <>
-                              <span className="text-[10px] text-[var(--text-dim)] group-hover:text-[var(--text-muted)] transition-colors">Tap for full plan</span>
-                              <span className="text-[10px] text-[var(--text-dim)] group-hover:text-[var(--text-muted)] transition-colors">→</span>
+                              <span className="text-[10px] text-[var(--text-dim)] uppercase tracking-wider">Read on</span>
+                              <span className="text-[var(--gold)]">→</span>
                             </>
                           )}
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>
-    </div>
+    </motion.div>
   );
 }
