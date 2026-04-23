@@ -1,27 +1,20 @@
 import { useEffect, useState } from 'react';
+import { getCountryHero, getDestinationPhoto, picsum } from './imagery';
 
 // Cache Wikipedia lookups so each name only fires once per session.
-const cache = new Map<string, string | null>();
-const inflight = new Map<string, Promise<string | null>>();
+const wikiCache = new Map<string, string | null>();
+const wikiInflight = new Map<string, Promise<string | null>>();
 
 function cleanName(name: string): string {
   return name.split('(')[0].split('/')[0].split('·')[0].trim();
 }
 
-/**
- * Try Wikipedia REST summary for the query; if no thumbnail, try a
- * variant with "travel" stripped and a few common suffixes.
- */
 async function lookupWiki(query: string): Promise<string | null> {
-  if (cache.has(query)) return cache.get(query)!;
-  if (inflight.has(query)) return inflight.get(query)!;
+  if (wikiCache.has(query)) return wikiCache.get(query)!;
+  if (wikiInflight.has(query)) return wikiInflight.get(query)!;
 
   const p = (async () => {
-    const candidates = [
-      query,
-      `${query} (country)`,
-      `${query} (city)`,
-    ];
+    const candidates = [query, `${query} (country)`, `${query} (city)`];
     for (const candidate of candidates) {
       try {
         const res = await fetch(
@@ -29,42 +22,67 @@ async function lookupWiki(query: string): Promise<string | null> {
         );
         if (!res.ok) continue;
         const data = await res.json();
-        // Prefer the full-resolution original image if available
         const src: string | undefined = data?.originalimage?.source || data?.thumbnail?.source;
         if (src) {
-          // Upscale any thumbnail-sized Wikipedia URL to ~1200 px wide.
-          const upscaled = src.replace(/\/\d+px-/, '/1200px-');
-          cache.set(query, upscaled);
-          return upscaled;
+          wikiCache.set(query, src);
+          return src;
         }
       } catch {
         /* try next */
       }
     }
-    cache.set(query, null);
+    wikiCache.set(query, null);
     return null;
   })();
 
-  inflight.set(query, p);
+  wikiInflight.set(query, p);
   try {
     return await p;
   } finally {
-    inflight.delete(query);
+    wikiInflight.delete(query);
   }
 }
 
-export function useWikiImage(name: string | null | undefined): string | null {
-  const [url, setUrl] = useState<string | null>(() => (name ? cache.get(cleanName(name)) ?? null : null));
+/**
+ * Multi-source image hook.
+ *
+ * Returns a URL immediately (Loremflickr-themed fallback so cards never empty),
+ * then upgrades to a higher-quality Wikipedia article image in the background
+ * if one is available for `name`.
+ *
+ * Pass `type: 'country' | 'destination'` to tune the fallback quality/tags.
+ */
+export function useWikiImage(
+  name: string | null | undefined,
+  type: 'country' | 'destination' = 'destination'
+): string | null {
+  const instant = name
+    ? (type === 'country' ? getCountryHero(name, 1200, 800) : getDestinationPhoto(name, 1200, 800))
+    : null;
+
+  const [url, setUrl] = useState<string | null>(() => {
+    if (!name) return null;
+    const cached = wikiCache.get(cleanName(name));
+    return cached ?? instant;
+  });
 
   useEffect(() => {
     if (!name) { setUrl(null); return; }
     const query = cleanName(name);
     let cancelled = false;
     lookupWiki(query).then((result) => {
-      if (!cancelled) setUrl(result);
+      if (cancelled) return;
+      if (result) setUrl(result);
     });
     return () => { cancelled = true; };
   }, [name]);
 
   return url;
+}
+
+/** Hook variant for any image — same API with explicit Picsum ultimate fallback. */
+export function useReliableImage(name: string | null | undefined, type: 'country' | 'destination' = 'destination'): string {
+  const u = useWikiImage(name, type);
+  if (u) return u;
+  return name ? picsum(name, 1200, 800) : '';
 }
