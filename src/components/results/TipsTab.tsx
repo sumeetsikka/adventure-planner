@@ -12,7 +12,7 @@ export default function TipsTab({ tips }: Props) {
     return (
       <div className="text-center py-16">
         <span className="text-5xl block mb-4">📋</span>
-        <p className="text-white font-medium">Tips are loading</p>
+        <p className="text-[var(--cream)] font-medium">Tips are loading</p>
       </div>
     );
   }
@@ -22,21 +22,21 @@ export default function TipsTab({ tips }: Props) {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-white font-bold text-xl mb-1">Travel Tips</h2>
-        <p className="text-gray-500 text-sm">Practical advice for your adventure. Tap any tip for the full detail.</p>
+        <h2 className="text-[var(--cream)] font-bold text-xl mb-1">Travel Tips</h2>
+        <p className="text-[var(--text-muted)] text-sm">Practical advice for your adventure. Tap any tip for the full detail.</p>
       </div>
 
       {/* Detail overlay */}
       {selected && (
         <div className="mb-6 animate-fade-up">
-          <div className="rounded-2xl border border-white/10 bg-[#131B2E] p-6">
+          <div className="rounded-2xl border border-[var(--line)] bg-[var(--ink-3)] p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <span className="text-4xl">{selected.icon}</span>
-                <h3 className="text-white font-bold text-lg">{selected.title}</h3>
+                <h3 className="text-[var(--cream)] font-bold text-lg">{selected.title}</h3>
               </div>
               <button onClick={() => setSelectedTip(null)}
-                className="text-gray-500 hover:text-white text-xl w-8 h-8 rounded-lg hover:bg-white/5 flex items-center justify-center transition-colors">×</button>
+                className="text-[var(--text-muted)] hover:text-[var(--cream)] text-xl w-8 h-8 rounded-lg hover:bg-[var(--ink-3)] flex items-center justify-center transition-colors">×</button>
             </div>
             <p className="text-gray-300 text-sm leading-relaxed">{selected.text}</p>
           </div>
@@ -53,15 +53,15 @@ export default function TipsTab({ tips }: Props) {
               onClick={() => setSelectedTip(isSelected ? null : i)}
               className={`group rounded-2xl p-5 border cursor-pointer transition-all duration-300 ${
                 isSelected
-                  ? 'border-white/20 bg-[#182036] ring-1 ring-white/10'
-                  : 'border-white/8 bg-[#131B2E] hover:border-white/15 hover:bg-[#182036] hover:-translate-y-0.5 hover:shadow-lg'
+                  ? 'border-white/20 bg-[var(--ink-4)] ring-1 ring-white/10'
+                  : 'border-[var(--line)] bg-[var(--ink-3)] hover:border-[var(--line-strong)] hover:bg-[var(--ink-4)] hover:-translate-y-0.5 hover:shadow-lg'
               }`}>
               <span className="text-3xl block mb-3">{tip.icon}</span>
-              <h4 className="text-white font-bold text-sm mb-2">{tip.title}</h4>
-              <p className="text-gray-400 text-[12px] leading-relaxed line-clamp-2">{tip.text}</p>
-              <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between">
-                <span className="text-[9px] text-gray-600 group-hover:text-gray-400 transition-colors">Tap to read</span>
-                <span className="text-gray-600 text-[10px] group-hover:text-gray-400 transition-colors">→</span>
+              <h4 className="text-[var(--cream)] font-bold text-sm mb-2">{tip.title}</h4>
+              <p className="text-[var(--text-muted)] text-[12px] leading-relaxed line-clamp-2">{tip.text}</p>
+              <div className="mt-3 pt-2 border-t border-[var(--line)] flex items-center justify-between">
+                <span className="text-[9px] text-[var(--text-dim)] group-hover:text-[var(--text-muted)] transition-colors">Tap to read</span>
+                <span className="text-[var(--text-dim)] text-[10px] group-hover:text-[var(--text-muted)] transition-colors">→</span>
               </div>
             </div>
           );

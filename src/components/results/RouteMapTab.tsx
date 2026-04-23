@@ -77,8 +77,8 @@ export default function RouteMapTab({ config, results }: Props) {
   if (loading) {
     return (
       <div className="text-center py-16">
-        <div className="w-8 h-8 border-2 border-[#FF6B35] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-gray-400">Loading map coordinates...</p>
+        <div className="w-8 h-8 border-2 border-[#C65D3B] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-[var(--text-muted)]">Loading map coordinates...</p>
       </div>
     );
   }
@@ -87,7 +87,7 @@ export default function RouteMapTab({ config, results }: Props) {
     return (
       <div className="text-center py-16">
         <span className="text-5xl block mb-4">🗺️</span>
-        <p className="text-gray-400">Could not resolve destination coordinates for the map.</p>
+        <p className="text-[var(--text-muted)]">Could not resolve destination coordinates for the map.</p>
       </div>
     );
   }
@@ -110,11 +110,11 @@ export default function RouteMapTab({ config, results }: Props) {
   return (
     <div>
       <div className="mb-4">
-        <h2 className="text-white font-bold text-xl mb-1">Your Route Map</h2>
-        <p className="text-gray-500 text-sm">{points.length} destinations plotted. Tap a marker for details.</p>
+        <h2 className="text-[var(--cream)] font-bold text-xl mb-1">Your Route Map</h2>
+        <p className="text-[var(--text-muted)] text-sm">{points.length} destinations plotted. Tap a marker for details.</p>
       </div>
 
-      <div className="rounded-2xl overflow-hidden border border-white/10" style={{ height: '500px' }}>
+      <div className="rounded-2xl overflow-hidden border border-[var(--line)]" style={{ height: '500px' }}>
         <MapContainer center={center} zoom={5} style={{ height: '100%', width: '100%' }} scrollWheelZoom={true}>
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -125,7 +125,7 @@ export default function RouteMapTab({ config, results }: Props) {
           {/* Route polyline */}
           <Polyline
             positions={points.map(p => [p.lat, p.lon] as [number, number])}
-            pathOptions={{ color: '#FF6B35', weight: 3, opacity: 0.7, dashArray: '8, 8' }}
+            pathOptions={{ color: '#C65D3B', weight: 3, opacity: 0.7, dashArray: '8, 8' }}
           />
 
           {/* Destination markers */}
@@ -157,7 +157,7 @@ export default function RouteMapTab({ config, results }: Props) {
       {/* Legend */}
       <div className="flex flex-wrap gap-2 mt-3">
         {points.map((p, i) => (
-          <div key={i} className="flex items-center gap-1.5 text-[10px] text-gray-500">
+          <div key={i} className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
             <div className="w-3 h-3 rounded-full" style={{ background: p.colour }} />
             <span>{p.name}</span>
           </div>

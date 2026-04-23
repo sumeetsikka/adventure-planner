@@ -59,8 +59,8 @@ export default function ChatTab({ config }: Props) {
   return (
     <div className="flex flex-col" style={{ minHeight: '500px' }}>
       <div className="mb-4">
-        <h2 className="text-white font-bold text-xl mb-1">Travel Agent</h2>
-        <p className="text-gray-500 text-sm">Ask me anything about {countryName}. I know your destinations and travel dates.</p>
+        <h2 className="text-[var(--cream)] font-bold text-xl mb-1">Travel Agent</h2>
+        <p className="text-[var(--text-muted)] text-sm">Ask me anything about {countryName}. I know your destinations and travel dates.</p>
       </div>
 
       {/* Chat messages */}
@@ -68,11 +68,11 @@ export default function ChatTab({ config }: Props) {
         {messages.length === 0 && (
           <div className="text-center py-8">
             <span className="text-4xl block mb-3">🧑‍✈️</span>
-            <p className="text-gray-400 text-sm mb-4">Hi! I'm your {countryName} travel expert. Ask me anything.</p>
+            <p className="text-[var(--text-muted)] text-sm mb-4">Hi! I'm your {countryName} travel expert. Ask me anything.</p>
             <div className="flex flex-wrap justify-center gap-2">
               {SUGGESTIONS.slice(0, 4).map((s) => (
                 <button key={s} onClick={() => sendMessage(s)}
-                  className="text-[11px] px-3 py-1.5 rounded-lg bg-[#131B2E] border border-white/8 text-gray-400 hover:text-white hover:border-white/15 transition-all">
+                  className="text-[11px] px-3 py-1.5 rounded-lg bg-[var(--ink-3)] border border-[var(--line)] text-[var(--text-muted)] hover:text-[var(--cream)] hover:border-[var(--line-strong)] transition-all">
                   {s}
                 </button>
               ))}
@@ -84,10 +84,10 @@ export default function ChatTab({ config }: Props) {
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
               msg.role === 'user'
-                ? 'bg-gradient-to-r from-[#FF6B35] to-[#E85D26] text-white'
-                : 'bg-[#131B2E] border border-white/8 text-gray-300'
+                ? 'bg-gradient-to-r from-[#C65D3B] to-[#B04E2E] text-[var(--cream)]'
+                : 'bg-[var(--ink-3)] border border-[var(--line)] text-gray-300'
             }`}>
-              {msg.role === 'assistant' && <span className="text-xs block mb-1 text-gray-500">🧑‍✈️ Travel Agent</span>}
+              {msg.role === 'assistant' && <span className="text-xs block mb-1 text-[var(--text-muted)]">🧑‍✈️ Travel Agent</span>}
               <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
             </div>
           </div>
@@ -95,7 +95,7 @@ export default function ChatTab({ config }: Props) {
 
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-[#131B2E] border border-white/8 rounded-2xl px-4 py-3">
+            <div className="bg-[var(--ink-3)] border border-[var(--line)] rounded-2xl px-4 py-3">
               <div className="flex gap-1">
                 <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
                 <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
@@ -113,7 +113,7 @@ export default function ChatTab({ config }: Props) {
         <div className="flex flex-wrap gap-1.5 mb-3">
           {SUGGESTIONS.filter(s => !messages.some(m => m.content === s)).slice(0, 3).map((s) => (
             <button key={s} onClick={() => sendMessage(s)} disabled={loading}
-              className="text-[10px] px-2.5 py-1 rounded-lg bg-white/5 border border-white/5 text-gray-500 hover:text-white hover:border-white/15 transition-all disabled:opacity-50">
+              className="text-[10px] px-2.5 py-1 rounded-lg bg-[var(--ink-3)] border border-[var(--line)] text-[var(--text-muted)] hover:text-[var(--cream)] hover:border-[var(--line-strong)] transition-all disabled:opacity-50">
               {s}
             </button>
           ))}
@@ -129,15 +129,15 @@ export default function ChatTab({ config }: Props) {
           onKeyDown={(e) => e.key === 'Enter' && sendMessage(input)}
           placeholder={`Ask about ${countryName}...`}
           disabled={loading}
-          className="flex-1 bg-[#131B2E] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#FF6B35]/50 transition-colors disabled:opacity-50"
+          className="flex-1 bg-[var(--ink-3)] border border-[var(--line)] rounded-xl px-4 py-3 text-[var(--cream)] placeholder-gray-600 text-sm focus:outline-none focus:border-[#C65D3B]/50 transition-colors disabled:opacity-50"
         />
         <button
           onClick={() => sendMessage(input)}
           disabled={!input.trim() || loading}
           className={`px-5 py-3 rounded-xl font-semibold text-sm transition-all ${
             input.trim() && !loading
-              ? 'bg-gradient-to-r from-[#FF6B35] to-[#E85D26] text-white hover:shadow-lg'
-              : 'bg-white/5 text-gray-600 cursor-not-allowed'
+              ? 'bg-gradient-to-r from-[#C65D3B] to-[#B04E2E] text-[var(--cream)] hover:shadow-lg'
+              : 'bg-[var(--ink-3)] text-[var(--text-dim)] cursor-not-allowed'
           }`}
         >
           Send

@@ -26,7 +26,7 @@ export default function WeatherTab({ weather }: Props) {
     return (
       <div className="text-center py-16">
         <span className="text-5xl block mb-4">🌤️</span>
-        <p className="text-white font-medium">Weather data is loading</p>
+        <p className="text-[var(--cream)] font-medium">Weather data is loading</p>
       </div>
     );
   }
@@ -34,8 +34,8 @@ export default function WeatherTab({ weather }: Props) {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-white font-bold text-xl mb-1">Weather Forecast</h2>
-        <p className="text-gray-500 text-sm">Expected conditions during your trip</p>
+        <h2 className="text-[var(--cream)] font-bold text-xl mb-1">Weather Forecast</h2>
+        <p className="text-[var(--text-muted)] text-sm">Expected conditions during your trip</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -47,13 +47,13 @@ export default function WeatherTab({ weather }: Props) {
           return (
             <div
               key={i}
-              className="rounded-2xl border border-white/8 bg-[#131B2E] p-5 hover:border-white/15 hover:bg-[#182036] hover:-translate-y-1 hover:shadow-xl transition-all duration-300"
+              className="rounded-2xl border border-[var(--line)] bg-[var(--ink-3)] p-5 hover:border-[var(--line-strong)] hover:bg-[var(--ink-4)] hover:-translate-y-1 hover:shadow-xl transition-all duration-300"
             >
               {/* Header */}
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h4 className="text-white font-bold text-sm leading-snug">{w.destination}</h4>
-                  <p className="text-gray-500 text-[11px] mt-0.5">{w.month}</p>
+                  <h4 className="text-[var(--cream)] font-bold text-sm leading-snug">{w.destination}</h4>
+                  <p className="text-[var(--text-muted)] text-[11px] mt-0.5">{w.month}</p>
                 </div>
                 <span className="text-3xl">{emoji}</span>
               </div>
@@ -61,12 +61,12 @@ export default function WeatherTab({ weather }: Props) {
               {/* Temperature */}
               <div className="flex items-center gap-3 mb-3">
                 <div className="text-center">
-                  <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-0.5">High</p>
+                  <p className="text-[10px] text-[var(--text-dim)] uppercase tracking-wider mb-0.5">High</p>
                   <p className={`font-bold text-lg ${highColour}`}>{w.temp_high_c}°C</p>
                 </div>
-                <div className="w-px h-8 bg-white/8" />
+                <div className="w-px h-8 bg-[var(--ink-4)]" />
                 <div className="text-center">
-                  <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-0.5">Low</p>
+                  <p className="text-[10px] text-[var(--text-dim)] uppercase tracking-wider mb-0.5">Low</p>
                   <p className={`font-bold text-lg ${lowColour}`}>{w.temp_low_c}°C</p>
                 </div>
               </div>
@@ -75,20 +75,20 @@ export default function WeatherTab({ weather }: Props) {
               <div className="flex gap-3 mb-3">
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm">💧</span>
-                  <span className="text-gray-400 text-xs">{w.rainfall_mm}mm</span>
+                  <span className="text-[var(--text-muted)] text-xs">{w.rainfall_mm}mm</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm">💦</span>
-                  <span className="text-gray-400 text-xs">{w.humidity_percent}% humidity</span>
+                  <span className="text-[var(--text-muted)] text-xs">{w.humidity_percent}% humidity</span>
                 </div>
               </div>
 
               {/* Description */}
-              <p className="text-gray-400 text-[12px] leading-relaxed mb-3">{w.description}</p>
+              <p className="text-[var(--text-muted)] text-[12px] leading-relaxed mb-3">{w.description}</p>
 
               {/* Pack advice */}
-              <div className="pt-2 border-t border-white/5">
-                <p className="text-gray-500 text-[11px] italic">Pack: {w.what_to_pack}</p>
+              <div className="pt-2 border-t border-[var(--line)]">
+                <p className="text-[var(--text-muted)] text-[11px] italic">Pack: {w.what_to_pack}</p>
               </div>
             </div>
           );

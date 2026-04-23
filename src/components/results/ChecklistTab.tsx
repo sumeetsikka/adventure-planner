@@ -47,24 +47,24 @@ export default function ChecklistTab({ config }: Props) {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-white font-bold text-xl mb-1">Pre-Departure Checklist</h2>
-        <p className="text-gray-500 text-sm">
+        <h2 className="text-[var(--cream)] font-bold text-xl mb-1">Pre-Departure Checklist</h2>
+        <p className="text-[var(--text-muted)] text-sm">
           {config.country?.name} trip preparation. Tick items off as you complete them.
         </p>
       </div>
 
       {/* Progress */}
-      <div className="rounded-2xl border border-white/8 bg-[#131B2E] p-5 mb-6">
+      <div className="rounded-2xl border border-[var(--line)] bg-[var(--ink-3)] p-5 mb-6">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-white font-semibold text-sm">{done} of {total} complete</span>
-          <span className="text-[#2D936C] font-bold text-sm">{Math.round(pct)}%</span>
+          <span className="text-[var(--cream)] font-semibold text-sm">{done} of {total} complete</span>
+          <span className="text-[#7A9082] font-bold text-sm">{Math.round(pct)}%</span>
         </div>
-        <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden">
-          <div className="h-full rounded-full bg-gradient-to-r from-[#2D936C] to-[#2D936C]/50 transition-all duration-500"
+        <div className="w-full h-2.5 bg-[var(--ink-3)] rounded-full overflow-hidden">
+          <div className="h-full rounded-full bg-gradient-to-r from-[#7A9082] to-[#7A9082]/50 transition-all duration-500"
             style={{ width: `${pct}%` }} />
         </div>
         {done === total && (
-          <p className="text-[#2D936C] text-xs mt-2 font-semibold">All done. You're ready to go! 🎉</p>
+          <p className="text-[#7A9082] text-xs mt-2 font-semibold">All done. You're ready to go! 🎉</p>
         )}
       </div>
 
@@ -73,9 +73,9 @@ export default function ChecklistTab({ config }: Props) {
         {categories.map((cat) => {
           const items = CHECKLIST_ITEMS.filter((i) => i.category === cat);
           return (
-            <div key={cat} className="rounded-2xl border border-white/8 bg-[#131B2E] overflow-hidden">
-              <div className="px-5 py-3 border-b border-white/5">
-                <h3 className="text-white font-semibold text-sm">{cat}</h3>
+            <div key={cat} className="rounded-2xl border border-[var(--line)] bg-[var(--ink-3)] overflow-hidden">
+              <div className="px-5 py-3 border-b border-[var(--line)]">
+                <h3 className="text-[var(--cream)] font-semibold text-sm">{cat}</h3>
               </div>
               <div className="divide-y divide-white/[0.04]">
                 {items.map((item) => {
@@ -84,13 +84,13 @@ export default function ChecklistTab({ config }: Props) {
                     <button key={item.id} type="button" onClick={() => toggle(item.id)}
                       className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-white/[0.02] transition-colors">
                       <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                        isChecked ? 'bg-[#2D936C] border-[#2D936C]' : 'border-white/20'
+                        isChecked ? 'bg-[#7A9082] border-[#7A9082]' : 'border-white/20'
                       }`}>
-                        {isChecked && <span className="text-white text-[10px]">✓</span>}
+                        {isChecked && <span className="text-[var(--cream)] text-[10px]">✓</span>}
                       </div>
                       <span className="text-lg flex-shrink-0">{item.icon}</span>
                       <span className={`text-sm transition-all ${
-                        isChecked ? 'text-gray-600 line-through' : 'text-gray-300'
+                        isChecked ? 'text-[var(--text-dim)] line-through' : 'text-gray-300'
                       }`}>{item.label}</span>
                     </button>
                   );

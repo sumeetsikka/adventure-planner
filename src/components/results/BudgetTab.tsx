@@ -54,11 +54,11 @@ export default function BudgetTab({ budget, config, onUpdate }: Props) {
     return (
       <div className="text-center py-16">
         <span className="text-5xl block mb-4">💰</span>
-        <p className="text-white font-medium mb-2">Budget not available yet</p>
-        <p className="text-gray-500 text-sm mb-6">This can happen if the AI service was busy. Click below to try again.</p>
+        <p className="text-[var(--cream)] font-medium mb-2">Budget not available yet</p>
+        <p className="text-[var(--text-muted)] text-sm mb-6">This can happen if the AI service was busy. Click below to try again.</p>
         {onUpdate && (
           <button onClick={handleRetry} disabled={retrying}
-            className="px-6 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-[#FF6B35] to-[#E85D26] hover:shadow-lg transition-all disabled:opacity-50">
+            className="px-6 py-3 rounded-xl font-semibold text-[var(--cream)] bg-gradient-to-r from-[#C65D3B] to-[#B04E2E] hover:shadow-lg transition-all disabled:opacity-50">
             {retrying ? 'Generating...' : 'Generate Budget'}
           </button>
         )}
@@ -72,23 +72,23 @@ export default function BudgetTab({ budget, config, onUpdate }: Props) {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-white font-bold text-xl mb-1">Trip Budget</h2>
-        <p className="text-gray-500 text-sm">Complete cost breakdown including flights, hotels, activities, and transport.</p>
+        <h2 className="text-[var(--cream)] font-bold text-xl mb-1">Trip Budget</h2>
+        <p className="text-[var(--text-muted)] text-sm">Complete cost breakdown including flights, hotels, activities, and transport.</p>
       </div>
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-        <div className="rounded-2xl p-5 border border-[#2D936C]/20 bg-[#131B2E]">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Per Person</p>
-          <p className="text-[#2D936C] text-3xl font-bold">${perPersonTotal.toLocaleString()}</p>
-          <p className="text-gray-500 text-xs mt-1">estimated total</p>
+        <div className="rounded-2xl p-5 border border-[#7A9082]/20 bg-[var(--ink-3)]">
+          <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-1">Per Person</p>
+          <p className="text-[#7A9082] text-3xl font-bold">${perPersonTotal.toLocaleString()}</p>
+          <p className="text-[var(--text-muted)] text-xs mt-1">estimated total</p>
         </div>
-        <div className="rounded-2xl p-5 border border-[#E6A817]/20 bg-[#131B2E]">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">
+        <div className="rounded-2xl p-5 border border-[#D4A574]/20 bg-[var(--ink-3)]">
+          <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-1">
             Group Total ({config.travellers} traveller{config.travellers > 1 ? 's' : ''})
           </p>
-          <p className="text-[#E6A817] text-3xl font-bold">${groupTotal.toLocaleString()}</p>
-          <p className="text-gray-500 text-xs mt-1">estimated total</p>
+          <p className="text-[#D4A574] text-3xl font-bold">${groupTotal.toLocaleString()}</p>
+          <p className="text-[var(--text-muted)] text-xs mt-1">estimated total</p>
         </div>
       </div>
 
@@ -105,22 +105,22 @@ export default function BudgetTab({ budget, config, onUpdate }: Props) {
               onClick={() => setSelectedItem(isSelected ? null : i)}
               className={`group rounded-2xl p-4 border cursor-pointer transition-all duration-300 ${
                 isSelected
-                  ? 'border-white/20 bg-[#182036] ring-1 ring-white/10'
-                  : 'border-white/8 bg-[#131B2E] hover:border-white/15 hover:bg-[#182036] hover:-translate-y-0.5'
+                  ? 'border-white/20 bg-[var(--ink-4)] ring-1 ring-white/10'
+                  : 'border-[var(--line)] bg-[var(--ink-3)] hover:border-[var(--line-strong)] hover:bg-[var(--ink-4)] hover:-translate-y-0.5'
               }`}>
               <div className="flex items-start justify-between mb-2">
                 <span className="text-2xl">{icon}</span>
-                <span className="text-[#2D936C] font-bold text-base">{item.cost}</span>
+                <span className="text-[#7A9082] font-bold text-base">{item.cost}</span>
               </div>
 
-              <h4 className="text-white font-semibold text-sm mb-2 leading-snug">{item.category}</h4>
+              <h4 className="text-[var(--cream)] font-semibold text-sm mb-2 leading-snug">{item.category}</h4>
 
               {/* Progress bar */}
-              <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden mb-1">
-                <div className="h-full rounded-full bg-gradient-to-r from-[#2D936C] to-[#2D936C]/40 transition-all duration-700"
+              <div className="w-full h-1.5 bg-[var(--ink-3)] rounded-full overflow-hidden mb-1">
+                <div className="h-full rounded-full bg-gradient-to-r from-[#7A9082] to-[#7A9082]/40 transition-all duration-700"
                   style={{ width: `${Math.min(pct, 100)}%` }} />
               </div>
-              <p className="text-gray-600 text-[9px]">{Math.round(pct)}% of budget</p>
+              <p className="text-[var(--text-dim)] text-[9px]">{Math.round(pct)}% of budget</p>
             </div>
           );
         })}
@@ -150,15 +150,15 @@ export default function BudgetTab({ budget, config, onUpdate }: Props) {
         const isAbove = diff > 0;
 
         return (
-          <div className="mt-6 rounded-2xl border border-white/8 bg-[#131B2E] p-5">
-            <h3 className="text-white font-semibold text-sm mb-3">How does your trip compare?</h3>
+          <div className="mt-6 rounded-2xl border border-[var(--line)] bg-[var(--ink-3)] p-5">
+            <h3 className="text-[var(--cream)] font-semibold text-sm mb-3">How does your trip compare?</h3>
             <div className="flex items-center gap-4 mb-3">
               <div className="flex-1">
                 <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="text-gray-500">Average for {config.country?.name}</span>
-                  <span className="text-gray-400">${avgTotal.toLocaleString()}/person</span>
+                  <span className="text-[var(--text-muted)]">Average for {config.country?.name}</span>
+                  <span className="text-[var(--text-muted)]">${avgTotal.toLocaleString()}/person</span>
                 </div>
-                <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+                <div className="w-full h-2 bg-[var(--ink-3)] rounded-full overflow-hidden">
                   <div className="h-full rounded-full bg-gray-500" style={{ width: '100%' }} />
                 </div>
               </div>
@@ -166,28 +166,28 @@ export default function BudgetTab({ budget, config, onUpdate }: Props) {
             <div className="flex items-center gap-4">
               <div className="flex-1">
                 <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="text-gray-500">Your trip</span>
-                  <span className={isBelow ? 'text-[#2D936C]' : 'text-[#E6A817]'}>${perPersonTotal.toLocaleString()}/person</span>
+                  <span className="text-[var(--text-muted)]">Your trip</span>
+                  <span className={isBelow ? 'text-[#7A9082]' : 'text-[#D4A574]'}>${perPersonTotal.toLocaleString()}/person</span>
                 </div>
-                <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full ${isBelow ? 'bg-[#2D936C]' : 'bg-[#E6A817]'}`}
+                <div className="w-full h-2 bg-[var(--ink-3)] rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full ${isBelow ? 'bg-[#7A9082]' : 'bg-[#D4A574]'}`}
                     style={{ width: `${Math.min(100, (perPersonTotal / avgTotal) * 100)}%` }} />
                 </div>
               </div>
             </div>
-            <p className={`text-xs mt-3 font-semibold ${isBelow ? 'text-[#2D936C]' : isAbove ? 'text-[#E6A817]' : 'text-gray-400'}`}>
+            <p className={`text-xs mt-3 font-semibold ${isBelow ? 'text-[#7A9082]' : isAbove ? 'text-[#D4A574]' : 'text-[var(--text-muted)]'}`}>
               {isBelow ? `${Math.abs(diffPct)}% below average. Great value! 🎉` :
                isAbove ? `${diffPct}% above average. You're going premium! ✨` :
                'Right on the average.'}
             </p>
-            <p className="text-gray-600 text-[9px] mt-1">
+            <p className="text-[var(--text-dim)] text-[9px] mt-1">
               Based on ~${avgDaily}/day average for mid-range Australian travellers in {config.country?.name} ({totalDays} days).
             </p>
           </div>
         );
       })()}
 
-      <p className="text-gray-600 text-[10px] text-center mt-4">
+      <p className="text-[var(--text-dim)] text-[10px] text-center mt-4">
         Estimates based on typical costs for Australian travellers. Actual prices vary by season and availability.
       </p>
     </div>

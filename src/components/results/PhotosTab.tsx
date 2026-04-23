@@ -15,8 +15,8 @@ export default function PhotosTab({ destinations }: Props) {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-white font-bold text-xl mb-1">Destination Photos</h2>
-        <p className="text-gray-500 text-sm">A visual preview of your selected destinations.</p>
+        <h2 className="text-[var(--cream)] font-bold text-xl mb-1">Destination Photos</h2>
+        <p className="text-[var(--text-muted)] text-sm">A visual preview of your selected destinations.</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -25,7 +25,7 @@ export default function PhotosTab({ destinations }: Props) {
           const imgUrl = `https://source.unsplash.com/800x500/?${encodeURIComponent(d.name)}+travel+landmark`;
 
           return (
-            <div key={d.id} className="group relative rounded-2xl overflow-hidden border border-white/8 bg-[#131B2E] hover:border-white/15 transition-all duration-300">
+            <div key={d.id} className="group relative rounded-2xl overflow-hidden border border-[var(--line)] bg-[var(--ink-3)] hover:border-[var(--line-strong)] transition-all duration-300">
               {hasFailed ? (
                 <div className="h-48 flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${d.colour}15, ${d.colour}05)` }}>
                   <span className="text-6xl">{d.emoji}</span>
@@ -46,12 +46,12 @@ export default function PhotosTab({ destinations }: Props) {
               <div className="p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-lg">{d.emoji}</span>
-                  <h3 className="text-white font-bold text-sm">{d.name}</h3>
+                  <h3 className="text-[var(--cream)] font-bold text-sm">{d.name}</h3>
                 </div>
-                <p className="text-gray-500 text-[10px] uppercase tracking-wider mb-2" style={{ color: d.colour }}>{d.region}</p>
+                <p className="text-[var(--text-muted)] text-[10px] uppercase tracking-wider mb-2" style={{ color: d.colour }}>{d.region}</p>
                 <div className="flex flex-wrap gap-1">
                   {d.tags.slice(0, 3).map((tag) => (
-                    <span key={tag} className="text-[9px] px-2 py-0.5 rounded-full bg-white/5 text-gray-500">{tag}</span>
+                    <span key={tag} className="text-[9px] px-2 py-0.5 rounded-full bg-[var(--ink-3)] text-[var(--text-muted)]">{tag}</span>
                   ))}
                 </div>
               </div>

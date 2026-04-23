@@ -64,10 +64,10 @@ function RetryButton({ label, onRetry }: { label: string; onRetry: () => Promise
   return (
     <div className="text-center py-16">
       <span className="text-5xl block mb-4">{label === 'flights' ? '✈️' : label === 'hotels' ? '🏨' : label === 'transport' ? '🚆' : label === 'tips' ? '📋' : label === 'packing' ? '🧳' : label === 'weather' ? '🌤️' : label === 'visa' ? '🛂' : label === 'currency' ? '💱' : label === 'nearby' ? '📍' : '🔄'}</span>
-      <p className="text-white font-medium mb-2">Data not available yet</p>
-      <p className="text-gray-500 text-sm mb-6">The AI service may have been busy. Click to try again.</p>
+      <p className="text-[var(--cream)] font-medium mb-2">Data not available yet</p>
+      <p className="text-[var(--text-muted)] text-sm mb-6">The AI service may have been busy. Click to try again.</p>
       <button onClick={handleClick} disabled={retrying}
-        className="px-6 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-[#FF6B35] to-[#E85D26] hover:shadow-lg transition-all disabled:opacity-50">
+        className="px-6 py-3 rounded-xl font-semibold text-[var(--cream)] bg-gradient-to-r from-[#C65D3B] to-[#B04E2E] hover:shadow-lg transition-all disabled:opacity-50">
         {retrying ? 'Generating...' : 'Retry'}
       </button>
     </div>
@@ -131,7 +131,7 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
               {config.country?.name || 'Your'}<br />
               <em className="italic text-shimmer">adventure.</em>
             </h1>
-            <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-[var(--text-muted)] text-sm print:text-gray-600 font-light">
+            <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-[var(--text-muted)] text-sm print:text-[var(--text-dim)] font-light">
               <span>{config.travellers} traveller{config.travellers > 1 ? 's' : ''}</span>
               <span className="text-[var(--text-dim)]">·</span>
               <span>{formatDateAU(config.departureDate)} → {formatDateAU(config.returnDate)}</span>

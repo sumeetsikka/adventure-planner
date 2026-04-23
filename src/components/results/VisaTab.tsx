@@ -28,7 +28,7 @@ export default function VisaTab({ visa }: Props) {
     return (
       <div className="text-center py-16">
         <span className="text-5xl block mb-4">📄</span>
-        <p className="text-white font-medium">Visa information is loading</p>
+        <p className="text-[var(--cream)] font-medium">Visa information is loading</p>
       </div>
     );
   }
@@ -45,11 +45,11 @@ export default function VisaTab({ visa }: Props) {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-white font-bold text-xl mb-1">Visa Requirements</h2>
-        <p className="text-gray-500 text-sm">For Australian passport holders</p>
+        <h2 className="text-[var(--cream)] font-bold text-xl mb-1">Visa Requirements</h2>
+        <p className="text-[var(--text-muted)] text-sm">For Australian passport holders</p>
       </div>
 
-      <div className="rounded-2xl border border-white/8 bg-[#131B2E] p-6">
+      <div className="rounded-2xl border border-[var(--line)] bg-[var(--ink-3)] p-6">
         {/* Status badge */}
         <div className="mb-6">
           <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold ${badge.className}`}>
@@ -60,9 +60,9 @@ export default function VisaTab({ visa }: Props) {
         {/* Info grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           {infoGrid.map((info, i) => (
-            <div key={i} className="rounded-xl border border-white/8 bg-white/[0.02] p-3">
-              <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">{info.label}</p>
-              <p className="text-white text-sm font-semibold leading-snug">{info.value}</p>
+            <div key={i} className="rounded-xl border border-[var(--line)] bg-white/[0.02] p-3">
+              <p className="text-[10px] text-[var(--text-dim)] uppercase tracking-wider mb-1">{info.label}</p>
+              <p className="text-[var(--cream)] text-sm font-semibold leading-snug">{info.value}</p>
             </div>
           ))}
         </div>
@@ -70,11 +70,11 @@ export default function VisaTab({ visa }: Props) {
         {/* Documents needed */}
         {visa.documents_needed.length > 0 && (
           <div className="mb-6">
-            <h3 className="text-white font-bold text-sm mb-3">Documents Needed</h3>
+            <h3 className="text-[var(--cream)] font-bold text-sm mb-3">Documents Needed</h3>
             <ul className="space-y-2">
               {visa.documents_needed.map((doc, i) => (
                 <li key={i} className="flex items-start gap-2">
-                  <span className="text-[#2D936C] mt-0.5 shrink-0">•</span>
+                  <span className="text-[#7A9082] mt-0.5 shrink-0">•</span>
                   <span className="text-gray-300 text-sm">{doc}</span>
                 </li>
               ))}
@@ -85,7 +85,7 @@ export default function VisaTab({ visa }: Props) {
         {/* How to apply */}
         {visa.how_to_apply && (
           <div className="mb-6">
-            <h3 className="text-white font-bold text-sm mb-2">How to Apply</h3>
+            <h3 className="text-[var(--cream)] font-bold text-sm mb-2">How to Apply</h3>
             <p className="text-gray-300 text-sm leading-relaxed">{visa.how_to_apply}</p>
           </div>
         )}
@@ -93,7 +93,7 @@ export default function VisaTab({ visa }: Props) {
         {/* Important notes */}
         {visa.important_notes.length > 0 && (
           <div>
-            <h3 className="text-white font-bold text-sm mb-3">Important Notes</h3>
+            <h3 className="text-[var(--cream)] font-bold text-sm mb-3">Important Notes</h3>
             <div className="space-y-2">
               {visa.important_notes.map((note, i) => (
                 <div

@@ -24,7 +24,7 @@ export default function PackingTab({ packing }: Props) {
     return (
       <div className="text-center py-16">
         <span className="text-5xl block mb-4">🎒</span>
-        <p className="text-white font-medium">Packing list is loading</p>
+        <p className="text-[var(--cream)] font-medium">Packing list is loading</p>
       </div>
     );
   }
@@ -49,21 +49,21 @@ export default function PackingTab({ packing }: Props) {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-white font-bold text-xl mb-1">Your Packing List</h2>
-        <p className="text-gray-500 text-sm">Tick items off as you pack</p>
+        <h2 className="text-[var(--cream)] font-bold text-xl mb-1">Your Packing List</h2>
+        <p className="text-[var(--text-muted)] text-sm">Tick items off as you pack</p>
       </div>
 
       {/* Progress bar */}
-      <div className="rounded-2xl border border-white/8 bg-[#131B2E] p-4 mb-6">
+      <div className="rounded-2xl border border-[var(--line)] bg-[var(--ink-3)] p-4 mb-6">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-white text-sm font-medium">
+          <span className="text-[var(--cream)] text-sm font-medium">
             {packedCount} of {totalItems} items packed
           </span>
-          <span className="text-[#2D936C] text-sm font-bold">{Math.round(progressPct)}%</span>
+          <span className="text-[#7A9082] text-sm font-bold">{Math.round(progressPct)}%</span>
         </div>
-        <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden">
+        <div className="w-full h-2.5 bg-[var(--ink-3)] rounded-full overflow-hidden">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-[#2D936C] to-[#2D936C]/60 transition-all duration-500"
+            className="h-full rounded-full bg-gradient-to-r from-[#7A9082] to-[#7A9082]/60 transition-all duration-500"
             style={{ width: `${progressPct}%` }}
           />
         </div>
@@ -91,10 +91,10 @@ export default function PackingTab({ packing }: Props) {
         ];
 
         return (
-          <div className="rounded-2xl border border-white/8 bg-[#131B2E] p-5 mb-6">
+          <div className="rounded-2xl border border-[var(--line)] bg-[var(--ink-3)] p-5 mb-6">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-white font-semibold text-sm">Estimated Pack Weight</h3>
-              <span className="text-[#E6A817] font-bold text-lg">{roundedWeight} kg</span>
+              <h3 className="text-[var(--cream)] font-semibold text-sm">Estimated Pack Weight</h3>
+              <span className="text-[#D4A574] font-bold text-lg">{roundedWeight} kg</span>
             </div>
 
             <div className="space-y-2">
@@ -104,13 +104,13 @@ export default function PackingTab({ packing }: Props) {
                 return (
                   <div key={airline.name}>
                     <div className="flex items-center justify-between text-[10px] mb-0.5">
-                      <span className="text-gray-500">{airline.name} ({airline.checked}kg checked)</span>
-                      <span className={isOver ? 'text-red-400 font-semibold' : 'text-[#2D936C]'}>
+                      <span className="text-[var(--text-muted)]">{airline.name} ({airline.checked}kg checked)</span>
+                      <span className={isOver ? 'text-red-400 font-semibold' : 'text-[#7A9082]'}>
                         {isOver ? `${(roundedWeight - airline.checked).toFixed(1)}kg over!` : `${(airline.checked - roundedWeight).toFixed(1)}kg spare`}
                       </span>
                     </div>
-                    <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full transition-all ${isOver ? 'bg-red-400' : 'bg-[#2D936C]'}`}
+                    <div className="w-full h-1.5 bg-[var(--ink-3)] rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full transition-all ${isOver ? 'bg-red-400' : 'bg-[#7A9082]'}`}
                         style={{ width: `${pct}%` }} />
                     </div>
                   </div>
@@ -118,7 +118,7 @@ export default function PackingTab({ packing }: Props) {
               })}
             </div>
 
-            <p className="text-gray-600 text-[9px] mt-3">
+            <p className="text-[var(--text-dim)] text-[9px] mt-3">
               Weight is a rough estimate based on typical item weights. Check your airline's baggage policy before you fly.
             </p>
           </div>
@@ -130,12 +130,12 @@ export default function PackingTab({ packing }: Props) {
         {packing.map((cat, i) => (
           <div
             key={i}
-            className="rounded-2xl border border-white/8 bg-[#131B2E] p-4 hover:border-white/15 hover:bg-[#182036] hover:-translate-y-1 hover:shadow-xl transition-all duration-300"
+            className="rounded-2xl border border-[var(--line)] bg-[var(--ink-3)] p-4 hover:border-[var(--line-strong)] hover:bg-[var(--ink-4)] hover:-translate-y-1 hover:shadow-xl transition-all duration-300"
           >
             <div className="flex items-center gap-2 mb-3">
               <span className="text-2xl">{getCategoryEmoji(cat.category)}</span>
-              <h4 className="text-white font-bold text-sm">{cat.category}</h4>
-              <span className="ml-auto text-[10px] text-gray-600">
+              <h4 className="text-[var(--cream)] font-bold text-sm">{cat.category}</h4>
+              <span className="ml-auto text-[10px] text-[var(--text-dim)]">
                 {cat.items.filter((item) => checkedItems.has(`${cat.category}-${item}`)).length}/{cat.items.length}
               </span>
             </div>
@@ -151,13 +151,13 @@ export default function PackingTab({ packing }: Props) {
                         type="checkbox"
                         checked={checked}
                         onChange={() => toggleItem(cat.category, item)}
-                        className="w-4 h-4 rounded accent-[#2D936C] shrink-0 cursor-pointer"
+                        className="w-4 h-4 rounded accent-[#7A9082] shrink-0 cursor-pointer"
                       />
                       <span
                         className={`text-[13px] transition-all duration-200 ${
                           checked
-                            ? 'line-through text-gray-600 opacity-50'
-                            : 'text-gray-300 group-hover/item:text-white'
+                            ? 'line-through text-[var(--text-dim)] opacity-50'
+                            : 'text-gray-300 group-hover/item:text-[var(--cream)]'
                         }`}
                       >
                         {item}
