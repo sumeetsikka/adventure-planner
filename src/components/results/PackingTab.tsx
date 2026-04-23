@@ -1,30 +1,21 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import type { PackingItem } from '../../types';
 
 interface Props {
   packing: PackingItem[];
 }
 
-const CATEGORY_EMOJI: Record<string, string> = {
-  Clothing: '👕',
-  Toiletries: '🧴',
-  Electronics: '🔌',
-  Documents: '📄',
-  Activities: '🎒',
-};
-
-function getCategoryEmoji(category: string): string {
-  return CATEGORY_EMOJI[category] ?? '📦';
-}
+const EASE = [0.16, 1, 0.3, 1] as const;
 
 export default function PackingTab({ packing }: Props) {
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
 
   if (packing.length === 0) {
     return (
-      <div className="text-center py-16">
-        <span className="text-5xl block mb-4">🎒</span>
-        <p className="text-[var(--cream)] font-medium">Packing list is loading</p>
+      <div className="text-center py-20">
+        <p className="eyebrow mb-4">In the bag</p>
+        <h2 className="font-display text-3xl text-[var(--cream)]">Compiling your <em>list</em>…</h2>
       </div>
     );
   }
@@ -37,139 +28,167 @@ export default function PackingTab({ packing }: Props) {
     const key = `${category}-${item}`;
     setCheckedItems((prev) => {
       const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   }
 
+  const categoryWeights: Record<string, number> = {
+    Clothing: 0.35, Toiletries: 0.15, Electronics: 0.4, Documents: 0.05, Activities: 0.5,
+  };
+  const defaultWeight = 0.2;
+  const totalWeight = packing.reduce((sum, cat) => {
+    const wPerItem = categoryWeights[cat.category] || defaultWeight;
+    return sum + cat.items.length * wPerItem;
+  }, 0);
+  const roundedWeight = Math.round(totalWeight * 10) / 10;
+
+  const AIRLINE_LIMITS = [
+    { name: 'Jetstar', checked: 20, carry: 7 },
+    { name: 'Qantas', checked: 23, carry: 7 },
+    { name: 'Singapore Airlines', checked: 25, carry: 7 },
+    { name: 'Vietnam Airlines', checked: 23, carry: 7 },
+    { name: 'AirAsia', checked: 20, carry: 7 },
+  ];
+
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-[var(--cream)] font-bold text-xl mb-1">Your Packing List</h2>
-        <p className="text-[var(--text-muted)] text-sm">Tick items off as you pack</p>
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: EASE }}>
+      <div className="mb-10">
+        <p className="eyebrow mb-3">In the bag · {packing.length} categories</p>
+        <h2 className="font-display text-4xl sm:text-5xl text-[var(--cream)] leading-[1.05] tracking-tight">
+          The <em className="italic text-[var(--gold)]">list</em>.
+        </h2>
+        <p className="text-[var(--text-muted)] text-sm mt-3 max-w-md">Weather-appropriate essentials for the trip. Tick items as you pack.</p>
       </div>
 
-      {/* Progress bar */}
-      <div className="rounded-2xl border border-[var(--line)] bg-[var(--ink-3)] p-4 mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[var(--cream)] text-sm font-medium">
-            {packedCount} of {totalItems} items packed
-          </span>
-          <span className="text-[#7A9082] text-sm font-bold">{Math.round(progressPct)}%</span>
+      {/* Progress */}
+      <div className="surface-card rounded-3xl p-7 mb-6">
+        <div className="flex items-baseline justify-between mb-5">
+          <div>
+            <p className="eyebrow mb-2">Packed</p>
+            <p className="font-display text-4xl text-[var(--cream)]">
+              {packedCount}<span className="text-[var(--text-dim)]"> / {totalItems}</span>
+            </p>
+          </div>
+          <p className="font-display text-5xl text-[var(--gold)] leading-none">
+            {Math.round(progressPct)}<span className="text-xl">%</span>
+          </p>
         </div>
-        <div className="w-full h-2.5 bg-[var(--ink-3)] rounded-full overflow-hidden">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-[#7A9082] to-[#7A9082]/60 transition-all duration-500"
-            style={{ width: `${progressPct}%` }}
+        <div className="w-full h-[3px] bg-[var(--line)] rounded-full overflow-hidden">
+          <motion.div
+            className="h-full rounded-full bg-[var(--gold)]"
+            initial={{ width: 0 }}
+            animate={{ width: `${progressPct}%` }}
+            transition={{ duration: 0.8, ease: EASE }}
           />
         </div>
       </div>
 
       {/* Weight estimate */}
-      {(() => {
-        // Rough weight estimates per item category (kg per item average)
-        const categoryWeights: Record<string, number> = {
-          Clothing: 0.35, Toiletries: 0.15, Electronics: 0.4, Documents: 0.05, Activities: 0.5,
-        };
-        const defaultWeight = 0.2;
-        const totalWeight = packing.reduce((sum, cat) => {
-          const wPerItem = categoryWeights[cat.category] || defaultWeight;
-          return sum + cat.items.length * wPerItem;
-        }, 0);
-        const roundedWeight = Math.round(totalWeight * 10) / 10;
-
-        const AIRLINE_LIMITS = [
-          { name: 'Jetstar', checked: 20, carry: 7 },
-          { name: 'Qantas', checked: 23, carry: 7 },
-          { name: 'Singapore Airlines', checked: 25, carry: 7 },
-          { name: 'Vietnam Airlines', checked: 23, carry: 7 },
-          { name: 'AirAsia', checked: 20, carry: 7 },
-        ];
-
-        return (
-          <div className="rounded-2xl border border-[var(--line)] bg-[var(--ink-3)] p-5 mb-6">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-[var(--cream)] font-semibold text-sm">Estimated Pack Weight</h3>
-              <span className="text-[#D4A574] font-bold text-lg">{roundedWeight} kg</span>
-            </div>
-
-            <div className="space-y-2">
-              {AIRLINE_LIMITS.map((airline) => {
-                const pct = Math.min(100, (roundedWeight / airline.checked) * 100);
-                const isOver = roundedWeight > airline.checked;
-                return (
-                  <div key={airline.name}>
-                    <div className="flex items-center justify-between text-[10px] mb-0.5">
-                      <span className="text-[var(--text-muted)]">{airline.name} ({airline.checked}kg checked)</span>
-                      <span className={isOver ? 'text-red-400 font-semibold' : 'text-[#7A9082]'}>
-                        {isOver ? `${(roundedWeight - airline.checked).toFixed(1)}kg over!` : `${(airline.checked - roundedWeight).toFixed(1)}kg spare`}
-                      </span>
-                    </div>
-                    <div className="w-full h-1.5 bg-[var(--ink-3)] rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full transition-all ${isOver ? 'bg-red-400' : 'bg-[#7A9082]'}`}
-                        style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <p className="text-[var(--text-dim)] text-[9px] mt-3">
-              Weight is a rough estimate based on typical item weights. Check your airline's baggage policy before you fly.
-            </p>
+      <div className="surface-card rounded-3xl p-7 mb-10">
+        <div className="flex items-baseline justify-between mb-6">
+          <div>
+            <p className="eyebrow mb-2">Estimated weight</p>
+            <p className="font-display text-lg text-[var(--cream)]">Against common airline limits</p>
           </div>
-        );
-      })()}
+          <p className="font-display text-4xl text-[var(--gold)] leading-none">
+            {roundedWeight}<span className="text-lg"> kg</span>
+          </p>
+        </div>
 
-      {/* Category cards grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {packing.map((cat, i) => (
-          <div
-            key={i}
-            className="rounded-2xl border border-[var(--line)] bg-[var(--ink-3)] p-4 hover:border-[var(--line-strong)] hover:bg-[var(--ink-4)] hover:-translate-y-1 hover:shadow-xl transition-all duration-300"
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-2xl">{getCategoryEmoji(cat.category)}</span>
-              <h4 className="text-[var(--cream)] font-bold text-sm">{cat.category}</h4>
-              <span className="ml-auto text-[10px] text-[var(--text-dim)]">
-                {cat.items.filter((item) => checkedItems.has(`${cat.category}-${item}`)).length}/{cat.items.length}
-              </span>
-            </div>
+        <div className="space-y-4">
+          {AIRLINE_LIMITS.map((airline) => {
+            const pct = Math.min(100, (roundedWeight / airline.checked) * 100);
+            const isOver = roundedWeight > airline.checked;
+            return (
+              <div key={airline.name}>
+                <div className="flex items-baseline justify-between text-[11px] uppercase tracking-wider mb-2">
+                  <span className="text-[var(--text-muted)]">{airline.name} · {airline.checked}kg</span>
+                  <span className={isOver ? 'text-[var(--terracotta)]' : 'text-[var(--sage)]'}>
+                    {isOver ? `${(roundedWeight - airline.checked).toFixed(1)}kg over` : `${(airline.checked - roundedWeight).toFixed(1)}kg spare`}
+                  </span>
+                </div>
+                <div className="w-full h-[2px] bg-[var(--line)] rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all ${isOver ? 'bg-[var(--terracotta)]' : 'bg-[var(--sage)]'}`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
-            <ul className="space-y-1.5">
-              {cat.items.map((item, j) => {
-                const key = `${cat.category}-${item}`;
-                const checked = checkedItems.has(key);
-                return (
-                  <li key={j}>
-                    <label className="flex items-center gap-2.5 cursor-pointer group/item">
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleItem(cat.category, item)}
-                        className="w-4 h-4 rounded accent-[#7A9082] shrink-0 cursor-pointer"
-                      />
-                      <span
-                        className={`text-[13px] transition-all duration-200 ${
-                          checked
-                            ? 'line-through text-[var(--text-dim)] opacity-50'
-                            : 'text-gray-300 group-hover/item:text-[var(--cream)]'
-                        }`}
-                      >
-                        {item}
-                      </span>
-                    </label>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ))}
+        <p className="text-[var(--text-dim)] text-[10px] mt-5 tracking-wider uppercase">
+          Rough estimate. Check your airline's baggage policy.
+        </p>
       </div>
-    </div>
+
+      {/* Category checklist */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {packing.map((cat, i) => {
+          const catDone = cat.items.filter((item) => checkedItems.has(`${cat.category}-${item}`)).length;
+
+          return (
+            <motion.section
+              key={i}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: i * 0.07, ease: EASE }}
+              className="surface-card rounded-3xl p-7"
+            >
+              <div className="flex items-end justify-between mb-5">
+                <div>
+                  <p className="eyebrow mb-1">Section {String(i + 1).padStart(2, '0')}</p>
+                  <h4 className="font-display text-2xl text-[var(--cream)]">{cat.category}</h4>
+                </div>
+                <p className="text-[var(--text-dim)] text-[11px] uppercase tracking-wider">
+                  {catDone} / {cat.items.length}
+                </p>
+              </div>
+              <div className="divider mb-5" />
+
+              <ul className="space-y-1">
+                {cat.items.map((item, j) => {
+                  const key = `${cat.category}-${item}`;
+                  const checked = checkedItems.has(key);
+                  return (
+                    <li key={j}>
+                      <label className="flex items-center gap-4 cursor-pointer group/item py-2">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleItem(cat.category, item)}
+                          className="sr-only"
+                        />
+                        <span
+                          className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
+                            checked
+                              ? 'border-[var(--gold)] bg-[var(--gold)]'
+                              : 'border-[var(--line-strong)] group-hover/item:border-[var(--gold)]/60'
+                          }`}
+                        >
+                          {checked && <span className="text-[var(--ink)] text-[9px] font-bold">✓</span>}
+                        </span>
+                        <span
+                          className={`text-[14px] transition-all ${
+                            checked
+                              ? 'line-through text-[var(--text-dim)]'
+                              : 'text-[var(--text)] group-hover/item:text-[var(--cream)]'
+                          }`}
+                        >
+                          {item}
+                        </span>
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
+            </motion.section>
+          );
+        })}
+      </div>
+    </motion.div>
   );
 }
