@@ -48,7 +48,7 @@ export default function CountryPicker({ onSelect }: Props) {
 
   // Hero image: show hovered country, or rotate through a few defaults
   const heroCountry = hovered || countries[0];
-  const heroImage = useWikiImage(heroCountry.name);
+  const heroImage = useWikiImage(heroCountry.name, 'country');
 
   return (
     <div className="relative min-h-screen">
