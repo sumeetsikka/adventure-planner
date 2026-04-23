@@ -72,6 +72,7 @@ export default function NearbyTab({ nearby }: Props) {
                       alt={place.name}
                       loading="lazy"
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      onError={(e) => { const img = e.currentTarget; if (img.dataset.fell) return; img.dataset.fell = '1'; img.src = `https://picsum.photos/seed/${encodeURIComponent(place.name)}/600/400`; }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[var(--ink)] via-[var(--ink)]/30 to-transparent" />
                     <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-between">
