@@ -70,6 +70,12 @@ export default function CountryPicker({ onSelect }: Props) {
                 alt={heroCountry.name}
                 className="w-full h-full object-cover animate-ken-burns"
                 loading="eager"
+                onError={(e) => {
+                  const img = e.currentTarget;
+                  if (img.dataset.fell) { img.style.display = 'none'; return; }
+                  img.dataset.fell = 'true';
+                  img.src = `https://picsum.photos/seed/${encodeURIComponent(heroCountry.id)}-hero/2000/1200`;
+                }}
               />
             )}
             <div className="absolute inset-0 img-overlay" />
