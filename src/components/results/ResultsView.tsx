@@ -90,70 +90,67 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
 
   return (
     <div className="min-h-screen relative print:bg-white">
-      {/* Background */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden print:hidden">
-        <div className="absolute top-0 left-1/3 w-[500px] h-[500px] bg-[#FF6B35]/[0.03] rounded-full blur-[120px]" />
-        <div className="absolute bottom-1/3 right-1/4 w-[400px] h-[400px] bg-[#0077B6]/[0.03] rounded-full blur-[100px]" />
-      </div>
-
-      <div className="relative max-w-4xl mx-auto px-4 py-8">
+      <div className="relative max-w-5xl mx-auto px-6 py-10 print:p-0">
         {/* Header */}
-        <div className="text-center mb-8 animate-fade-up">
-          <div className="flex items-center justify-end mb-6 print:hidden">
-            <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-end">
+        <div className="mb-10 print:mb-4">
+          <div className="flex items-center justify-between mb-8 print:hidden">
+            <button onClick={onStartOver} className="eyebrow text-[var(--text-muted)] hover:text-[var(--cream)] transition-colors">
+              ← Start Over
+            </button>
+            <div className="flex flex-wrap gap-2 justify-end">
               <button onClick={async () => {
                   const url = encodeTripToUrl(config);
                   await copyToClipboard(url);
                   setShareMsg('Link copied!');
                   setTimeout(() => setShareMsg(''), 2000);
                 }}
-                className="text-xs text-gray-500 hover:text-white glass rounded-lg px-3 py-1.5 hover:bg-white/8 transition-all">
-                {shareMsg || '🔗 Share'}
+                className="text-[11px] tracking-widest uppercase text-[var(--text-muted)] hover:text-[var(--cream)] border border-[var(--line)] hover:border-[var(--line-strong)] rounded-full px-3.5 py-1.5 transition-all">
+                {shareMsg || 'Share'}
               </button>
               <button onClick={() => openEmailWithTrip(config, results)}
-                className="text-xs text-gray-500 hover:text-white glass rounded-lg px-3 py-1.5 hover:bg-white/8 transition-all">
-                ✉️ Email
+                className="text-[11px] tracking-widest uppercase text-[var(--text-muted)] hover:text-[var(--cream)] border border-[var(--line)] hover:border-[var(--line-strong)] rounded-full px-3.5 py-1.5 transition-all">
+                Email
               </button>
               <button onClick={handleCalendarExport}
-                className="text-xs text-gray-500 hover:text-white glass rounded-lg px-3 py-1.5 hover:bg-white/8 transition-all">
-                📅 Calendar
+                className="text-[11px] tracking-widest uppercase text-[var(--text-muted)] hover:text-[var(--cream)] border border-[var(--line)] hover:border-[var(--line-strong)] rounded-full px-3.5 py-1.5 transition-all">
+                Calendar
               </button>
               <button onClick={() => window.print()}
-                className="text-xs text-gray-500 hover:text-white glass rounded-lg px-3 py-1.5 hover:bg-white/8 transition-all">
-                📄 PDF
-              </button>
-              <button onClick={onStartOver}
-                className="text-xs text-gray-500 hover:text-white glass rounded-lg px-3 py-1.5 hover:bg-white/8 transition-all">
-                ← Start Over
+                className="text-[11px] tracking-widest uppercase text-[var(--text-muted)] hover:text-[var(--cream)] border border-[var(--line)] hover:border-[var(--line-strong)] rounded-full px-3.5 py-1.5 transition-all">
+                PDF
               </button>
             </div>
           </div>
-          <div className="inline-flex items-center gap-2 bg-white/5 border border-white/8 rounded-full px-4 py-1 mb-4 print:hidden">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#2D936C]" />
-            <span className="text-[10px] text-gray-400 font-medium tracking-widest uppercase">Trip Ready</span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3 print:text-black">
-            Your {config.country?.name || ''} Adventure
-          </h1>
-          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-gray-400 text-sm print:text-gray-600">
-            <span>{config.travellers} traveller{config.travellers > 1 ? 's' : ''}</span>
-            <span className="text-gray-600">·</span>
-            <span>{formatDateAU(config.departureDate)} to {formatDateAU(config.returnDate)}</span>
-            <span className="text-gray-600">·</span>
-            <span>{totalDays} days</span>
-          </div>
-          <div className="flex flex-wrap justify-center gap-1.5 mt-3 print:hidden">
-            {config.destinations.map((d) => (
-              <span key={d.id} className="text-[10px] font-medium px-2.5 py-1 rounded-full border"
-                style={{ background: `${d.colour}0A`, color: d.colour, borderColor: `${d.colour}20` }}>
-                {d.emoji} {d.name.split('(')[0].split('/')[0].trim()}
-              </span>
-            ))}
+
+          <div className="text-center">
+            <div className="inline-flex items-center gap-2 mb-5 print:hidden">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--gold)] animate-gentle-pulse" />
+              <span className="eyebrow">Your journey · ready</span>
+            </div>
+            <h1 className="font-display text-5xl sm:text-7xl text-[var(--cream)] mb-4 print:text-black">
+              {config.country?.name || 'Your'}<br />
+              <em className="italic text-shimmer">adventure.</em>
+            </h1>
+            <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-[var(--text-muted)] text-sm print:text-gray-600 font-light">
+              <span>{config.travellers} traveller{config.travellers > 1 ? 's' : ''}</span>
+              <span className="text-[var(--text-dim)]">·</span>
+              <span>{formatDateAU(config.departureDate)} → {formatDateAU(config.returnDate)}</span>
+              <span className="text-[var(--text-dim)]">·</span>
+              <span>{totalDays} days</span>
+            </div>
+            <div className="flex flex-wrap justify-center gap-1.5 mt-5 print:hidden">
+              {config.destinations.map((d) => (
+                <span key={d.id} className="text-[10px] font-light tracking-wider px-3 py-1 rounded-full border"
+                  style={{ background: `${d.colour}10`, color: 'var(--cream)', borderColor: `${d.colour}30` }}>
+                  {d.emoji} {d.name.split('(')[0].split('/')[0].trim()}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex justify-center mb-8 print:hidden">
+        <div className="mb-10 print:hidden">
           <TabNav active={activeTab} onChange={setActiveTab} />
         </div>
 
