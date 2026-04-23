@@ -208,6 +208,9 @@ export default function CountryPicker({ onSelect }: Props) {
 }
 
 function CountryTile({ country, onSelect, onHover }: { country: Country; onSelect: (c: Country) => void; onHover: (c: Country | null) => void }) {
+  const destCount = getDestinationsForCountry(country.id)?.length ?? 0;
+  const photo = getCountryHero(country.id, 800, 600);
+
   return (
     <motion.button
       onClick={() => onSelect(country)}
@@ -215,43 +218,50 @@ function CountryTile({ country, onSelect, onHover }: { country: Country; onSelec
       onMouseLeave={() => onHover(null)}
       whileHover={{ y: -4 }}
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      className="group relative overflow-hidden rounded-2xl text-left h-64 sm:h-72 border border-[var(--line)] hover:border-[var(--line-strong)] transition-colors"
+      className="group relative overflow-hidden rounded-2xl text-left h-56 border border-[var(--line)] hover:border-[var(--line-strong)] transition-colors"
+      style={{
+        background: `linear-gradient(145deg, ${country.colour}dd 0%, ${country.colour}55 50%, var(--ink-2) 100%)`,
+      }}
     >
-      {/* Photo */}
+      {/* Photo layer (if it loads, blends on top) */}
       <img
-        src={`https://source.unsplash.com/800x600/?${encodeURIComponent(country.name)}+travel`}
+        src={photo}
         alt={country.name}
         loading="lazy"
-        className="absolute inset-0 w-full h-full object-cover transition-transform duration-[1.5s] group-hover:scale-110"
+        className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-all duration-[1.2s] group-hover:scale-105"
         onError={(e) => {
-          (e.target as HTMLImageElement).style.opacity = '0';
+          (e.target as HTMLImageElement).style.display = 'none';
         }}
       />
-      <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(10,8,6,0) 30%, rgba(10,8,6,0.95) 100%)' }} />
 
-      {/* Country colour accent on hover */}
-      <div
-        className="absolute inset-0 opacity-0 group-hover:opacity-30 transition-opacity duration-500 mix-blend-multiply"
-        style={{ background: country.colour }}
-      />
+      {/* Readability overlays */}
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(10,8,6,0.1) 0%, rgba(10,8,6,0.65) 70%, rgba(10,8,6,0.95) 100%)' }} />
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-40 transition-opacity duration-500 mix-blend-multiply" style={{ background: country.colour }} />
 
-      {/* Content */}
-      <div className="absolute inset-0 p-6 flex flex-col justify-end">
-        <div className="flex items-center gap-2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-          <span className="text-xl">{country.emoji}</span>
-          <span className="eyebrow text-[var(--gold-soft)]">Explore</span>
-        </div>
-        <h3 className="font-display text-3xl sm:text-4xl text-[var(--cream)] mb-2 leading-tight">
-          {country.name}
-        </h3>
-        <p className="text-[var(--text-muted)] text-xs leading-relaxed line-clamp-2 max-w-[90%] font-light">
-          {country.tagline}
-        </p>
+      {/* Top row: flag + destination count */}
+      <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-10">
+        <span className="text-3xl drop-shadow-lg">{country.emoji}</span>
+        {destCount > 0 && (
+          <span className="text-[9px] tracking-[0.2em] uppercase text-[var(--cream)] bg-[var(--ink)]/60 backdrop-blur-sm rounded-full px-2.5 py-1 border border-[var(--line-strong)]">
+            {destCount} stops
+          </span>
+        )}
       </div>
 
-      {/* Corner flag */}
-      <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-[var(--ink)]/70 backdrop-blur-sm flex items-center justify-center text-lg border border-[var(--line-strong)]">
-        {country.emoji}
+      {/* Content */}
+      <div className="absolute inset-0 p-5 flex flex-col justify-end z-10">
+        <h3 className="font-display text-[28px] sm:text-3xl text-[var(--cream)] leading-[1.05] mb-1.5 drop-shadow-md">
+          {country.name}
+        </h3>
+        <p className="text-[11.5px] text-[var(--cream)]/80 leading-snug font-light italic line-clamp-2 font-display-soft">
+          {country.tagline}.
+        </p>
+        <div className="mt-3 pt-3 border-t border-[var(--cream)]/15 flex items-center justify-between">
+          <span className="text-[9px] tracking-[0.25em] uppercase text-[var(--gold-soft)]">
+            Begin here
+          </span>
+          <span className="text-[var(--cream)] text-sm group-hover:translate-x-1 transition-transform">→</span>
+        </div>
       </div>
     </motion.button>
   );
