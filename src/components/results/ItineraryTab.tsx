@@ -159,7 +159,8 @@ export default function ItineraryTab({ itinerary, config, hotels, onUpdate }: Pr
           >
             {/* Photo header */}
             <div className="relative h-56 overflow-hidden">
-              <img src={photo} alt={selectedDayData.location} className="w-full h-full object-cover animate-ken-burns" />
+              <img src={photo} alt={selectedDayData.location} className="w-full h-full object-cover animate-ken-burns"
+                onError={(e) => { const i = e.currentTarget; if (i.dataset.fell) return; i.dataset.fell = '1'; i.src = `https://picsum.photos/seed/${encodeURIComponent(selectedDayData.location)}/1200/500`; }} />
               <div
                 className="absolute inset-0"
                 style={{ background: 'linear-gradient(180deg, transparent 30%, rgba(10,8,6,0.95) 100%)' }}
