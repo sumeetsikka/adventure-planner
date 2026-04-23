@@ -62,13 +62,16 @@ export default function CountryPicker({ onSelect }: Props) {
             exit={{ opacity: 0 }}
             transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
             className="absolute inset-0"
+            style={{ background: `linear-gradient(160deg, ${heroCountry.colour}60 0%, var(--ink) 70%)` }}
           >
-            <img
-              src={heroImage}
-              alt={heroCountry.name}
-              className="w-full h-full object-cover animate-ken-burns"
-              loading="eager"
-            />
+            {heroImage && (
+              <img
+                src={heroImage}
+                alt={heroCountry.name}
+                className="w-full h-full object-cover animate-ken-burns"
+                loading="eager"
+              />
+            )}
             <div className="absolute inset-0 img-overlay" />
             <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(10,8,6,0.55) 0%, rgba(10,8,6,0.4) 40%, rgba(10,8,6,0.9) 100%)' }} />
           </motion.div>
