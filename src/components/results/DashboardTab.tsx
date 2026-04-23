@@ -113,7 +113,8 @@ export default function DashboardTab({ config, results, onTabChange }: Props) {
               transition={{ duration: 0.5, delay: 0.4 + i * 0.05 }}
               className="relative rounded-2xl overflow-hidden h-40 border border-[var(--line)]"
             >
-              <img src={getDestinationPhoto(d.name, 600, 400)} alt={d.name} className="absolute inset-0 w-full h-full object-cover" />
+              <img src={getDestinationPhoto(d.name, 600, 400)} alt={d.name} className="absolute inset-0 w-full h-full object-cover"
+                onError={(e) => { const i = e.currentTarget; if (i.dataset.fell) return; i.dataset.fell = '1'; i.src = `https://picsum.photos/seed/${encodeURIComponent(d.id)}/600/400`; }} />
               <div className="absolute inset-0" style={{ background: `linear-gradient(180deg, transparent 30%, ${d.colour}40 60%, rgba(10,8,6,0.95) 100%)` }} />
               <div className="absolute inset-0 p-4 flex flex-col justify-end">
                 <span className="text-[9px] tracking-widest uppercase text-[var(--gold-soft)]">Stop {i + 1}</span>
