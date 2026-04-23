@@ -212,7 +212,7 @@ export default function CountryPicker({ onSelect }: Props) {
 
 function CountryTile({ country, onSelect, onHover }: { country: Country; onSelect: (c: Country) => void; onHover: (c: Country | null) => void }) {
   const destCount = getDestinationsForCountry(country.id)?.length ?? 0;
-  const photo = getCountryHero(country.id, 800, 600);
+  const photo = useWikiImage(country.name);
 
   return (
     <motion.button
