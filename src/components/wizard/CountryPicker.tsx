@@ -226,15 +226,19 @@ function CountryTile({ country, onSelect, onHover }: { country: Country; onSelec
         background: `linear-gradient(145deg, ${country.colour}dd 0%, ${country.colour}55 50%, var(--ink-2) 100%)`,
       }}
     >
-      {/* Photo layer (if it loads, blends on top) */}
+      {/* Photo layer — useWikiImage returns an instant Loremflickr URL,
+          then upgrades to a Wikipedia article image when available. */}
       {photo && (
         <img
           src={photo}
           alt={country.name}
           loading="lazy"
-          className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:opacity-90 transition-all duration-[1.2s] group-hover:scale-105"
+          className="absolute inset-0 w-full h-full object-cover opacity-75 group-hover:opacity-95 transition-all duration-[1.2s] group-hover:scale-105"
           onError={(e) => {
-            (e.target as HTMLImageElement).style.display = 'none';
+            const img = e.currentTarget;
+            if (img.dataset.fell) { img.style.display = 'none'; return; }
+            img.dataset.fell = 'true';
+            img.src = `https://picsum.photos/seed/${encodeURIComponent(country.id)}/800/600`;
           }}
         />
       )}
