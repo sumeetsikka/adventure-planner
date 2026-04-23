@@ -1,9 +1,13 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import type { Destination } from '../../types';
+import { getDestinationPhoto } from '../../lib/imagery';
 
 interface Props {
   destinations: Destination[];
 }
+
+const EASE = [0.16, 1, 0.3, 1] as const;
 
 export default function PhotosTab({ destinations }: Props) {
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
@@ -13,52 +17,78 @@ export default function PhotosTab({ destinations }: Props) {
   };
 
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-[var(--cream)] font-bold text-xl mb-1">Destination Photos</h2>
-        <p className="text-[var(--text-muted)] text-sm">A visual preview of your selected destinations.</p>
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7, ease: EASE }}
+    >
+      <div className="mb-10">
+        <p className="eyebrow mb-3">Chapter VI — Portraits</p>
+        <h2 className="font-display text-4xl sm:text-5xl text-[var(--cream)] leading-tight">
+          A visual <span className="italic text-[var(--gold)]">preview</span>
+        </h2>
+        <div className="divider my-5 max-w-[120px]" />
+        <p className="text-[var(--text-muted)] text-sm max-w-xl">Scenes from each place you&apos;re bound for.</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {destinations.map((d) => {
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        {destinations.map((d, i) => {
           const hasFailed = failedImages.has(d.id);
-          const imgUrl = `https://source.unsplash.com/800x500/?${encodeURIComponent(d.name)}+travel+landmark`;
+          const imgUrl = getDestinationPhoto(d.name, 1000, 700);
+          const isLarge = i % 3 === 0;
 
           return (
-            <div key={d.id} className="group relative rounded-2xl overflow-hidden border border-[var(--line)] bg-[var(--ink-3)] hover:border-[var(--line-strong)] transition-all duration-300">
+            <motion.figure
+              key={d.id}
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: EASE, delay: i * 0.06 }}
+              className={`group relative rounded-3xl overflow-hidden surface-soft ${
+                isLarge ? 'sm:col-span-2' : ''
+              }`}
+            >
               {hasFailed ? (
-                <div className="h-48 flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${d.colour}15, ${d.colour}05)` }}>
-                  <span className="text-6xl">{d.emoji}</span>
+                <div
+                  className="h-[420px] flex items-center justify-center"
+                  style={{
+                    background: `linear-gradient(135deg, var(--ink-3), var(--ink-4))`,
+                  }}
+                >
+                  <span className="font-display italic text-5xl text-[var(--gold)]">{d.name}</span>
                 </div>
               ) : (
-                <div className="relative h-48 overflow-hidden">
+                <div className={`relative overflow-hidden ${isLarge ? 'h-[480px]' : 'h-[360px]'}`}>
                   <img
                     src={imgUrl}
                     alt={d.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="w-full h-full object-cover transition-transform duration-[1200ms] group-hover:scale-105"
                     onError={() => handleError(d.id)}
                     loading="lazy"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0B1120] via-transparent to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[var(--ink)] via-[var(--ink)]/50 to-transparent" />
                 </div>
               )}
 
-              <div className="p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-lg">{d.emoji}</span>
-                  <h3 className="text-[var(--cream)] font-bold text-sm">{d.name}</h3>
-                </div>
-                <p className="text-[var(--text-muted)] text-[10px] uppercase tracking-wider mb-2" style={{ color: d.colour }}>{d.region}</p>
-                <div className="flex flex-wrap gap-1">
+              <figcaption className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
+                <p className="eyebrow mb-2 text-[var(--gold)]">{d.region}</p>
+                <h3 className="font-display text-3xl sm:text-4xl text-[var(--cream)] leading-tight mb-3">
+                  {d.name}
+                </h3>
+                <div className="flex flex-wrap gap-2">
                   {d.tags.slice(0, 3).map((tag) => (
-                    <span key={tag} className="text-[9px] px-2 py-0.5 rounded-full bg-[var(--ink-3)] text-[var(--text-muted)]">{tag}</span>
+                    <span
+                      key={tag}
+                      className="text-[10px] tracking-[0.18em] uppercase px-3 py-1 rounded-full border border-[var(--cream)]/25 text-[var(--cream)]/80 bg-[var(--ink)]/40 backdrop-blur"
+                    >
+                      {tag}
+                    </span>
                   ))}
                 </div>
-              </div>
-            </div>
+              </figcaption>
+            </motion.figure>
           );
         })}
       </div>
-    </div>
+    </motion.div>
   );
 }
