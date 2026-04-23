@@ -43,8 +43,49 @@ export function picsum(query: string, width: number, height: number): string {
   return `https://picsum.photos/seed/${seed}/${width}/${height}`;
 }
 
+/**
+ * Flickr tag hints per country so the instant fallback already shows the
+ * iconic landmark rather than random landscape shots.
+ */
+const COUNTRY_LANDMARK_TAG: Record<string, string> = {
+  vietnam: 'halongbay',
+  thailand: 'grandpalace',
+  japan: 'fuji',
+  indonesia: 'borobudur',
+  philippines: 'elnido',
+  cambodia: 'angkorwat',
+  italy: 'colosseum',
+  france: 'eiffeltower',
+  spain: 'sagradafamilia',
+  portugal: 'lisbon',
+  greece: 'santorini',
+  switzerland: 'matterhorn',
+  germany: 'neuschwanstein',
+  netherlands: 'amsterdam',
+  belgium: 'bruges',
+  austria: 'hallstatt',
+  norway: 'fjord',
+  sweden: 'stockholm',
+  croatia: 'dubrovnik',
+  iceland: 'skogafoss',
+  morocco: 'marrakech',
+  egypt: 'pyramids',
+  turkey: 'cappadocia',
+  mauritius: 'mauritiusbeach',
+  peru: 'machupicchu',
+  mexico: 'chichenitza',
+  newzealand: 'milfordsound',
+  maldives: 'maldivesbeach',
+  fiji: 'fijiisland',
+};
+
 export function getCountryHero(countryNameOrId: string, width = 1600, height = 900): string {
-  return loremflickr(countryNameOrId, width, height, 'landscape');
+  const key = cleanQuery(countryNameOrId).toLowerCase().replace(/\s+/g, '');
+  const landmark = COUNTRY_LANDMARK_TAG[key];
+  if (landmark) {
+    return loremflickr(`${countryNameOrId} ${landmark}`, width, height, landmark);
+  }
+  return loremflickr(countryNameOrId, width, height, 'landmark');
 }
 
 export function getDestinationPhoto(destinationName: string, width = 800, height = 600): string {
