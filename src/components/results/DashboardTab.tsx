@@ -42,7 +42,8 @@ export default function DashboardTab({ config, results, onTabChange }: Props) {
         transition={{ duration: 0.8 }}
         className="relative rounded-3xl overflow-hidden border border-[var(--line)] h-[360px]"
       >
-        <img src={heroImage} alt={config.country?.name || ''} className="absolute inset-0 w-full h-full object-cover animate-ken-burns" />
+        <img src={heroImage} alt={config.country?.name || ''} className="absolute inset-0 w-full h-full object-cover animate-ken-burns"
+          onError={(e) => { const i = e.currentTarget; if (i.dataset.fell) return; i.dataset.fell = '1'; i.src = `https://picsum.photos/seed/${encodeURIComponent(config.country?.id || 'trip')}-hero/1800/900`; }} />
         <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(10,8,6,0.35) 0%, rgba(10,8,6,0.55) 50%, rgba(10,8,6,0.95) 100%)' }} />
         <div className="absolute inset-0 p-8 flex flex-col justify-between">
           <div className="flex items-center gap-2">
