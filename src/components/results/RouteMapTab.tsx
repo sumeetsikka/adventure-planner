@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import type { TravelConfig, GenerationResults } from '../../types';
@@ -29,12 +30,14 @@ interface GeoPoint {
   lon: number;
 }
 
+const EASE = [0.16, 1, 0.3, 1] as const;
+
 function createColourIcon(colour: string) {
   return L.divIcon({
     className: '',
-    html: `<div style="width:24px;height:24px;border-radius:50%;background:${colour};border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
+    html: `<div style="width:26px;height:26px;border-radius:50%;background:${colour};border:3px solid #F5EDE0;box-shadow:0 2px 10px rgba(0,0,0,0.5);"></div>`,
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
     popupAnchor: [0, -14],
   });
 }
@@ -76,18 +79,19 @@ export default function RouteMapTab({ config, results }: Props) {
 
   if (loading) {
     return (
-      <div className="text-center py-16">
-        <div className="w-8 h-8 border-2 border-[#C65D3B] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-[var(--text-muted)]">Loading map coordinates...</p>
+      <div className="text-center py-20">
+        <div className="w-8 h-8 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin mx-auto mb-5" />
+        <p className="eyebrow">Plotting your route…</p>
       </div>
     );
   }
 
   if (points.length === 0) {
     return (
-      <div className="text-center py-16">
-        <span className="text-5xl block mb-4">🗺️</span>
-        <p className="text-[var(--text-muted)]">Could not resolve destination coordinates for the map.</p>
+      <div className="text-center py-20">
+        <p className="eyebrow mb-4">The route</p>
+        <h2 className="font-display text-3xl text-[var(--cream)] mb-2">Map <em>unavailable</em>.</h2>
+        <p className="text-[var(--text-muted)] text-sm">Could not resolve destination coordinates.</p>
       </div>
     );
   }
@@ -97,7 +101,6 @@ export default function RouteMapTab({ config, results }: Props) {
     points.reduce((s, p) => s + p.lon, 0) / points.length,
   ];
 
-  // Find hotel for each destination
   const getHotel = (destName: string) => {
     const match = results.hotels.find(h =>
       destName.toLowerCase().includes(h.destination.toLowerCase().split('(')[0].trim()) ||
@@ -108,61 +111,73 @@ export default function RouteMapTab({ config, results }: Props) {
   };
 
   return (
-    <div>
-      <div className="mb-4">
-        <h2 className="text-[var(--cream)] font-bold text-xl mb-1">Your Route Map</h2>
-        <p className="text-[var(--text-muted)] text-sm">{points.length} destinations plotted. Tap a marker for details.</p>
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: EASE }}>
+      <div className="mb-8">
+        <p className="eyebrow mb-3">On the map · {points.length} stops</p>
+        <h2 className="font-display text-4xl sm:text-5xl text-[var(--cream)] leading-[1.05] tracking-tight">
+          The <em className="italic text-[var(--gold)]">route</em>.
+        </h2>
+        <p className="text-[var(--text-muted)] text-sm mt-3 max-w-md">Every stop plotted in sequence. Tap a marker for details.</p>
       </div>
 
-      <div className="rounded-2xl overflow-hidden border border-[var(--line)]" style={{ height: '500px' }}>
-        <MapContainer center={center} zoom={5} style={{ height: '100%', width: '100%' }} scrollWheelZoom={true}>
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-          />
-          <FitBounds points={points} />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.8, ease: EASE }}
+        className="surface-card rounded-3xl overflow-hidden p-2"
+      >
+        <div className="rounded-[20px] overflow-hidden" style={{ height: '540px' }}>
+          <MapContainer center={center} zoom={5} style={{ height: '100%', width: '100%' }} scrollWheelZoom={true}>
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            />
+            <FitBounds points={points} />
 
-          {/* Route polyline */}
-          <Polyline
-            positions={points.map(p => [p.lat, p.lon] as [number, number])}
-            pathOptions={{ color: '#C65D3B', weight: 3, opacity: 0.7, dashArray: '8, 8' }}
-          />
+            <Polyline
+              positions={points.map(p => [p.lat, p.lon] as [number, number])}
+              pathOptions={{ color: '#D4A574', weight: 2.5, opacity: 0.8, dashArray: '6, 10' }}
+            />
 
-          {/* Destination markers */}
-          {points.map((p, i) => {
-            const hotel = getHotel(p.name);
-            return (
-              <Marker key={i} position={[p.lat, p.lon]} icon={createColourIcon(p.colour)}>
-                <Popup>
-                  <div style={{ minWidth: '160px', color: '#1e293b' }}>
-                    <p style={{ fontWeight: 'bold', fontSize: '14px', margin: '0 0 4px' }}>
-                      {p.emoji} {p.name}
-                    </p>
-                    <p style={{ fontSize: '11px', color: '#64748b', margin: '0 0 4px' }}>
-                      Stop {i + 1} of {points.length}
-                    </p>
-                    {hotel && (
-                      <p style={{ fontSize: '11px', margin: '0' }}>
-                        🏨 {hotel.name} ({hotel.price_per_night_aud}/night)
+            {points.map((p, i) => {
+              const hotel = getHotel(p.name);
+              return (
+                <Marker key={i} position={[p.lat, p.lon]} icon={createColourIcon(p.colour)}>
+                  <Popup>
+                    <div style={{ minWidth: '180px', color: '#0A0806', fontFamily: 'Inter, sans-serif' }}>
+                      <p style={{ fontSize: '9px', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#C65D3B', margin: '0 0 6px', fontWeight: 600 }}>
+                        Stop {i + 1} of {points.length}
                       </p>
-                    )}
-                  </div>
-                </Popup>
-              </Marker>
-            );
-          })}
-        </MapContainer>
-      </div>
+                      <p style={{ fontFamily: 'Fraunces, serif', fontWeight: 500, fontSize: '17px', margin: '0 0 6px', lineHeight: 1.2 }}>
+                        {p.emoji} {p.name}
+                      </p>
+                      {hotel && (
+                        <p style={{ fontSize: '11px', margin: '6px 0 0', color: '#3a2e24' }}>
+                          <em>Stay:</em> {hotel.name} · {hotel.price_per_night_aud}/night
+                        </p>
+                      )}
+                    </div>
+                  </Popup>
+                </Marker>
+              );
+            })}
+          </MapContainer>
+        </div>
+      </motion.div>
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-2 mt-3">
-        {points.map((p, i) => (
-          <div key={i} className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
-            <div className="w-3 h-3 rounded-full" style={{ background: p.colour }} />
-            <span>{p.name}</span>
-          </div>
-        ))}
+      <div className="mt-8">
+        <p className="eyebrow mb-4">The stops</p>
+        <div className="flex flex-wrap gap-x-6 gap-y-3">
+          {points.map((p, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <span className="font-display text-sm text-[var(--text-dim)]">{String(i + 1).padStart(2, '0')}</span>
+              <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: p.colour }} />
+              <span className="text-[var(--text)] text-sm">{p.name}</span>
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
