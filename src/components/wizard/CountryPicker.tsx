@@ -1,12 +1,14 @@
 import { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { countries } from '../../data/countries';
+import { getCountryHero } from '../../lib/imagery';
 import type { Country } from '../../types';
 
 interface Props {
   onSelect: (country: Country) => void;
 }
 
-const REGION_MAP: Record<string, string[]> = {
+const REGIONS: Record<string, string[]> = {
   'Asia': ['vietnam', 'thailand', 'japan', 'indonesia', 'philippines', 'cambodia'],
   'Europe': ['italy', 'france', 'spain', 'portugal', 'greece', 'switzerland', 'germany', 'netherlands', 'belgium', 'austria', 'norway', 'sweden', 'croatia', 'iceland'],
   'Africa & Middle East': ['morocco', 'egypt', 'turkey', 'mauritius'],
@@ -15,161 +17,241 @@ const REGION_MAP: Record<string, string[]> = {
   'Indian Ocean': ['maldives'],
 };
 
-const REGION_EMOJIS: Record<string, string> = {
-  'Asia': '🌏',
-  'Europe': '🌍',
-  'Africa & Middle East': '🌍',
-  'Americas': '🌎',
-  'Oceania & Pacific': '🌏',
-  'Indian Ocean': '🌊',
-};
-
 export default function CountryPicker({ onSelect }: Props) {
   const [search, setSearch] = useState('');
   const [customCountry, setCustomCountry] = useState('');
+  const [hovered, setHovered] = useState<Country | null>(null);
 
-  const regions = useMemo(() => {
-    return Object.entries(REGION_MAP)
+  const grouped = useMemo(() => {
+    return Object.entries(REGIONS)
       .map(([name, ids]) => {
-        const regionCountries = countries.filter((c) => ids.includes(c.id));
-        const filtered = search
-          ? regionCountries.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()))
-          : regionCountries;
-        return { name, emoji: REGION_EMOJIS[name] || '🌍', countries: filtered };
+        const cs = countries.filter(c => ids.includes(c.id));
+        return {
+          name,
+          countries: search ? cs.filter(c => c.name.toLowerCase().includes(search.toLowerCase())) : cs,
+        };
       })
-      .filter((r) => r.countries.length > 0);
+      .filter(r => r.countries.length > 0);
   }, [search]);
 
-  const handleCustomSubmit = () => {
+  const handleCustom = () => {
     if (!customCountry.trim()) return;
-    const custom: Country = {
-      id: customCountry.trim().toLowerCase().replace(/\s+/g, '-'),
-      name: customCountry.trim(),
-      emoji: '🌍',
-      colour: '#FF6B35',
-      tagline: `Explore ${customCountry.trim()} your way`,
-      origin: 'MEL',
-      currency: 'AUD',
-      prebuilt: false,
-    };
-    onSelect(custom);
+    const name = customCountry.trim();
+    onSelect({
+      id: name.toLowerCase().replace(/\s+/g, '-'),
+      name, emoji: '🌍', colour: '#C65D3B',
+      tagline: `Explore ${name} your way`,
+      origin: 'MEL', currency: 'AUD', prebuilt: false,
+    });
   };
 
+  // Hero image: show hovered country, or rotate through a few defaults
+  const heroCountry = hovered || countries[0];
+  const heroImage = getCountryHero(heroCountry.name, 2000, 1200);
+
   return (
-    <div className="min-h-screen relative">
-      {/* Background */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[#FF6B35]/[0.04] rounded-full blur-[120px]" />
-        <div className="absolute bottom-1/3 right-1/3 w-[500px] h-[500px] bg-[#0077B6]/[0.04] rounded-full blur-[100px]" />
-        <div className="absolute top-1/2 right-0 w-[400px] h-[400px] bg-[#2D936C]/[0.03] rounded-full blur-[100px]" />
+    <div className="relative min-h-screen">
+      {/* Full-bleed cinematic hero */}
+      <div className="fixed inset-0 overflow-hidden">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={heroCountry.id}
+            initial={{ opacity: 0, scale: 1.05 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute inset-0"
+          >
+            <img
+              src={heroImage}
+              alt={heroCountry.name}
+              className="w-full h-full object-cover animate-ken-burns"
+              loading="eager"
+            />
+            <div className="absolute inset-0 img-overlay" />
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(10,8,6,0.55) 0%, rgba(10,8,6,0.4) 40%, rgba(10,8,6,0.9) 100%)' }} />
+          </motion.div>
+        </AnimatePresence>
       </div>
 
-      <div className="relative max-w-6xl mx-auto px-4 pt-12 pb-16">
-        {/* Hero */}
-        <div className="text-center mb-12 animate-fade-up">
-          <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 mb-6">
-            <span className="w-2 h-2 rounded-full bg-[#2D936C] animate-pulse" />
-            <span className="text-[11px] text-gray-400 font-medium tracking-wide">ADVENTURE PLANNER</span>
+      {/* Content */}
+      <div className="relative z-10 max-w-6xl mx-auto px-6 py-12 sm:py-20">
+        {/* Top brand line */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="flex items-center justify-between mb-20 sm:mb-32"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-[var(--gold)] animate-gentle-pulse" />
+            <span className="eyebrow">The Adventure Planner</span>
           </div>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-4 leading-tight">
-            Where in the world<br />
-            <span className="text-shimmer">are you heading?</span>
+          <div className="text-[10px] text-[var(--text-dim)] tracking-widest uppercase hidden sm:block">
+            ISSUE № 01
+          </div>
+        </motion.div>
+
+        {/* Editorial headline */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          className="mb-16 sm:mb-20 max-w-3xl"
+        >
+          <p className="eyebrow mb-4 text-[var(--text-muted)]">Chapter One · Choose your destination</p>
+          <h1 className="font-display text-5xl sm:text-7xl md:text-8xl text-[var(--cream)] mb-6">
+            Where the story<br />
+            <em className="italic text-shimmer">begins.</em>
           </h1>
-          <p className="text-gray-400 text-lg max-w-lg mx-auto">
-            Pick a country below, or type any destination. We'll build your perfect trip.
+          <p className="text-lg sm:text-xl text-[var(--text-muted)] max-w-xl leading-relaxed font-light">
+            Twenty-nine countries. Four hundred destinations. One perfectly crafted journey, built just for you.
           </p>
-        </div>
+        </motion.div>
 
         {/* Search */}
-        <div className="max-w-md mx-auto mb-10">
-          <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-lg">🔍</span>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.5 }}
+          className="max-w-lg mb-16"
+        >
+          <div className="relative group">
+            <span className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--text-dim)]">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            </span>
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search countries..."
-              className="w-full bg-[#131B2E] border border-white/10 rounded-2xl pl-12 pr-4 py-3.5 text-white placeholder-gray-600 focus:outline-none focus:border-[#FF6B35]/50 transition-colors text-sm"
+              placeholder="Search a country…"
+              className="w-full bg-[var(--ink-2)]/80 backdrop-blur-md border border-[var(--line)] rounded-full pl-14 pr-6 py-4 text-[var(--cream)] placeholder-[var(--text-dim)] focus:outline-none focus:border-[var(--gold)]/40 transition-all font-light"
             />
           </div>
+        </motion.div>
+
+        {/* Country regions */}
+        <div className="space-y-14">
+          {grouped.map((region, ri) => (
+            <motion.section
+              key={region.name}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.6 + ri * 0.1 }}
+            >
+              <div className="flex items-baseline gap-6 mb-6">
+                <h2 className="font-display text-2xl sm:text-3xl text-[var(--cream)]">{region.name}</h2>
+                <div className="flex-1 h-px bg-[var(--line)]" />
+                <span className="eyebrow text-[var(--text-dim)]">{region.countries.length} destinations</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                {region.countries.map((country) => (
+                  <CountryTile
+                    key={country.id}
+                    country={country}
+                    onSelect={onSelect}
+                    onHover={setHovered}
+                  />
+                ))}
+              </div>
+            </motion.section>
+          ))}
+
+          {grouped.length === 0 && search && (
+            <div className="text-center py-12">
+              <p className="font-display text-3xl text-[var(--cream)] italic mb-2">No match</p>
+              <p className="text-[var(--text-muted)]">Try the custom destination below.</p>
+            </div>
+          )}
         </div>
-
-        {/* Regions */}
-        {regions.map((region) => (
-          <div key={region.name} className="mb-10">
-            <div className="flex items-center gap-3 mb-5">
-              <span className="text-lg">{region.emoji}</span>
-              <h2 className="text-sm font-bold text-gray-500 tracking-[3px] uppercase">{region.name}</h2>
-              <div className="flex-1 h-px bg-white/5" />
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-3">
-              {region.countries.map((country) => (
-                <button
-                  key={country.id}
-                  onClick={() => onSelect(country)}
-                  className="group rounded-2xl border border-white/8 bg-[#131B2E] hover:bg-[#182036] hover:border-white/15 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20 transition-all duration-300 p-4 text-left overflow-hidden relative"
-                >
-                  <div
-                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                    style={{ background: `linear-gradient(160deg, ${country.colour}10, transparent 60%)` }}
-                  />
-                  <div className="relative">
-                    <span className="text-3xl block mb-2">{country.emoji}</span>
-                    <h3 className="text-white font-bold text-sm mb-0.5">{country.name}</h3>
-                    <p className="text-gray-500 text-[10px] leading-snug line-clamp-2">{country.tagline}</p>
-                  </div>
-                  <div
-                    className="absolute bottom-0 left-0 right-0 h-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                    style={{ background: `linear-gradient(90deg, transparent, ${country.colour}, transparent)` }}
-                  />
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-
-        {/* No results */}
-        {regions.length === 0 && search && (
-          <div className="text-center py-8">
-            <p className="text-gray-400 mb-2">No pre-built countries match "{search}"</p>
-            <p className="text-gray-500 text-sm">But you can explore it anyway using AI below.</p>
-          </div>
-        )}
 
         {/* Custom country */}
-        <div className="mt-12">
-          <div className="max-w-lg mx-auto">
-            <div className="rounded-2xl border border-dashed border-white/10 bg-[#131B2E] p-6 text-center">
-              <span className="text-3xl block mb-3">🌍</span>
-              <h3 className="text-white font-bold text-base mb-1">Explore another country</h3>
-              <p className="text-gray-500 text-sm mb-4">
-                Type any country and we'll generate destinations using AI.
-              </p>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={customCountry}
-                  onChange={(e) => setCustomCountry(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleCustomSubmit()}
-                  placeholder="e.g. Sri Lanka, South Korea, Croatia..."
-                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#FF6B35]/50 transition-colors"
-                />
-                <button
-                  onClick={handleCustomSubmit}
-                  disabled={!customCountry.trim()}
-                  className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-all ${
-                    customCountry.trim()
-                      ? 'bg-gradient-to-r from-[#FF6B35] to-[#E85D26] text-white hover:shadow-lg'
-                      : 'bg-white/5 text-gray-600 cursor-not-allowed'
-                  }`}
-                >
-                  Go →
-                </button>
-              </div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 1 }}
+          className="mt-20 mb-8"
+        >
+          <div className="divider mb-10" />
+          <div className="max-w-lg mx-auto text-center">
+            <span className="eyebrow block mb-3">Somewhere else?</span>
+            <h3 className="font-display text-3xl text-[var(--cream)] mb-3">
+              Anywhere in the world.
+            </h3>
+            <p className="text-[var(--text-muted)] text-sm mb-6 font-light">
+              Type any country and we'll build your trip from scratch.
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={customCountry}
+                onChange={(e) => setCustomCountry(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCustom()}
+                placeholder="e.g. Sri Lanka, South Korea, Argentina…"
+                className="flex-1 bg-[var(--ink-2)]/80 backdrop-blur-md border border-[var(--line)] rounded-full px-5 py-3.5 text-[var(--cream)] placeholder-[var(--text-dim)] text-sm focus:outline-none focus:border-[var(--gold)]/40 transition-all font-light"
+              />
+              <button
+                onClick={handleCustom}
+                disabled={!customCountry.trim()}
+                className="px-6 py-3.5 rounded-full font-medium text-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-[var(--cream)] text-[var(--ink)] hover:bg-[var(--paper)]"
+              >
+                Begin →
+              </button>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
+  );
+}
+
+function CountryTile({ country, onSelect, onHover }: { country: Country; onSelect: (c: Country) => void; onHover: (c: Country | null) => void }) {
+  return (
+    <motion.button
+      onClick={() => onSelect(country)}
+      onMouseEnter={() => onHover(country)}
+      onMouseLeave={() => onHover(null)}
+      whileHover={{ y: -4 }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      className="group relative overflow-hidden rounded-2xl text-left h-64 sm:h-72 border border-[var(--line)] hover:border-[var(--line-strong)] transition-colors"
+    >
+      {/* Photo */}
+      <img
+        src={`https://source.unsplash.com/800x600/?${encodeURIComponent(country.name)}+travel`}
+        alt={country.name}
+        loading="lazy"
+        className="absolute inset-0 w-full h-full object-cover transition-transform duration-[1.5s] group-hover:scale-110"
+        onError={(e) => {
+          (e.target as HTMLImageElement).style.opacity = '0';
+        }}
+      />
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(10,8,6,0) 30%, rgba(10,8,6,0.95) 100%)' }} />
+
+      {/* Country colour accent on hover */}
+      <div
+        className="absolute inset-0 opacity-0 group-hover:opacity-30 transition-opacity duration-500 mix-blend-multiply"
+        style={{ background: country.colour }}
+      />
+
+      {/* Content */}
+      <div className="absolute inset-0 p-6 flex flex-col justify-end">
+        <div className="flex items-center gap-2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+          <span className="text-xl">{country.emoji}</span>
+          <span className="eyebrow text-[var(--gold-soft)]">Explore</span>
+        </div>
+        <h3 className="font-display text-3xl sm:text-4xl text-[var(--cream)] mb-2 leading-tight">
+          {country.name}
+        </h3>
+        <p className="text-[var(--text-muted)] text-xs leading-relaxed line-clamp-2 max-w-[90%] font-light">
+          {country.tagline}
+        </p>
+      </div>
+
+      {/* Corner flag */}
+      <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-[var(--ink)]/70 backdrop-blur-sm flex items-center justify-center text-lg border border-[var(--line-strong)]">
+        {country.emoji}
+      </div>
+    </motion.button>
   );
 }
