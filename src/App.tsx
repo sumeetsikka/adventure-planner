@@ -233,11 +233,12 @@ export default function App() {
       {themeToggle}
       {step === 1 && (
         loadingDestinations ? (
-          <div className="max-w-4xl mx-auto px-4 pt-20 text-center">
-            <div className="text-5xl mb-4 animate-bounce">{selectedCountry?.emoji || '🌍'}</div>
-            <h2 className="text-white text-2xl font-bold mb-2">Discovering {selectedCountry?.name}...</h2>
-            <p className="text-gray-500 text-sm">Generating destinations using AI.</p>
-            <div className="mt-6 w-8 h-8 border-2 border-[#FF6B35] border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="max-w-4xl mx-auto px-4 pt-32 text-center">
+            <div className="text-5xl mb-6">{selectedCountry?.emoji || '🌍'}</div>
+            <p className="eyebrow mb-3">Discovering</p>
+            <h2 className="font-display text-5xl text-[var(--cream)] mb-4 italic">{selectedCountry?.name}…</h2>
+            <p className="text-[var(--text-muted)] text-sm font-light">Generating destinations using AI.</p>
+            <div className="mt-8 w-8 h-8 border border-[var(--text-dim)] border-t-[var(--gold)] rounded-full animate-spin mx-auto" />
           </div>
         ) : (
           <DestinationPicker selected={selectedDests} onSelect={setSelectedDests} onNext={() => setStep(2)}
