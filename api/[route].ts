@@ -141,27 +141,63 @@ async function handleWeather(config: any) {
   const destinations = config.destinations || [];
   const travelMonth = new Date(config.departureDate).toLocaleString('en-AU', { month: 'long' });
 
+  // Determine which API to use based on how far the dates are
+  const departureDate = new Date(config.departureDate);
+  const today = new Date();
+  const daysAhead = Math.round((departureDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  const useForecast = daysAhead >= -1 && daysAhead <= 13; // Forecast works for next ~14 days
+
+  // For future trips, use historical data from the same month one year ago
+  let startDate = config.departureDate;
+  let endDate = config.returnDate;
+  if (!useForecast) {
+    const histYear = today.getFullYear() - 1;
+    const month = String(departureDate.getMonth() + 1).padStart(2, '0');
+    const startDay = String(departureDate.getDate()).padStart(2, '0');
+    const returnDate = new Date(config.returnDate);
+    const endDay = String(returnDate.getDate()).padStart(2, '0');
+    const endMonth = String(returnDate.getMonth() + 1).padStart(2, '0');
+    startDate = `${histYear}-${month}-${startDay}`;
+    endDate = `${histYear}-${endMonth}-${endDay}`;
+  }
+
+  const apiUrl = useForecast
+    ? 'https://api.open-meteo.com/v1/forecast'
+    : 'https://archive-api.open-meteo.com/v1/archive';
+
   const results = await Promise.all(
     destinations.map(async (d: any) => {
+      const fallback = { destination: d.name, month: travelMonth, temp_high_c: 25, temp_low_c: 18, rainfall_mm: 50, humidity_percent: 65, description: 'Weather data unavailable.', what_to_pack: 'Pack versatile layers.' };
       try {
         const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(d.name.split('(')[0].trim())}&count=1`);
         const geoData = await geoRes.json();
-        if (!geoData.results?.length) return { destination: d.name, month: travelMonth, temp_high_c: 25, temp_low_c: 18, rainfall_mm: 50, humidity_percent: 65, description: 'Weather data unavailable.', what_to_pack: 'Pack versatile layers.' };
+        if (!geoData.results?.length) return fallback;
 
         const { latitude, longitude } = geoData.results[0];
-        const wxRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,relative_humidity_2m_mean&start_date=${config.departureDate}&end_date=${config.returnDate}&timezone=auto`);
+        const wxRes = await fetch(`${apiUrl}?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,relative_humidity_2m_mean&start_date=${startDate}&end_date=${endDate}&timezone=auto`);
         const wxData = await wxRes.json();
         const daily = wxData.daily || {};
+        const clean = (arr: any[]) => (arr || []).filter((v: any) => v !== null && !isNaN(v));
         const avg = (arr: number[]) => arr.length > 0 ? Math.round(arr.reduce((a: number, b: number) => a + b, 0) / arr.length) : 0;
-        const high = avg(daily.temperature_2m_max || []);
-        const low = avg(daily.temperature_2m_min || []);
-        const rain = Math.round((daily.precipitation_sum || []).reduce((a: number, b: number) => a + b, 0));
-        const hum = avg(daily.relative_humidity_2m_mean || []);
+        const highs = clean(daily.temperature_2m_max);
+        const lows = clean(daily.temperature_2m_min);
+        const precips = clean(daily.precipitation_sum);
+        const hums = clean(daily.relative_humidity_2m_mean);
+
+        // If no valid data returned, use fallback
+        if (highs.length === 0 && lows.length === 0) return fallback;
+
+        const high = avg(highs);
+        const low = avg(lows);
+        const rain = Math.round(precips.reduce((a: number, b: number) => a + b, 0));
+        const hum = avg(hums);
+
+        const historicalNote = useForecast ? '' : ' Based on last year\'s data for the same dates.';
 
         return { destination: d.name, month: travelMonth, temp_high_c: high, temp_low_c: low, rainfall_mm: rain, humidity_percent: hum,
-          description: high > 30 ? 'Hot conditions.' : high > 20 ? 'Warm and pleasant.' : high > 10 ? 'Cool, layers needed.' : 'Cold weather.',
+          description: (high > 30 ? 'Hot conditions.' : high > 20 ? 'Warm and pleasant.' : high > 10 ? 'Cool, layers needed.' : 'Cold weather.') + historicalNote,
           what_to_pack: high > 28 ? 'Light breathable clothing, sunscreen, hat.' : high > 15 ? 'Light layers, one warm layer for evenings.' : 'Warm layers, jacket.' };
-      } catch { return { destination: d.name, month: travelMonth, temp_high_c: 25, temp_low_c: 18, rainfall_mm: 50, humidity_percent: 65, description: 'Weather data unavailable.', what_to_pack: 'Pack versatile layers.' }; }
+      } catch { return fallback; }
     })
   );
   return results;
