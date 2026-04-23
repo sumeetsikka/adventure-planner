@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import type { Destination, VibeOption } from '../../types';
 import { calculateMidpointDays, determineEntryCity, orderDestinations } from '../../lib/routePlanner';
 import { formatDateAU, addDaysISO, todayISO } from '../../lib/dateUtils';
@@ -27,7 +28,7 @@ const VIBES: { value: VibeOption; label: string; icon: string; desc: string }[] 
   { value: 'culture', label: 'Culture', icon: '🏛️', desc: 'Temples, history, traditions' },
   { value: 'foodie', label: 'Foodie', icon: '🍜', desc: 'Street food, cooking classes' },
   { value: 'nature', label: 'Nature', icon: '🌿', desc: 'Trekking, jungles, rice terraces' },
-  { value: 'nightlife', label: 'Nightlife', icon: '🍻', desc: 'Rooftop bars, bia hoi, clubs' },
+  { value: 'nightlife', label: 'Nightlife', icon: '🍻', desc: 'Rooftop bars, clubs' },
   { value: 'romance', label: 'Romance', icon: '💕', desc: 'Couples, sunsets, intimate dining' },
   { value: 'family', label: 'Family', icon: '👨‍👩‍👧‍👦', desc: 'Kid-friendly, safe, educational' },
   { value: 'luxury', label: 'Luxury', icon: '✨', desc: 'Five-star, spas, fine dining' },
@@ -90,123 +91,148 @@ export default function TravelDetails({
   };
 
   return (
-    <div className="min-h-screen relative">
-      {/* Background */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/4 right-0 w-[400px] h-[400px] bg-[#FF6B35]/[0.03] rounded-full blur-[100px]" />
-      </div>
-
-      <div className="relative max-w-xl mx-auto px-4 py-12">
+    <div className="min-h-screen bg-[var(--ink)] py-12 sm:py-20 px-6">
+      <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-10 animate-fade-up">
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">Plan your trip</h1>
-          <p className="text-gray-500 text-sm">We've mapped your ideal route. Adjust the details below.</p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+          className="text-center mb-12"
+        >
+          <p className="eyebrow mb-4">Chapter Three · The details</p>
+          <h1 className="font-display text-5xl sm:text-6xl text-[var(--cream)] mb-4">
+            When the story<br /><em className="italic text-shimmer">unfolds.</em>
+          </h1>
+          <p className="text-[var(--text-muted)] text-base font-light max-w-md mx-auto">
+            We've mapped your ideal route. Tell us when, who, and how you travel.
+          </p>
+        </motion.div>
 
-        <div className="space-y-5 stagger-children">
-          {/* Route Card */}
-          <div className="glass rounded-2xl p-5">
-            <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-[3px] mb-4">Your Route</h2>
-            <div className="space-y-2.5">
+        <div className="space-y-5">
+          {/* Route Preview */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="surface-soft p-6"
+          >
+            <div className="flex items-baseline justify-between mb-4">
+              <span className="eyebrow">Your route</span>
+              <span className="text-[11px] text-[var(--text-dim)] font-light">{ordered.length} stops</span>
+            </div>
+            <div className="space-y-3">
               {ordered.map((d, i) => (
                 <div key={d.id} className="flex items-center gap-3">
+                  <span className="text-[10px] text-[var(--text-dim)] w-4 font-light">{String(i + 1).padStart(2, '0')}</span>
                   <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
-                    style={{ background: `${d.colour}15` }}
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-base flex-shrink-0"
+                    style={{ background: `${d.colour}25`, border: `1px solid ${d.colour}40` }}
                   >
                     {d.emoji}
                   </div>
-                  <p className="text-white text-sm font-medium flex-1">{d.name}</p>
-                  <span className="text-gray-500 text-xs">{d.recommendedDays[0]}-{d.recommendedDays[1]}d</span>
-                  {i < ordered.length - 1 && (
-                    <span className="text-gray-700 text-[10px]">→</span>
-                  )}
+                  <p className="text-[var(--cream)] text-sm flex-1 font-light">{d.name}</p>
+                  <span className="text-[var(--text-dim)] text-[11px]">{d.recommendedDays[0]}–{d.recommendedDays[1]}d</span>
                 </div>
               ))}
             </div>
-          </div>
+          </motion.div>
 
           {/* Trip Length */}
-          <div className="rounded-2xl p-5 border border-[#FF6B35]/15" style={{ background: 'linear-gradient(135deg, rgba(255,107,53,0.06) 0%, rgba(11,17,32,1) 100%)' }}>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-lg">📅</span>
-              <h2 className="text-white font-bold text-sm">Trip Length</h2>
-            </div>
-            <p className="text-gray-400 text-sm mb-4">
-              We recommend <span className="text-[#FF6B35] font-bold text-xl">{recommendedDays} days</span> for this route.
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.15 }}
+            className="surface-soft p-6"
+          >
+            <span className="eyebrow block mb-3">Trip length</span>
+            <p className="text-[var(--text-muted)] text-sm mb-5 font-light">
+              We recommend <span className="font-display text-3xl text-[var(--gold)] mx-1">{recommendedDays}</span> days for this route.
             </p>
             <div className="flex gap-2 mb-3">
               <button
                 type="button"
                 onClick={() => { setUseRecommended(true); setTripDays(recommendedDays); }}
-                className={`flex-1 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all border ${
+                className={`flex-1 px-4 py-3 rounded-full text-xs font-medium tracking-wide transition-all ${
                   useRecommended
-                    ? 'border-[#FF6B35]/40 bg-[#FF6B35]/10 text-[#FF6B35]'
-                    : 'border-white/8 bg-white/3 text-gray-500 hover:border-white/15'
+                    ? 'bg-[var(--cream)] text-[var(--ink)]'
+                    : 'bg-[var(--ink-3)] text-[var(--text-muted)] hover:text-[var(--cream)]'
                 }`}
               >
-                ✅ Accept {recommendedDays} days
+                Accept {recommendedDays} days
               </button>
               <button
                 type="button"
                 onClick={() => setUseRecommended(false)}
-                className={`flex-1 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all border ${
+                className={`flex-1 px-4 py-3 rounded-full text-xs font-medium tracking-wide transition-all ${
                   !useRecommended
-                    ? 'border-[#FF6B35]/40 bg-[#FF6B35]/10 text-[#FF6B35]'
-                    : 'border-white/8 bg-white/3 text-gray-500 hover:border-white/15'
+                    ? 'bg-[var(--cream)] text-[var(--ink)]'
+                    : 'bg-[var(--ink-3)] text-[var(--text-muted)] hover:text-[var(--cream)]'
                 }`}
               >
-                ✏️ Customise
+                Customise
               </button>
             </div>
             {!useRecommended && (
-              <div className="flex items-center gap-3 glass rounded-xl p-3">
+              <div className="flex items-center justify-center gap-4 bg-[var(--ink-3)] rounded-2xl p-4 mt-3">
                 <button type="button" onClick={() => setTripDays(Math.max(minDays, tripDays - 1))}
-                  className="w-9 h-9 rounded-lg bg-white/8 text-white text-lg font-bold hover:bg-white/12 transition-colors flex items-center justify-center">-</button>
-                <span className="text-2xl font-bold text-white w-10 text-center">{tripDays}</span>
+                  className="w-10 h-10 rounded-full bg-[var(--ink-4)] text-[var(--cream)] text-lg hover:bg-[var(--ink-2)] transition-colors">−</button>
+                <div className="text-center">
+                  <span className="font-display text-4xl text-[var(--cream)]">{tripDays}</span>
+                  <span className="text-[var(--text-dim)] text-xs block">days</span>
+                </div>
                 <button type="button" onClick={() => setTripDays(Math.min(maxDays + 5, tripDays + 1))}
-                  className="w-9 h-9 rounded-lg bg-white/8 text-white text-lg font-bold hover:bg-white/12 transition-colors flex items-center justify-center">+</button>
-                <span className="text-gray-500 text-xs">days</span>
+                  className="w-10 h-10 rounded-full bg-[var(--ink-4)] text-[var(--cream)] text-lg hover:bg-[var(--ink-2)] transition-colors">+</button>
               </div>
             )}
-          </div>
+          </motion.div>
 
-          {/* Start Date + Preview */}
-          <div className="glass rounded-2xl p-5">
-            <label className="block text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">When do you leave?</label>
+          {/* Start Date */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="surface-soft p-6"
+          >
+            <span className="eyebrow block mb-3">When do you leave?</span>
             <input
               type="date"
               value={startDate}
               min={todayISO()}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#FF6B35]/50 transition-colors mb-3"
+              className="w-full bg-[var(--ink-3)] border border-[var(--line)] rounded-xl px-4 py-3.5 text-[var(--cream)] focus:outline-none focus:border-[var(--gold)]/40 transition-colors mb-3 font-light"
             />
-            <div className="bg-[#2D936C]/8 border border-[#2D936C]/15 rounded-xl p-3.5 flex items-center gap-3">
+            <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'rgba(212, 165, 116, 0.06)', border: '1px solid rgba(212, 165, 116, 0.15)' }}>
               <span className="text-lg">✈️</span>
               <div>
-                <p className="text-white text-sm font-semibold">{formatDateAU(startDate)} to {formatDateAU(endDate)}</p>
-                <p className="text-[#2D936C] text-xs">{tripDays} days of adventure</p>
+                <p className="text-[var(--cream)] text-sm font-light">{formatDateAU(startDate)} → {formatDateAU(endDate)}</p>
+                <p className="text-[var(--gold)] text-[11px] tracking-wide">{tripDays} days of adventure</p>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Travellers */}
-          <div className="glass rounded-2xl p-5">
-            <label className="block text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wider">Who's going?</label>
-            <div className="flex items-center gap-4 mb-4">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.25 }}
+            className="surface-soft p-6"
+          >
+            <span className="eyebrow block mb-4">Who's going?</span>
+            <div className="flex items-center justify-center gap-5 mb-5">
               <button type="button" onClick={() => updateTravellers(Math.max(1, localTravellers - 1))}
-                className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 text-white text-lg hover:bg-white/10 transition-colors flex items-center justify-center">-</button>
+                className="w-10 h-10 rounded-full bg-[var(--ink-3)] text-[var(--cream)] text-lg hover:bg-[var(--ink-4)] transition-colors">−</button>
               <div className="text-center">
-                <span className="text-2xl font-bold text-white">{localTravellers}</span>
-                <p className="text-gray-500 text-[10px]">traveller{localTravellers > 1 ? 's' : ''}</p>
+                <span className="font-display text-5xl text-[var(--cream)]">{localTravellers}</span>
+                <p className="text-[var(--text-dim)] text-[10px] tracking-widest uppercase mt-1">Traveller{localTravellers > 1 ? 's' : ''}</p>
               </div>
               <button type="button" onClick={() => updateTravellers(Math.min(10, localTravellers + 1))}
-                className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 text-white text-lg hover:bg-white/10 transition-colors flex items-center justify-center">+</button>
+                className="w-10 h-10 rounded-full bg-[var(--ink-3)] text-[var(--cream)] text-lg hover:bg-[var(--ink-4)] transition-colors">+</button>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 justify-center">
               {localAges.map((age, i) => (
                 <div key={i} className="text-center">
-                  <span className="text-[9px] text-gray-600 block mb-1">Age</span>
+                  <span className="text-[9px] text-[var(--text-dim)] tracking-widest uppercase block mb-1">Age {i + 1}</span>
                   <input
                     type="number" min={1} max={99} value={age}
                     onChange={(e) => {
@@ -214,18 +240,23 @@ export default function TravelDetails({
                       next[i] = Math.max(1, Math.min(99, parseInt(e.target.value) || 1));
                       setLocalAges(next);
                     }}
-                    className="w-14 bg-white/5 border border-white/10 rounded-lg px-2 py-2 text-white text-center text-sm focus:outline-none focus:border-[#FF6B35]/50 transition-colors"
+                    className="w-14 bg-[var(--ink-3)] border border-[var(--line)] rounded-lg px-2 py-2 text-[var(--cream)] text-center text-sm focus:outline-none focus:border-[var(--gold)]/40 transition-colors font-light"
                   />
                 </div>
               ))}
             </div>
-          </div>
+          </motion.div>
 
-          {/* Vibes (multi-select) */}
-          <div className="glass rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-3">
-              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Your vibes</label>
-              <span className="text-[10px] text-gray-600">{localVibes.length} selected · pick as many as you like</span>
+          {/* Vibes */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="surface-soft p-6"
+          >
+            <div className="flex items-baseline justify-between mb-4">
+              <span className="eyebrow">Your vibes</span>
+              <span className="text-[10px] text-[var(--text-dim)] font-light">{localVibes.length} selected · pick any</span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {VIBES.map((v) => {
@@ -235,36 +266,41 @@ export default function TravelDetails({
                     key={v.value}
                     type="button"
                     onClick={() => toggleVibe(v.value)}
-                    className={`group px-3 py-3 rounded-xl text-left transition-all duration-300 border ${
+                    className={`group px-3 py-3 rounded-xl text-left transition-all border ${
                       isActive
-                        ? 'border-[#FF6B35]/40 bg-[#FF6B35]/8 shadow-lg shadow-[#FF6B35]/5'
-                        : 'border-white/6 bg-white/2 hover:border-white/12 hover:bg-white/4'
+                        ? 'border-[var(--gold)]/50 bg-[var(--gold)]/5'
+                        : 'border-[var(--line)] bg-[var(--ink-3)] hover:border-[var(--line-strong)]'
                     }`}
                   >
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-lg">{v.icon}</span>
-                      {isActive && <span className="text-[#FF6B35] text-xs">✓</span>}
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-base">{v.icon}</span>
+                      {isActive && <span className="text-[var(--gold)] text-xs">✓</span>}
                     </div>
-                    <span className={`text-xs font-semibold block ${isActive ? 'text-white' : 'text-gray-400'}`}>{v.label}</span>
-                    <span className="text-[9px] text-gray-600 leading-tight block">{v.desc}</span>
+                    <span className={`text-xs font-medium block ${isActive ? 'text-[var(--cream)]' : 'text-[var(--text-muted)]'}`}>{v.label}</span>
+                    <span className="text-[9px] text-[var(--text-dim)] leading-tight block font-light">{v.desc}</span>
                   </button>
                 );
               })}
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-between mt-8">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.5 }}
+          className="flex items-center justify-between mt-10"
+        >
           <button type="button" onClick={onBack}
-            className="px-5 py-2.5 rounded-xl text-sm text-gray-500 hover:text-white border border-white/8 hover:border-white/15 transition-all">
+            className="eyebrow text-[var(--text-muted)] hover:text-[var(--cream)] transition-colors">
             ← Back
           </button>
           <button type="button" onClick={handleGenerate}
-            className="px-8 py-3.5 rounded-xl font-bold text-white bg-gradient-to-r from-[#FF6B35] to-[#E85D26] shadow-lg shadow-orange-500/20 hover:shadow-xl hover:shadow-orange-500/30 hover:-translate-y-0.5 transition-all duration-300 text-base">
-            Generate My Trip 🚀
+            className="px-8 py-3.5 rounded-full font-medium text-[var(--ink)] bg-[var(--cream)] hover:bg-[var(--paper)] transition-colors text-sm tracking-wide">
+            Craft my journey →
           </button>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
