@@ -57,7 +57,7 @@ export default function DestinationPicker({ selected, onSelect, onNext, country,
     return sum + Math.round((d.recommendedDays[0] + d.recommendedDays[1]) / 2);
   }, 0);
 
-  const heroImage = getCountryHero(country.name, 2000, 1000);
+  const heroImage = useWikiImage(country.name);
 
   return (
     <div className="relative min-h-screen">
