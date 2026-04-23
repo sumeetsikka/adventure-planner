@@ -4,7 +4,7 @@ import type { Country, Destination } from '../../types';
 import { countries } from '../../data/countries';
 import { getDestinationsForCountry } from '../../data/destinations';
 import { generateDestinations } from '../../lib/api';
-import { getCountryHero } from '../../lib/imagery';
+import { useWikiImage } from '../../lib/useWikiImage';
 import DestinationCard from './DestinationCard';
 
 interface Props {
