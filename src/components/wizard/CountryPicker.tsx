@@ -146,7 +146,7 @@ export default function CountryPicker({ onSelect }: Props) {
                 <span className="eyebrow text-[var(--text-dim)]">{region.countries.length} destinations</span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                 {region.countries.map((country) => (
                   <CountryTile
                     key={country.id}
