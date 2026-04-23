@@ -1,113 +1,105 @@
+import { motion } from 'framer-motion';
 import type { VisaInfo } from '../../types';
 
 interface Props {
   visa: VisaInfo | null;
 }
 
-function getStatusBadge(visa: VisaInfo): { label: string; className: string } {
-  if (!visa.visa_required) {
-    return {
-      label: 'Visa Free',
-      className: 'bg-green-500/15 text-green-400 border border-green-500/25',
-    };
-  }
-  if (visa.visa_type.toLowerCase().includes('e-visa')) {
-    return {
-      label: 'E-Visa',
-      className: 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/25',
-    };
-  }
-  return {
-    label: 'Visa Required',
-    className: 'bg-orange-500/15 text-orange-400 border border-orange-500/25',
-  };
+const EASE = [0.16, 1, 0.3, 1] as const;
+
+function getStatusLabel(visa: VisaInfo): string {
+  if (!visa.visa_required) return 'Visa Free';
+  if (visa.visa_type.toLowerCase().includes('e-visa')) return 'E-Visa';
+  return 'Visa Required';
 }
 
 export default function VisaTab({ visa }: Props) {
   if (!visa) {
     return (
-      <div className="text-center py-16">
-        <span className="text-5xl block mb-4">📄</span>
-        <p className="text-[var(--cream)] font-medium">Visa information is loading</p>
+      <div className="text-center py-24">
+        <p className="eyebrow mb-4">Papers</p>
+        <p className="font-display text-2xl italic text-[var(--cream)]">Gathering your <span className="text-[var(--gold)]">documents</span>…</p>
       </div>
     );
   }
 
-  const badge = getStatusBadge(visa);
+  const status = getStatusLabel(visa);
 
   const infoGrid = [
     { label: 'Visa Type', value: visa.visa_type },
     { label: 'Max Stay', value: visa.max_stay },
-    { label: 'Processing Time', value: visa.processing_time },
+    { label: 'Processing', value: visa.processing_time },
     { label: 'Cost (AUD)', value: visa.cost_aud },
   ];
 
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-[var(--cream)] font-bold text-xl mb-1">Visa Requirements</h2>
-        <p className="text-[var(--text-muted)] text-sm">For Australian passport holders</p>
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7, ease: EASE }}
+    >
+      <div className="mb-10">
+        <p className="eyebrow mb-3">Chapter II — Entry</p>
+        <h2 className="font-display text-4xl sm:text-5xl text-[var(--cream)] leading-tight">
+          Papers &amp; <span className="italic text-[var(--gold)]">passage</span>
+        </h2>
+        <div className="divider my-5 max-w-[120px]" />
+        <p className="text-[var(--text-muted)] text-sm max-w-xl">For Australian passport holders.</p>
       </div>
 
-      <div className="rounded-2xl border border-[var(--line)] bg-[var(--ink-3)] p-6">
-        {/* Status badge */}
-        <div className="mb-6">
-          <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold ${badge.className}`}>
-            {badge.label}
+      <div className="surface-card rounded-3xl p-8">
+        <div className="flex items-center gap-4 mb-8">
+          <span className="inline-flex items-center px-4 py-2 rounded-full border border-[var(--gold)]/40 text-[var(--gold)] text-[11px] font-medium tracking-[0.18em] uppercase">
+            {status}
           </span>
         </div>
 
-        {/* Info grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
           {infoGrid.map((info, i) => (
-            <div key={i} className="rounded-xl border border-[var(--line)] bg-white/[0.02] p-3">
-              <p className="text-[10px] text-[var(--text-dim)] uppercase tracking-wider mb-1">{info.label}</p>
-              <p className="text-[var(--cream)] text-sm font-semibold leading-snug">{info.value}</p>
+            <div key={i} className="border-l border-[var(--line-strong)] pl-4">
+              <p className="eyebrow mb-2">{info.label}</p>
+              <p className="font-display text-lg text-[var(--cream)] leading-snug">{info.value}</p>
             </div>
           ))}
         </div>
 
-        {/* Documents needed */}
         {visa.documents_needed.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-[var(--cream)] font-bold text-sm mb-3">Documents Needed</h3>
-            <ul className="space-y-2">
+          <div className="mb-10">
+            <p className="eyebrow mb-4">Documents Needed</p>
+            <ul className="space-y-3">
               {visa.documents_needed.map((doc, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <span className="text-[#7A9082] mt-0.5 shrink-0">•</span>
-                  <span className="text-gray-300 text-sm">{doc}</span>
+                <li key={i} className="flex items-start gap-3 text-[var(--cream)] text-[15px] leading-relaxed">
+                  <span className="text-[var(--gold)] mt-1.5 shrink-0">—</span>
+                  <span>{doc}</span>
                 </li>
               ))}
             </ul>
           </div>
         )}
 
-        {/* How to apply */}
         {visa.how_to_apply && (
-          <div className="mb-6">
-            <h3 className="text-[var(--cream)] font-bold text-sm mb-2">How to Apply</h3>
-            <p className="text-gray-300 text-sm leading-relaxed">{visa.how_to_apply}</p>
+          <div className="mb-10">
+            <p className="eyebrow mb-3">How to Apply</p>
+            <p className="font-display-soft text-[var(--cream)] text-lg leading-relaxed italic">{visa.how_to_apply}</p>
           </div>
         )}
 
-        {/* Important notes */}
         {visa.important_notes.length > 0 && (
           <div>
-            <h3 className="text-[var(--cream)] font-bold text-sm mb-3">Important Notes</h3>
-            <div className="space-y-2">
+            <p className="eyebrow mb-4">Important Notes</p>
+            <div className="space-y-3">
               {visa.important_notes.map((note, i) => (
                 <div
                   key={i}
-                  className="flex items-start gap-2 rounded-xl bg-yellow-500/8 border border-yellow-500/20 px-3 py-2.5"
+                  className="rounded-2xl border-l-2 border-[var(--terracotta)] bg-[var(--ink-3)] px-5 py-4"
                 >
-                  <span className="text-yellow-400 shrink-0 mt-0.5">⚠️</span>
-                  <p className="text-yellow-200/80 text-sm leading-relaxed">{note}</p>
+                  <p className="text-[var(--cream)] text-[14px] leading-relaxed italic font-display-soft">{note}</p>
                 </div>
               ))}
             </div>
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
