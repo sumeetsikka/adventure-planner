@@ -62,7 +62,12 @@ export default function PhotosTab({ destinations }: Props) {
                     src={imgUrl}
                     alt={d.name}
                     className="w-full h-full object-cover transition-transform duration-[1200ms] group-hover:scale-105"
-                    onError={() => handleError(d.id)}
+                    onError={(e) => {
+                      const img = e.currentTarget;
+                      if (img.dataset.fell) { handleError(d.id); return; }
+                      img.dataset.fell = '1';
+                      img.src = `https://picsum.photos/seed/${encodeURIComponent(d.id)}/1000/700`;
+                    }}
                     loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[var(--ink)] via-[var(--ink)]/50 to-transparent" />
