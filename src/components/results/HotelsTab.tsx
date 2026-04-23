@@ -148,7 +148,8 @@ export default function HotelsTab({ hotels, destinations: _destinations, config 
                 onClick={() => setExpandedDest(isExpanded ? null : di)}
                 className="relative w-full h-40 sm:h-48 overflow-hidden text-left block group"
               >
-                <img src={banner} alt={dest.destination} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                <img src={banner} alt={dest.destination} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  onError={(e) => { const i = e.currentTarget; if (i.dataset.fell) return; i.dataset.fell = '1'; i.src = `https://picsum.photos/seed/${encodeURIComponent(dest.destination)}/1400/400`; }} />
                 <div
                   className="absolute inset-0"
                   style={{ background: 'linear-gradient(180deg, transparent 30%, rgba(10,8,6,0.95) 100%)' }}
