@@ -16,21 +16,24 @@ export default function DestinationCard({ destination, selected, onToggle }: Pro
       : `${d.recommendedDays[0]}–${d.recommendedDays[1]} days`;
 
   const isMustVisit = !!d.mustVisit;
-  const photo = getDestinationPhoto(d.name, 800, 900);
+  const photo = getDestinationPhoto(d.name, 800, 600);
 
   return (
     <motion.button
       type="button"
       onClick={() => onToggle(d.id)}
-      whileHover={{ y: -4 }}
+      whileHover={{ y: -3 }}
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      className={`group relative w-full text-left rounded-2xl overflow-hidden h-[420px] border transition-colors ${
+      className={`group relative w-full text-left rounded-2xl overflow-hidden h-[300px] border transition-colors ${
         selected
           ? 'border-[var(--gold)]'
-          : 'border-[var(--line)] hover:border-[var(--line-strong)]'
+          : isMustVisit
+            ? 'border-[var(--gold)]/30 hover:border-[var(--gold)]/60'
+            : 'border-[var(--line)] hover:border-[var(--line-strong)]'
       }`}
       style={{
-        boxShadow: selected ? `0 20px 40px -20px ${d.colour}60` : undefined,
+        background: `linear-gradient(145deg, ${d.colour}cc 0%, ${d.colour}55 50%, var(--ink-2) 100%)`,
+        boxShadow: selected ? `0 20px 40px -20px ${d.colour}70` : undefined,
       } as React.CSSProperties}
     >
       {/* Photo */}
@@ -38,81 +41,70 @@ export default function DestinationCard({ destination, selected, onToggle }: Pro
         src={photo}
         alt={d.name}
         loading="lazy"
-        className="absolute inset-0 w-full h-full object-cover transition-transform duration-[1.5s] group-hover:scale-110"
+        className="absolute inset-0 w-full h-full object-cover opacity-65 group-hover:opacity-85 transition-all duration-[1.2s] group-hover:scale-105"
         onError={(e) => {
-          (e.target as HTMLImageElement).style.opacity = '0';
+          (e.target as HTMLImageElement).style.display = 'none';
         }}
       />
 
-      {/* Fallback colour layer */}
-      <div className="absolute inset-0 -z-10" style={{ background: `linear-gradient(160deg, ${d.colour}40, var(--ink-2))` }} />
-
-      {/* Gradient */}
-      <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(10,8,6,0.1) 0%, rgba(10,8,6,0.4) 50%, rgba(10,8,6,0.95) 100%)' }} />
-
-      {/* Colour tint on hover */}
+      {/* Readability overlays */}
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(10,8,6,0.15) 0%, rgba(10,8,6,0.55) 50%, rgba(10,8,6,0.95) 100%)' }} />
       <div
-        className="absolute inset-0 opacity-0 group-hover:opacity-25 transition-opacity duration-500 mix-blend-multiply"
+        className="absolute inset-0 opacity-0 group-hover:opacity-30 transition-opacity duration-500 mix-blend-multiply"
         style={{ background: d.colour }}
       />
 
-      {/* Must Visit badge */}
-      {isMustVisit && (
-        <div className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-semibold tracking-[0.2em] uppercase z-10"
-          style={{ background: 'var(--gold)', color: 'var(--ink)' }}>
-          <span>★</span>
-          <span>Editor's Pick</span>
+      {/* Top row */}
+      <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-10">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl drop-shadow-lg">{d.emoji}</span>
+          {isMustVisit && (
+            <span className="text-[9px] tracking-[0.18em] uppercase font-semibold px-2.5 py-1 rounded-full"
+              style={{ background: 'var(--gold)', color: 'var(--ink)' }}>
+              Must visit
+            </span>
+          )}
         </div>
-      )}
-
-      {/* Selected check */}
-      {selected && (
-        <div
-          className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center text-[var(--ink)] text-sm font-bold shadow-lg z-10"
-          style={{ background: 'var(--cream)' }}
-        >
-          ✓
-        </div>
-      )}
+        {selected ? (
+          <div className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--ink)] text-sm font-bold shadow-lg"
+            style={{ background: 'var(--cream)' }}>✓</div>
+        ) : (
+          <span className="text-[10px] tracking-[0.2em] uppercase text-[var(--cream)]/80 bg-[var(--ink)]/50 backdrop-blur-sm rounded-full px-2.5 py-1 border border-[var(--line-strong)]">
+            {daysLabel}
+          </span>
+        )}
+      </div>
 
       {/* Content */}
-      <div className="absolute inset-0 p-6 flex flex-col justify-end z-10">
-        <p className="eyebrow mb-3 opacity-80" style={{ color: 'var(--gold-soft)' }}>
+      <div className="absolute inset-0 p-5 flex flex-col justify-end z-10">
+        <p className="eyebrow mb-2 drop-shadow-md" style={{ color: 'var(--gold-soft)' }}>
           {d.region}
         </p>
-        <div className="flex items-start gap-3 mb-3">
-          <span className="text-3xl leading-none">{d.emoji}</span>
-          <h3 className="font-display text-3xl text-[var(--cream)] leading-tight">{d.name}</h3>
-        </div>
-
-        <p className="text-[13px] text-[var(--text-muted)] leading-relaxed mb-4 line-clamp-3 font-light">{d.brief}</p>
+        <h3 className="font-display text-[26px] sm:text-[28px] text-[var(--cream)] leading-[1.05] mb-2 drop-shadow-md">
+          {d.name}
+        </h3>
+        <p className="text-[12px] text-[var(--cream)]/80 leading-snug font-light italic font-display-soft line-clamp-2 mb-3">
+          {d.brief}
+        </p>
 
         {/* Tags */}
-        <div className="flex flex-wrap gap-1.5 mb-3">
+        <div className="flex flex-wrap gap-1.5">
           {d.tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
-              className="text-[10px] px-2.5 py-0.5 rounded-full font-light tracking-wide"
+              className="text-[10px] px-2 py-0.5 rounded-full font-light tracking-wide"
               style={{
-                background: 'rgba(245, 237, 224, 0.1)',
+                background: 'rgba(245, 237, 224, 0.12)',
                 color: 'var(--cream)',
-                border: '1px solid rgba(245, 237, 224, 0.15)',
+                border: '1px solid rgba(245, 237, 224, 0.18)',
               }}
             >
               {tag}
             </span>
           ))}
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between pt-3 border-t border-[var(--line)]">
-          <p className="text-[11px] text-[var(--text-dim)] font-light">
-            {daysLabel}
-            {d.accessNote && ` · ${d.accessNote}`}
-          </p>
-          {!selected && (
-            <span className="text-[10px] text-[var(--text-dim)] group-hover:text-[var(--gold)] transition-colors tracking-widest uppercase">
-              Add →
+          {d.accessNote && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full font-light tracking-wide text-[var(--gold-soft)]">
+              · {d.accessNote}
             </span>
           )}
         </div>
