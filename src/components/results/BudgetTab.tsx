@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import type { BudgetItem, TravelConfig } from '../../types';
 import { generateBudget } from '../../lib/api';
 
@@ -16,25 +17,9 @@ function parseCostMid(cost: string): number {
   return Math.round((values[0] + values[1]) / 2);
 }
 
-const CATEGORY_ICONS: Record<string, string> = {
-  flight: '✈️', flights: '✈️', international: '✈️', domestic: '🛫', internal: '🛫',
-  hotel: '🏨', accommodation: '🏨', stay: '🏨',
-  food: '🍜', drink: '🍜', meal: '🍜', dining: '🍜',
-  activity: '🎯', tour: '🎯', activities: '🎯', cruise: '⛵', cave: '🦇', trek: '⛰️', snorkel: '🤿', cooking: '🍳', tailor: '✂️', canyoning: '🧗',
-  transport: '🚕', grab: '🚕', taxi: '🚕', transfer: '🚕', motorbike: '🏍️', train: '🚂', ferry: '⛴️',
-  visa: '📄', insurance: '🛡️', sim: '📱', souvenir: '🎁', miscellaneous: '🎁',
-};
-
-function getCategoryIcon(category: string): string {
-  const lower = category.toLowerCase();
-  for (const [key, icon] of Object.entries(CATEGORY_ICONS)) {
-    if (lower.includes(key)) return icon;
-  }
-  return '💰';
-}
+const EASE = [0.16, 1, 0.3, 1] as const;
 
 export default function BudgetTab({ budget, config, onUpdate }: Props) {
-  const [selectedItem, setSelectedItem] = useState<number | null>(null);
   const [retrying, setRetrying] = useState(false);
 
   const handleRetry = async () => {
@@ -52,14 +37,19 @@ export default function BudgetTab({ budget, config, onUpdate }: Props) {
 
   if (budget.length === 0) {
     return (
-      <div className="text-center py-16">
-        <span className="text-5xl block mb-4">💰</span>
-        <p className="text-[var(--cream)] font-medium mb-2">Budget not available yet</p>
-        <p className="text-[var(--text-muted)] text-sm mb-6">This can happen if the AI service was busy. Click below to try again.</p>
+      <div className="text-center py-20">
+        <p className="eyebrow mb-4">The numbers</p>
+        <h2 className="font-display text-3xl text-[var(--cream)] mb-3">Budget <em>not ready</em>.</h2>
+        <p className="text-[var(--text-muted)] text-sm mb-8 max-w-md mx-auto">
+          This can happen if the AI service was busy. Try again.
+        </p>
         {onUpdate && (
-          <button onClick={handleRetry} disabled={retrying}
-            className="px-6 py-3 rounded-xl font-semibold text-[var(--cream)] bg-gradient-to-r from-[#C65D3B] to-[#B04E2E] hover:shadow-lg transition-all disabled:opacity-50">
-            {retrying ? 'Generating...' : 'Generate Budget'}
+          <button
+            onClick={handleRetry}
+            disabled={retrying}
+            className="px-7 py-3 rounded-full font-medium text-[var(--ink)] bg-[var(--cream)] hover:opacity-90 transition-all disabled:opacity-50"
+          >
+            {retrying ? 'Calculating…' : 'Generate budget'}
           </button>
         )}
       </div>
@@ -70,65 +60,90 @@ export default function BudgetTab({ budget, config, onUpdate }: Props) {
   const groupTotal = perPersonTotal * config.travellers;
 
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-[var(--cream)] font-bold text-xl mb-1">Trip Budget</h2>
-        <p className="text-[var(--text-muted)] text-sm">Complete cost breakdown including flights, hotels, activities, and transport.</p>
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: EASE }}>
+      <div className="mb-10">
+        <p className="eyebrow mb-3">Costed · {budget.length} categories</p>
+        <h2 className="font-display text-4xl sm:text-5xl text-[var(--cream)] leading-[1.05] tracking-tight">
+          The <em className="italic text-[var(--gold)]">numbers</em>.
+        </h2>
+        <p className="text-[var(--text-muted)] text-sm mt-3 max-w-md">
+          Complete cost breakdown — flights, hotels, activities, transport.
+        </p>
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-        <div className="rounded-2xl p-5 border border-[#7A9082]/20 bg-[var(--ink-3)]">
-          <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-1">Per Person</p>
-          <p className="text-[#7A9082] text-3xl font-bold">${perPersonTotal.toLocaleString()}</p>
-          <p className="text-[var(--text-muted)] text-xs mt-1">estimated total</p>
-        </div>
-        <div className="rounded-2xl p-5 border border-[#D4A574]/20 bg-[var(--ink-3)]">
-          <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-1">
-            Group Total ({config.travellers} traveller{config.travellers > 1 ? 's' : ''})
+      {/* Totals spread */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-10">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: EASE }}
+          className="surface-card rounded-3xl p-8"
+        >
+          <p className="eyebrow mb-4">Per person</p>
+          <p className="font-display text-5xl sm:text-6xl text-[var(--cream)] leading-none tracking-tight">
+            ${perPersonTotal.toLocaleString()}
           </p>
-          <p className="text-[#D4A574] text-3xl font-bold">${groupTotal.toLocaleString()}</p>
-          <p className="text-[var(--text-muted)] text-xs mt-1">estimated total</p>
+          <p className="text-[var(--text-dim)] text-xs uppercase tracking-wider mt-4">estimated total</p>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.08, ease: EASE }}
+          className="surface-card rounded-3xl p-8"
+        >
+          <p className="eyebrow mb-4">Group · {config.travellers} traveller{config.travellers > 1 ? 's' : ''}</p>
+          <p className="font-display text-5xl sm:text-6xl text-[var(--gold)] leading-none tracking-tight">
+            ${groupTotal.toLocaleString()}
+          </p>
+          <p className="text-[var(--text-dim)] text-xs uppercase tracking-wider mt-4">estimated total</p>
+        </motion.div>
+      </div>
+
+      {/* Category list */}
+      <div className="surface-card rounded-3xl overflow-hidden mb-10">
+        <div className="px-7 py-5 border-b border-[var(--line)]">
+          <p className="eyebrow">Breakdown</p>
         </div>
+        <ul>
+          {budget.map((item, i) => {
+            const mid = parseCostMid(item.cost);
+            const pct = perPersonTotal > 0 ? (mid / perPersonTotal) * 100 : 0;
+
+            return (
+              <motion.li
+                key={i}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: i * 0.035, ease: EASE }}
+                className="px-7 py-5 border-b border-[var(--line)] last:border-b-0 hover:bg-[var(--ink-3)] transition-colors"
+              >
+                <div className="flex items-baseline justify-between gap-4 mb-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-display text-lg text-[var(--cream)] leading-snug">{item.category}</p>
+                  </div>
+                  <p className="font-display text-2xl text-[var(--gold)] flex-shrink-0">{item.cost}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-[2px] bg-[var(--line)] rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-[var(--gold)]"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min(pct, 100)}%` }}
+                      transition={{ duration: 0.8, delay: 0.2 + i * 0.04, ease: EASE }}
+                    />
+                  </div>
+                  <p className="text-[var(--text-dim)] text-[10px] uppercase tracking-wider w-10 text-right">
+                    {Math.round(pct)}%
+                  </p>
+                </div>
+              </motion.li>
+            );
+          })}
+        </ul>
       </div>
 
-      {/* Budget cards grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {budget.map((item, i) => {
-          const mid = parseCostMid(item.cost);
-          const pct = perPersonTotal > 0 ? (mid / perPersonTotal) * 100 : 0;
-          const icon = getCategoryIcon(item.category);
-          const isSelected = selectedItem === i;
-
-          return (
-            <div key={i}
-              onClick={() => setSelectedItem(isSelected ? null : i)}
-              className={`group rounded-2xl p-4 border cursor-pointer transition-all duration-300 ${
-                isSelected
-                  ? 'border-white/20 bg-[var(--ink-4)] ring-1 ring-white/10'
-                  : 'border-[var(--line)] bg-[var(--ink-3)] hover:border-[var(--line-strong)] hover:bg-[var(--ink-4)] hover:-translate-y-0.5'
-              }`}>
-              <div className="flex items-start justify-between mb-2">
-                <span className="text-2xl">{icon}</span>
-                <span className="text-[#7A9082] font-bold text-base">{item.cost}</span>
-              </div>
-
-              <h4 className="text-[var(--cream)] font-semibold text-sm mb-2 leading-snug">{item.category}</h4>
-
-              {/* Progress bar */}
-              <div className="w-full h-1.5 bg-[var(--ink-3)] rounded-full overflow-hidden mb-1">
-                <div className="h-full rounded-full bg-gradient-to-r from-[#7A9082] to-[#7A9082]/40 transition-all duration-700"
-                  style={{ width: `${Math.min(pct, 100)}%` }} />
-              </div>
-              <p className="text-[var(--text-dim)] text-[9px]">{Math.round(pct)}% of budget</p>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Cost Comparison */}
+      {/* Cost comparison */}
       {perPersonTotal > 0 && (() => {
-        // Average daily spend benchmarks (AUD, mid-range traveller, excludes international flights)
         const benchmarks: Record<string, number> = {
           vietnam: 80, thailand: 90, japan: 180, indonesia: 100, philippines: 85, cambodia: 70,
           italy: 200, france: 220, spain: 170, portugal: 150, greece: 160, switzerland: 300,
@@ -150,46 +165,60 @@ export default function BudgetTab({ budget, config, onUpdate }: Props) {
         const isAbove = diff > 0;
 
         return (
-          <div className="mt-6 rounded-2xl border border-[var(--line)] bg-[var(--ink-3)] p-5">
-            <h3 className="text-[var(--cream)] font-semibold text-sm mb-3">How does your trip compare?</h3>
-            <div className="flex items-center gap-4 mb-3">
-              <div className="flex-1">
-                <div className="flex items-center justify-between text-xs mb-1">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: EASE }}
+            className="surface-card rounded-3xl p-8"
+          >
+            <p className="eyebrow mb-4">In context</p>
+            <h3 className="font-display text-2xl text-[var(--cream)] leading-tight mb-6">
+              How does your trip <em className="italic text-[var(--gold)]">compare</em>?
+            </h3>
+
+            <div className="space-y-5 mb-5">
+              <div>
+                <div className="flex items-baseline justify-between text-[11px] uppercase tracking-wider mb-2">
                   <span className="text-[var(--text-muted)]">Average for {config.country?.name}</span>
-                  <span className="text-[var(--text-muted)]">${avgTotal.toLocaleString()}/person</span>
+                  <span className="font-display text-lg text-[var(--text)] normal-case tracking-normal">
+                    ${avgTotal.toLocaleString()}
+                  </span>
                 </div>
-                <div className="w-full h-2 bg-[var(--ink-3)] rounded-full overflow-hidden">
-                  <div className="h-full rounded-full bg-gray-500" style={{ width: '100%' }} />
+                <div className="w-full h-[2px] bg-[var(--line)] rounded-full overflow-hidden">
+                  <div className="h-full bg-[var(--text-dim)]" style={{ width: '100%' }} />
                 </div>
               </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex-1">
-                <div className="flex items-center justify-between text-xs mb-1">
+              <div>
+                <div className="flex items-baseline justify-between text-[11px] uppercase tracking-wider mb-2">
                   <span className="text-[var(--text-muted)]">Your trip</span>
-                  <span className={isBelow ? 'text-[#7A9082]' : 'text-[#D4A574]'}>${perPersonTotal.toLocaleString()}/person</span>
+                  <span className={`font-display text-lg normal-case tracking-normal ${isBelow ? 'text-[var(--sage)]' : 'text-[var(--gold)]'}`}>
+                    ${perPersonTotal.toLocaleString()}
+                  </span>
                 </div>
-                <div className="w-full h-2 bg-[var(--ink-3)] rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full ${isBelow ? 'bg-[#7A9082]' : 'bg-[#D4A574]'}`}
-                    style={{ width: `${Math.min(100, (perPersonTotal / avgTotal) * 100)}%` }} />
+                <div className="w-full h-[2px] bg-[var(--line)] rounded-full overflow-hidden">
+                  <div
+                    className={`h-full ${isBelow ? 'bg-[var(--sage)]' : 'bg-[var(--gold)]'}`}
+                    style={{ width: `${Math.min(100, (perPersonTotal / avgTotal) * 100)}%` }}
+                  />
                 </div>
               </div>
             </div>
-            <p className={`text-xs mt-3 font-semibold ${isBelow ? 'text-[#7A9082]' : isAbove ? 'text-[#D4A574]' : 'text-[var(--text-muted)]'}`}>
-              {isBelow ? `${Math.abs(diffPct)}% below average. Great value! 🎉` :
-               isAbove ? `${diffPct}% above average. You're going premium! ✨` :
+
+            <p className={`font-display italic text-base ${isBelow ? 'text-[var(--sage)]' : isAbove ? 'text-[var(--gold)]' : 'text-[var(--text-muted)]'}`}>
+              {isBelow ? `${Math.abs(diffPct)}% below the average — great value.` :
+               isAbove ? `${diffPct}% above the average — going premium.` :
                'Right on the average.'}
             </p>
-            <p className="text-[var(--text-dim)] text-[9px] mt-1">
-              Based on ~${avgDaily}/day average for mid-range Australian travellers in {config.country?.name} ({totalDays} days).
+            <p className="text-[var(--text-dim)] text-[10px] uppercase tracking-wider mt-3">
+              Based on ~${avgDaily}/day for mid-range Australian travellers · {totalDays} days
             </p>
-          </div>
+          </motion.div>
         );
       })()}
 
-      <p className="text-[var(--text-dim)] text-[10px] text-center mt-4">
-        Estimates based on typical costs for Australian travellers. Actual prices vary by season and availability.
+      <p className="text-[var(--text-dim)] text-[10px] text-center mt-8 tracking-wider uppercase">
+        Estimates based on typical Australian traveller costs. Prices vary by season.
       </p>
-    </div>
+    </motion.div>
   );
 }
