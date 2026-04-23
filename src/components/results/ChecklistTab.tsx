@@ -1,29 +1,32 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import type { TravelConfig } from '../../types';
 
 interface Props {
   config: TravelConfig;
 }
 
+const EASE = [0.16, 1, 0.3, 1] as const;
+
 const CHECKLIST_ITEMS = [
-  { id: 'passport', icon: '🛂', label: 'Passport valid for 6+ months beyond travel dates', category: 'Documents' },
-  { id: 'visa', icon: '📄', label: 'Visa applied for or requirements checked', category: 'Documents' },
-  { id: 'insurance', icon: '🛡️', label: 'Travel insurance purchased (comprehensive cover)', category: 'Documents' },
-  { id: 'flights', icon: '✈️', label: 'All flights booked (international + domestic)', category: 'Bookings' },
-  { id: 'hotels', icon: '🏨', label: 'Hotels booked for all destinations', category: 'Bookings' },
-  { id: 'transfers', icon: '🚕', label: 'Airport transfers arranged', category: 'Bookings' },
-  { id: 'tours', icon: '🎯', label: 'Tours and activities pre-booked where needed', category: 'Bookings' },
-  { id: 'bank', icon: '🏦', label: 'Bank notified of travel dates (avoid card blocks)', category: 'Money' },
-  { id: 'currency', icon: '💱', label: 'Local currency or travel card arranged', category: 'Money' },
-  { id: 'sim', icon: '📱', label: 'SIM card or roaming plan sorted', category: 'Tech' },
-  { id: 'apps', icon: '📲', label: 'Offline maps and translation apps downloaded', category: 'Tech' },
-  { id: 'copies', icon: '📋', label: 'Document copies saved digitally (passport, insurance, bookings)', category: 'Safety' },
-  { id: 'emergency', icon: '🆘', label: 'Emergency contacts shared with family/friends', category: 'Safety' },
-  { id: 'vaccinations', icon: '💉', label: 'Vaccinations checked with travel doctor', category: 'Health' },
-  { id: 'medications', icon: '💊', label: 'Prescriptions and basic meds packed', category: 'Health' },
-  { id: 'packing', icon: '🧳', label: 'Packing complete (see Packing tab)', category: 'Packing' },
-  { id: 'home', icon: '🏠', label: 'Home arrangements sorted (mail, pets, plants)', category: 'Home' },
-  { id: 'chargers', icon: '🔌', label: 'Power adapter for destination country', category: 'Tech' },
+  { id: 'passport', label: 'Passport valid for 6+ months beyond travel dates', category: 'Documents' },
+  { id: 'visa', label: 'Visa applied for or requirements checked', category: 'Documents' },
+  { id: 'insurance', label: 'Travel insurance purchased (comprehensive cover)', category: 'Documents' },
+  { id: 'flights', label: 'All flights booked (international + domestic)', category: 'Bookings' },
+  { id: 'hotels', label: 'Hotels booked for all destinations', category: 'Bookings' },
+  { id: 'transfers', label: 'Airport transfers arranged', category: 'Bookings' },
+  { id: 'tours', label: 'Tours and activities pre-booked where needed', category: 'Bookings' },
+  { id: 'bank', label: 'Bank notified of travel dates (avoid card blocks)', category: 'Money' },
+  { id: 'currency', label: 'Local currency or travel card arranged', category: 'Money' },
+  { id: 'sim', label: 'SIM card or roaming plan sorted', category: 'Tech' },
+  { id: 'apps', label: 'Offline maps and translation apps downloaded', category: 'Tech' },
+  { id: 'chargers', label: 'Power adapter for destination country', category: 'Tech' },
+  { id: 'copies', label: 'Document copies saved digitally (passport, insurance, bookings)', category: 'Safety' },
+  { id: 'emergency', label: 'Emergency contacts shared with family/friends', category: 'Safety' },
+  { id: 'vaccinations', label: 'Vaccinations checked with travel doctor', category: 'Health' },
+  { id: 'medications', label: 'Prescriptions and basic meds packed', category: 'Health' },
+  { id: 'packing', label: 'Packing complete (see Packing tab)', category: 'Packing' },
+  { id: 'home', label: 'Home arrangements sorted (mail, pets, plants)', category: 'Home' },
 ];
 
 export default function ChecklistTab({ config }: Props) {
@@ -32,7 +35,8 @@ export default function ChecklistTab({ config }: Props) {
   const toggle = (id: string) => {
     setChecked((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };
@@ -41,65 +45,103 @@ export default function ChecklistTab({ config }: Props) {
   const done = checked.size;
   const pct = total > 0 ? (done / total) * 100 : 0;
 
-  // Group by category
   const categories = Array.from(new Set(CHECKLIST_ITEMS.map((i) => i.category)));
 
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-[var(--cream)] font-bold text-xl mb-1">Pre-Departure Checklist</h2>
-        <p className="text-[var(--text-muted)] text-sm">
-          {config.country?.name} trip preparation. Tick items off as you complete them.
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7, ease: EASE }}
+    >
+      <div className="mb-10">
+        <p className="eyebrow mb-3">Chapter V — Preparation</p>
+        <h2 className="font-display text-4xl sm:text-5xl text-[var(--cream)] leading-tight">
+          Before you <span className="italic text-[var(--gold)]">depart</span>
+        </h2>
+        <div className="divider my-5 max-w-[120px]" />
+        <p className="text-[var(--text-muted)] text-sm max-w-xl">
+          {config.country?.name ? `Preparing for ${config.country.name}. ` : ''}Mark items complete as you tick them off.
         </p>
       </div>
 
       {/* Progress */}
-      <div className="rounded-2xl border border-[var(--line)] bg-[var(--ink-3)] p-5 mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[var(--cream)] font-semibold text-sm">{done} of {total} complete</span>
-          <span className="text-[#7A9082] font-bold text-sm">{Math.round(pct)}%</span>
+      <div className="surface-card rounded-3xl p-8 mb-10">
+        <div className="flex items-baseline justify-between mb-5">
+          <div>
+            <p className="eyebrow mb-2">Progress</p>
+            <p className="font-display text-4xl text-[var(--cream)] leading-none">
+              {done}<span className="text-[var(--text-muted)] text-2xl"> / {total}</span>
+            </p>
+          </div>
+          <p className="font-display italic text-3xl text-[var(--gold)]">{Math.round(pct)}%</p>
         </div>
-        <div className="w-full h-2.5 bg-[var(--ink-3)] rounded-full overflow-hidden">
-          <div className="h-full rounded-full bg-gradient-to-r from-[#7A9082] to-[#7A9082]/50 transition-all duration-500"
-            style={{ width: `${pct}%` }} />
+        <div className="w-full h-[3px] bg-[var(--ink-4)] rounded-full overflow-hidden">
+          <motion.div
+            className="h-full bg-[var(--gold)]"
+            initial={false}
+            animate={{ width: `${pct}%` }}
+            transition={{ duration: 0.6, ease: EASE }}
+          />
         </div>
         {done === total && (
-          <p className="text-[#7A9082] text-xs mt-2 font-semibold">All done. You're ready to go! 🎉</p>
+          <p className="font-display italic text-[var(--gold)] mt-4">All set — safe travels.</p>
         )}
       </div>
 
-      {/* Checklist by category */}
-      <div className="space-y-4">
-        {categories.map((cat) => {
+      {/* Categories */}
+      <div className="space-y-8">
+        {categories.map((cat, ci) => {
           const items = CHECKLIST_ITEMS.filter((i) => i.category === cat);
           return (
-            <div key={cat} className="rounded-2xl border border-[var(--line)] bg-[var(--ink-3)] overflow-hidden">
-              <div className="px-5 py-3 border-b border-[var(--line)]">
-                <h3 className="text-[var(--cream)] font-semibold text-sm">{cat}</h3>
+            <motion.section
+              key={cat}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: EASE, delay: ci * 0.05 }}
+            >
+              <div className="flex items-baseline gap-4 mb-4">
+                <p className="eyebrow">Section</p>
+                <h3 className="font-display italic text-2xl text-[var(--cream)]">{cat}</h3>
+                <div className="flex-1 h-px bg-[var(--line)]" />
               </div>
-              <div className="divide-y divide-white/[0.04]">
-                {items.map((item) => {
+              <div className="surface-soft rounded-3xl overflow-hidden">
+                {items.map((item, idx) => {
                   const isChecked = checked.has(item.id);
                   return (
-                    <button key={item.id} type="button" onClick={() => toggle(item.id)}
-                      className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-white/[0.02] transition-colors">
-                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                        isChecked ? 'bg-[#7A9082] border-[#7A9082]' : 'border-white/20'
-                      }`}>
-                        {isChecked && <span className="text-[var(--cream)] text-[10px]">✓</span>}
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => toggle(item.id)}
+                      className={`w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-[var(--ink-4)]/50 transition-colors ${
+                        idx !== items.length - 1 ? 'border-b border-[var(--line)]' : ''
+                      }`}
+                    >
+                      <div
+                        className={`w-6 h-6 rounded-full border flex items-center justify-center flex-shrink-0 transition-all ${
+                          isChecked
+                            ? 'bg-[var(--gold)] border-[var(--gold)]'
+                            : 'border-[var(--line-strong)]'
+                        }`}
+                      >
+                        {isChecked && <span className="text-[var(--ink)] text-xs">✓</span>}
                       </div>
-                      <span className="text-lg flex-shrink-0">{item.icon}</span>
-                      <span className={`text-sm transition-all ${
-                        isChecked ? 'text-[var(--text-dim)] line-through' : 'text-gray-300'
-                      }`}>{item.label}</span>
+                      <span
+                        className={`text-[15px] font-display-soft transition-all ${
+                          isChecked
+                            ? 'text-[var(--text-dim)] italic line-through'
+                            : 'text-[var(--cream)]'
+                        }`}
+                      >
+                        {item.label}
+                      </span>
                     </button>
                   );
                 })}
               </div>
-            </div>
+            </motion.section>
           );
         })}
       </div>
-    </div>
+    </motion.div>
   );
 }
