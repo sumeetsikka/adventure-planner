@@ -71,6 +71,12 @@ export default function DestinationPicker({ selected, onSelect, onNext, country,
             src={heroImage}
             alt={country.name}
             className="absolute inset-0 w-full h-full object-cover animate-ken-burns"
+            onError={(e) => {
+              const img = e.currentTarget;
+              if (img.dataset.fell) { img.style.display = 'none'; return; }
+              img.dataset.fell = 'true';
+              img.src = `https://picsum.photos/seed/${encodeURIComponent(country.id)}-hero/2000/1000`;
+            }}
           />
         )}
         <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(10,8,6,0.6) 0%, rgba(10,8,6,0.3) 40%, var(--ink) 100%)' }} />
