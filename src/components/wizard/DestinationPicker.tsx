@@ -62,15 +62,17 @@ export default function DestinationPicker({ selected, onSelect, onNext, country,
   return (
     <div className="relative min-h-screen">
       {/* Editorial banner */}
-      <div className="relative h-[60vh] min-h-[400px] overflow-hidden">
-        <motion.img
-          initial={{ scale: 1.1, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
-          src={heroImage}
-          alt={country.name}
-          className="absolute inset-0 w-full h-full object-cover animate-ken-burns"
-        />
+      <div className="relative h-[60vh] min-h-[400px] overflow-hidden" style={{ background: `linear-gradient(160deg, ${country.colour}60 0%, var(--ink) 70%)` }}>
+        {heroImage && (
+          <motion.img
+            initial={{ scale: 1.1, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
+            src={heroImage}
+            alt={country.name}
+            className="absolute inset-0 w-full h-full object-cover animate-ken-burns"
+          />
+        )}
         <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(10,8,6,0.6) 0%, rgba(10,8,6,0.3) 40%, var(--ink) 100%)' }} />
 
         <div className="relative z-10 max-w-7xl mx-auto px-6 pt-8">
