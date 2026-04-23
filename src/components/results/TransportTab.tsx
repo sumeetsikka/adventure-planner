@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import type { TransportLeg } from '../../types';
 import { formatDateAU } from '../../lib/dateUtils';
 
@@ -22,24 +23,17 @@ function getModeIcon(mode: string): string {
   return '🚐';
 }
 
-function getModeColour(mode: string): string {
-  const lower = mode.toLowerCase();
-  if (lower.includes('train') || lower.includes('rail') || lower.includes('shinkansen')) return '#0077B6';
-  if (lower.includes('bus') || lower.includes('coach')) return '#7A9082';
-  if (lower.includes('ferry') || lower.includes('boat') || lower.includes('speed')) return '#6B4C9A';
-  if (lower.includes('car') || lower.includes('taxi') || lower.includes('transfer')) return '#D4A574';
-  return '#C65D3B';
-}
+const EASE = [0.16, 1, 0.3, 1] as const;
 
 export default function TransportTab({ transport }: Props) {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
 
   if (transport.length === 0) {
     return (
-      <div className="text-center py-16">
-        <span className="text-5xl block mb-4">🚆</span>
-        <p className="text-[var(--cream)] font-medium mb-2">No inter-city transport needed</p>
-        <p className="text-[var(--text-muted)] text-sm">All your destinations may share the same city, or transport data is still loading.</p>
+      <div className="text-center py-20">
+        <p className="eyebrow mb-4">Getting around</p>
+        <h2 className="font-display text-3xl text-[var(--cream)] mb-2">No inter-city <em>transport</em> needed.</h2>
+        <p className="text-[var(--text-muted)] text-sm">All your destinations share the same city.</p>
       </div>
     );
   }
@@ -47,132 +41,148 @@ export default function TransportTab({ transport }: Props) {
   const selected = selectedIdx !== null ? transport[selectedIdx] : null;
 
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-[var(--cream)] font-bold text-xl mb-1">Inter-City Transport</h2>
-        <p className="text-[var(--text-muted)] text-sm">How to get between your destinations. Tap any journey for full details and booking links.</p>
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: EASE }}>
+      <div className="mb-10">
+        <p className="eyebrow mb-3">Between cities · {transport.length} legs</p>
+        <h2 className="font-display text-4xl sm:text-5xl text-[var(--cream)] leading-[1.05] tracking-tight">
+          The <em className="italic text-[var(--gold)]">route</em>.
+        </h2>
+        <p className="text-[var(--text-muted)] text-sm mt-3 max-w-md">How you'll travel between destinations. Tap for booking links.</p>
       </div>
 
       {/* Detail panel */}
-      {selected && (() => {
-        const colour = getModeColour(selected.mode);
-        return (
-          <div className="mb-6 rounded-2xl overflow-hidden border-2" style={{ borderColor: `${colour}40` }}>
-            <div className="px-6 py-5" style={{ background: `linear-gradient(135deg, ${colour}20, ${colour}08)` }}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <span className="text-4xl">{getModeIcon(selected.mode)}</span>
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full text-[var(--cream)]" style={{ background: colour }}>
-                        {selected.mode.toUpperCase()}
-                      </span>
-                    </div>
-                    <h3 className="text-[var(--cream)] font-bold text-lg">{selected.from} → {selected.to}</h3>
-                    <p className="text-[var(--text-muted)] text-sm">{formatDateAU(selected.date)} · {selected.duration}</p>
-                  </div>
-                </div>
-                <button onClick={() => setSelectedIdx(null)}
-                  className="text-[var(--text-muted)] hover:text-[var(--cream)] w-10 h-10 rounded-xl hover:bg-[var(--ink-4)] flex items-center justify-center transition-all text-xl">×</button>
-              </div>
+      {selected && (
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: EASE }}
+          className="surface-card rounded-3xl p-8 mb-10"
+        >
+          <div className="flex items-start justify-between mb-8 gap-4">
+            <div>
+              <p className="eyebrow mb-3">{selected.mode} · {formatDateAU(selected.date)}</p>
+              <h3 className="font-display text-3xl text-[var(--cream)] leading-tight flex items-center gap-3">
+                <span>{selected.from}</span>
+                <span className="text-[var(--gold)]">→</span>
+                <span>{selected.to}</span>
+              </h3>
             </div>
+            <button
+              onClick={() => setSelectedIdx(null)}
+              className="w-9 h-9 rounded-full border border-[var(--line)] text-[var(--text-muted)] hover:text-[var(--cream)] hover:border-[var(--line-strong)] transition-all flex items-center justify-center"
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
 
-            <div className="bg-[var(--ink-3)] px-6 py-5">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
-                <div className="bg-[var(--ink-2)] rounded-xl p-3">
-                  <p className="text-[9px] text-[var(--text-dim)] uppercase tracking-wider mb-1">Operator</p>
-                  <p className="text-[var(--cream)] font-medium text-sm">{selected.operator}</p>
-                </div>
-                <div className="bg-[var(--ink-2)] rounded-xl p-3">
-                  <p className="text-[9px] text-[var(--text-dim)] uppercase tracking-wider mb-1">Duration</p>
-                  <p className="text-gray-300 font-medium text-sm">{selected.duration}</p>
-                </div>
-                <div className="bg-[var(--ink-2)] rounded-xl p-3">
-                  <p className="text-[9px] text-[var(--text-dim)] uppercase tracking-wider mb-1">Price est.</p>
-                  <p className="text-[#7A9082] font-bold text-lg">{selected.price_estimate_aud}</p>
-                </div>
-              </div>
-
-              {selected.tip && (
-                <div className="rounded-xl p-4 mb-5 border" style={{ background: `${colour}08`, borderColor: `${colour}15` }}>
-                  <p className="text-sm" style={{ color: colour }}><span className="font-semibold">💡 Tip:</span> {selected.tip}</p>
-                </div>
-              )}
-
-              <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-2">Book This Journey</p>
-              <div className="flex flex-wrap gap-2">
-                {(selected.booking_sites || []).map((site, i) => {
-                  // Build a search URL for each booking site
-                  const siteUrls: Record<string, string> = {
-                    '12Go Asia': `https://12go.asia/en/travel/${encodeURIComponent(selected.from)}/${encodeURIComponent(selected.to)}`,
-                    'Rome2Rio': `https://www.rome2rio.com/s/${encodeURIComponent(selected.from)}/${encodeURIComponent(selected.to)}`,
-                    'Trainline': `https://www.thetrainline.com/`,
-                    'Bookaway': `https://www.bookaway.com/routes/${encodeURIComponent(selected.from.toLowerCase())}-to-${encodeURIComponent(selected.to.toLowerCase())}`,
-                    'Busbud': `https://www.busbud.com/en/`,
-                    'DirectFerries': `https://www.directferries.com/`,
-                    'Rentalcars': `https://www.rentalcars.com/`,
-                    'Kayak': `https://www.kayak.com.au/cars`,
-                  };
-                  const url = selected.booking_urls?.[i] || siteUrls[site] || `https://www.google.com/search?q=${encodeURIComponent(`${site} ${selected.from} to ${selected.to} ${selected.mode}`)}`;
-                  return (
-                    <a key={site} href={url} target="_blank" rel="noopener noreferrer"
-                      className="px-5 py-2.5 rounded-xl font-semibold text-sm border hover:-translate-y-0.5 hover:shadow-lg transition-all inline-flex items-center gap-1"
-                      style={{ background: `${colour}12`, borderColor: `${colour}25`, color: colour }}>
-                      {site} ↗
-                    </a>
-                  );
-                })}
-              </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 mb-8 pb-8 border-b border-[var(--line)]">
+            <div>
+              <p className="eyebrow mb-2">Operator</p>
+              <p className="font-display text-lg text-[var(--cream)]">{selected.operator}</p>
+            </div>
+            <div>
+              <p className="eyebrow mb-2">Duration</p>
+              <p className="font-display text-lg text-[var(--cream)]">{selected.duration}</p>
+            </div>
+            <div>
+              <p className="eyebrow mb-2">From</p>
+              <p className="font-display text-2xl text-[var(--gold)]">{selected.price_estimate_aud}</p>
             </div>
           </div>
-        );
-      })()}
 
-      {/* Journey cards */}
-      <div className="space-y-3">
-        {transport.map((t, i) => {
-          const colour = getModeColour(t.mode);
-          const isSelected = selectedIdx === i;
-
-          return (
-            <div key={i}
-              onClick={() => setSelectedIdx(isSelected ? null : i)}
-              className={`group rounded-2xl border cursor-pointer transition-all duration-300 overflow-hidden ${
-                isSelected
-                  ? 'ring-2 shadow-xl'
-                  : 'hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/20'
-              }`}
-              style={{
-                borderColor: isSelected ? colour : 'rgba(255,255,255,0.08)',
-                boxShadow: isSelected ? `0 4px 20px ${colour}20` : undefined,
-              }}>
-              <div className="h-1" style={{ background: `linear-gradient(90deg, ${colour}, ${colour}60)` }} />
-              <div className="bg-[var(--ink-3)] group-hover:bg-[#162033] transition-colors p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{getModeIcon(t.mode)}</span>
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full text-[var(--cream)]" style={{ background: colour }}>
-                      {t.mode}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[#7A9082] font-bold text-base">{t.price_estimate_aud}</p>
-                    <p className="text-[var(--text-dim)] text-[9px]">per person</p>
-                  </div>
-                </div>
-
-                <h4 className="text-[var(--cream)] font-bold text-sm mb-1">{t.from} → {t.to}</h4>
-                <p className="text-[var(--text-muted)] text-[11px] mb-2">{formatDateAU(t.date)} · {t.duration} · {t.operator}</p>
-
-                <div className="pt-2 border-t border-[var(--line)] flex items-center justify-between">
-                  <span className="text-[10px] text-[var(--text-dim)] group-hover:text-[var(--text-muted)] transition-colors">Tap for booking details</span>
-                  <span className="text-[10px] text-[var(--text-dim)] group-hover:text-[var(--text-muted)] transition-colors">→</span>
-                </div>
-              </div>
+          {selected.tip && (
+            <div className="surface-soft rounded-2xl p-5 mb-8 border-l-2 border-[var(--gold)]">
+              <p className="eyebrow mb-1 text-[var(--gold)]">A note</p>
+              <p className="text-[var(--text)] text-sm leading-relaxed">{selected.tip}</p>
             </div>
-          );
-        })}
+          )}
+
+          <p className="eyebrow mb-3">Book this journey</p>
+          <div className="flex flex-wrap gap-2">
+            {(selected.booking_sites || []).map((site, i) => {
+              const siteUrls: Record<string, string> = {
+                '12Go Asia': `https://12go.asia/en/travel/${encodeURIComponent(selected.from)}/${encodeURIComponent(selected.to)}`,
+                'Rome2Rio': `https://www.rome2rio.com/s/${encodeURIComponent(selected.from)}/${encodeURIComponent(selected.to)}`,
+                'Trainline': `https://www.thetrainline.com/`,
+                'Bookaway': `https://www.bookaway.com/routes/${encodeURIComponent(selected.from.toLowerCase())}-to-${encodeURIComponent(selected.to.toLowerCase())}`,
+                'Busbud': `https://www.busbud.com/en/`,
+                'DirectFerries': `https://www.directferries.com/`,
+                'Rentalcars': `https://www.rentalcars.com/`,
+                'Kayak': `https://www.kayak.com.au/cars`,
+              };
+              const url = selected.booking_urls?.[i] || siteUrls[site] || `https://www.google.com/search?q=${encodeURIComponent(`${site} ${selected.from} to ${selected.to} ${selected.mode}`)}`;
+              return (
+                <a
+                  key={site}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-5 py-2.5 rounded-full text-sm font-medium bg-[var(--cream)] text-[var(--ink)] hover:opacity-90 transition-all"
+                >
+                  {site} ↗
+                </a>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Timeline */}
+      <div className="relative">
+        <div className="absolute left-[15px] top-3 bottom-3 w-px bg-[var(--line)]" aria-hidden />
+        <div className="space-y-5">
+          {transport.map((t, i) => {
+            const isSelected = selectedIdx === i;
+
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.55, delay: i * 0.06, ease: EASE }}
+                className="relative pl-12"
+              >
+                <div
+                  className={`absolute left-0 top-5 w-[31px] h-[31px] rounded-full border-2 flex items-center justify-center text-base transition-all ${
+                    isSelected ? 'border-[var(--gold)] bg-[var(--gold)]/10' : 'border-[var(--line-strong)] bg-[var(--ink-2)]'
+                  }`}
+                  aria-hidden
+                >
+                  <span className="text-sm">{getModeIcon(t.mode)}</span>
+                </div>
+
+                <div
+                  onClick={() => setSelectedIdx(isSelected ? null : i)}
+                  className={`surface-card rounded-2xl p-5 cursor-pointer transition-all ${
+                    isSelected ? 'ring-1 ring-[var(--gold)]/50' : ''
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <p className="eyebrow mb-2">{t.mode} · {formatDateAU(t.date)}</p>
+                      <h4 className="font-display text-xl text-[var(--cream)] leading-tight flex items-center gap-2 flex-wrap">
+                        <span>{t.from}</span>
+                        <span className="text-[var(--gold)]">→</span>
+                        <span>{t.to}</span>
+                      </h4>
+                      <div className="flex items-center gap-3 text-[11px] uppercase tracking-wider text-[var(--text-muted)] mt-3">
+                        <span>{t.duration}</span>
+                        <span className="w-1 h-1 rounded-full bg-[var(--line-strong)]" />
+                        <span>{t.operator}</span>
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="font-display text-2xl text-[var(--gold)] leading-none">{t.price_estimate_aud}</p>
+                      <p className="text-[var(--text-dim)] text-[10px] uppercase tracking-wider mt-1.5">per person</p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
