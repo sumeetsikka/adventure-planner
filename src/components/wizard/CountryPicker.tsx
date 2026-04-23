@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { countries } from '../../data/countries';
+import { getDestinationsForCountry } from '../../data/destinations';
 import { getCountryHero } from '../../lib/imagery';
 import type { Country } from '../../types';
 
