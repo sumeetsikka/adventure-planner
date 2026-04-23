@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import type { Destination } from '../../types';
-import { getDestinationPhoto } from '../../lib/imagery';
+import { useWikiImage } from '../../lib/useWikiImage';
 
 interface Props {
   destination: Destination;
