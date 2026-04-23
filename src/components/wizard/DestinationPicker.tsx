@@ -116,7 +116,7 @@ export default function DestinationPicker({ selected, onSelect, onNext, country,
               </h2>
               <div className="flex-1 h-px bg-[var(--line-strong)]" />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
               {mustVisitDests.map((d) => (
                 <DestinationCard key={d.id} destination={d} selected={selectedIds.has(d.id)} onToggle={toggle} />
               ))}
@@ -140,7 +140,7 @@ export default function DestinationPicker({ selected, onSelect, onNext, country,
                 <div className="flex-1 h-px bg-[var(--line)]" />
                 <span className="eyebrow text-[var(--text-dim)]">{regionDests.length} places</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                 {regionDests.map((d) => (
                   <DestinationCard key={`${region}-${d.id}`} destination={d} selected={selectedIds.has(d.id)} onToggle={toggle} />
                 ))}
