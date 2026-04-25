@@ -108,23 +108,32 @@ export function useWikiImage(
   // instead of the country itself (country pages return flags).
   const wikiQuery = name ? (type === 'country' ? landmarkForCountry(name) : cleanName(name)) : null;
 
-  const [url, setUrl] = useState<string | null>(() => {
-    if (!wikiQuery) return null;
+  // Track resolved URLs by query key. When `wikiQuery` changes, the derived
+  // value naturally falls back to `instant` for the new key — no setState
+  // is needed for the reset, only when a fresh network result lands.
+  const [resolved, setResolved] = useState<Record<string, string>>(() => {
+    if (!wikiQuery) return {};
     const cached = wikiCache.get(wikiQuery);
-    return cached ?? instant;
+    return cached ? { [wikiQuery]: cached } : {};
   });
 
   useEffect(() => {
-    if (!wikiQuery) { setUrl(null); return; }
+    if (!wikiQuery) return;
+    if (resolved[wikiQuery]) return;
     let cancelled = false;
     lookupWiki(wikiQuery).then((result) => {
-      if (cancelled) return;
-      if (result) setUrl(result);
+      if (cancelled || !result) return;
+      setResolved((prev) => ({ ...prev, [wikiQuery]: result }));
     });
     return () => { cancelled = true; };
+    // We intentionally don't include `resolved` in deps — it would cause
+    // a refetch every time we add an entry. The lookup itself dedupes via
+    // the module-level cache.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wikiQuery]);
 
-  return url;
+  if (!wikiQuery) return null;
+  return resolved[wikiQuery] ?? instant;
 }
 
 /** Hook variant for any image — same API with explicit Picsum ultimate fallback. */

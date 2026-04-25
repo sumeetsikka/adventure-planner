@@ -252,7 +252,7 @@ async function handleTransport(config: any) {
   if (journeys.length === 0) return [];
 
   const userMessage = `Country: ${countryName}. Travellers: ${config.travellers}.\n\n${journeys.map((j, i) => `${i + 1}. ${j}`).join('\n')}`;
-  let transport = parseResult(await callLLM(TRANSPORT_SYSTEM, userMessage));
+  const transport = parseResult(await callLLM(TRANSPORT_SYSTEM, userMessage));
   let si = 0;
   for (let i = 0; i < transport.length && si < schedule.length - 1; i++) { transport[i].date = schedule[si].departure; si++; }
   return transport;

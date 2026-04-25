@@ -41,7 +41,7 @@ router.post('/', async (req, res) => {
     const userMessage = `Country: ${countryName}. ${currencyHint} Currency information for Australian travellers.`;
 
     const result = await callLLM(CURRENCY_SYSTEM, userMessage);
-    let currency = Array.isArray(result) ? result[0] : result;
+    const currency = Array.isArray(result) ? result[0] : result;
 
     // Enrich with real data if available
     if (meta && currency) {

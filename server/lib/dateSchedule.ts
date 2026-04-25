@@ -45,7 +45,7 @@ export function computeSchedule(
   const totalMidpoints = midpoints.reduce((a, b) => a + b, 0);
 
   // Allocate days proportionally, minimum 1 per destination
-  let allocated = midpoints.map((mid) => {
+  const allocated = midpoints.map((mid) => {
     const proportion = totalMidpoints > 0 ? mid / totalMidpoints : 1 / destinations.length;
     return Math.max(1, Math.round(availableDays * proportion));
   });
