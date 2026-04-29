@@ -28,8 +28,9 @@ const EMPTY_RESULTS: GenerationResults = {
 
 export default function App() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  const [view, setView] = useState<AppView>('country');
+  const [view, setView] = useState<AppView>(() => (listTrips().length > 0 ? 'mytrips' : 'country'));
   const [step, setStep] = useState<WizardStep>(1);
+  const [tripsVersion, setTripsVersion] = useState(0); // bump to force MyTrips re-render
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
