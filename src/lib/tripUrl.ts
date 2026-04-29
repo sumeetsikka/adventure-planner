@@ -55,3 +55,25 @@ export async function copyToClipboard(text: string): Promise<boolean> {
     return true;
   }
 }
+
+/**
+ * Native share with copy-to-clipboard fallback.
+ * Uses Web Share API on iOS Safari + Android Chrome (and modern desktop
+ * Chrome/Edge). Falls back to clipboard everywhere else.
+ *
+ * Returns: 'shared' | 'copied' | 'cancelled'
+ */
+export async function shareOrCopy(opts: { title: string; text: string; url: string }): Promise<'shared' | 'copied' | 'cancelled'> {
+  if (typeof navigator !== 'undefined' && 'share' in navigator) {
+    try {
+      await navigator.share({ title: opts.title, text: opts.text, url: opts.url });
+      return 'shared';
+    } catch (err) {
+      // AbortError = user cancelled the share sheet — don't fall back to copy
+      if (err instanceof Error && err.name === 'AbortError') return 'cancelled';
+      // Some browsers throw if Web Share rejects (e.g. denied permission); fall through
+    }
+  }
+  await copyToClipboard(opts.url);
+  return 'copied';
+}
