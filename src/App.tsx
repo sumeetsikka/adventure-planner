@@ -117,6 +117,57 @@ export default function App() {
   });
   const [results, setResults] = useState<GenerationResults>({ ...EMPTY_RESULTS });
 
+  // Auto-save the current trip whenever the config or results change.
+  // Only save if there's actually a trip in progress (country selected and
+  // either we're past the wizard or we have meaningful data).
+  useEffect(() => {
+    if (!selectedCountry) return;
+    const config: TravelConfig = {
+      country: selectedCountry,
+      destinations: selectedDests,
+      departureDate, returnDate, travellers, ages, vibes,
+    };
+    const hasMeaningfulData =
+      selectedDests.length > 0 ||
+      results.itinerary.length > 0 ||
+      results.flights.length > 0;
+    if (!hasMeaningfulData) return;
+    saveTrip({ config, results });
+    setTripsVersion((v) => v + 1);
+  }, [selectedCountry, selectedDests, departureDate, returnDate, travellers, ages, vibes, results]);
+
+  const loadTrip = (trip: SavedTrip) => {
+    setActiveTripId(trip.id);
+    setSelectedCountry(trip.config.country);
+    const dests = getDestinationsForCountry(trip.config.country.id) ?? trip.config.destinations;
+    setCountryDestinations(dests);
+    setSelectedDests(trip.config.destinations);
+    setDepartureDate(trip.config.departureDate);
+    setReturnDate(trip.config.returnDate);
+    setTravellers(trip.config.travellers);
+    setAges(trip.config.ages);
+    setVibes(trip.config.vibes);
+    setResults(trip.results);
+    const hasResults = trip.results.itinerary.length > 0 || trip.results.flights.length > 0;
+    setView(hasResults ? 'results' : 'wizard');
+    setStep(hasResults ? 3 : 2);
+  };
+
+  const newTrip = () => {
+    newTripId();
+    setSelectedCountry(null);
+    setCountryDestinations([]);
+    setSelectedDests([]);
+    setDepartureDate('');
+    setReturnDate('');
+    setTravellers(2);
+    setAges([30, 30]);
+    setVibes(['adventure', 'foodie']);
+    setResults({ ...EMPTY_RESULTS });
+    setStep(1);
+    setView('country');
+  };
+
   const handleCountrySelect = async (country: Country) => {
     setSelectedCountry(country);
     const prebuilt = getDestinationsForCountry(country.id);
