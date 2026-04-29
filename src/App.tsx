@@ -109,7 +109,11 @@ export default function App() {
   });
 
   const handleGenerate = useCallback(async () => {
-    const config = buildConfig();
+    const config: TravelConfig = {
+      country: selectedCountry!,
+      destinations: selectedDests,
+      departureDate, returnDate, travellers, ages, vibes,
+    };
     setView('loading');
     setProgress({ route: false, flights: false, hotels: false, itinerary: false, budget: false, tips: false, packing: false, weather: false, visa: false, currency: false, nearby: false, transport: false });
     setResults({ ...EMPTY_RESULTS });
