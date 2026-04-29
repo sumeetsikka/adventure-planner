@@ -21,6 +21,8 @@ import DashboardTab from './DashboardTab';
 import BookingTrackerTab from './BookingTrackerTab';
 import RouteMapTab from './RouteMapTab';
 import ChatTab from './ChatTab';
+import EventsTab from './EventsTab';
+import JournalTab from './JournalTab';
 import { encodeTripToUrl, shareOrCopy } from '../../lib/tripUrl';
 
 interface Props {
