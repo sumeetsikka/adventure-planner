@@ -313,13 +313,32 @@ export default function App() {
           key={tripsVersion}
           onLoad={loadTrip}
           onNew={newTrip}
+          onInspire={() => setView('inspire')}
+        />
+      </div>
+    );
+  }
+
+  if (view === 'inspire') {
+    return (
+      <div className={`min-h-screen ${bg}`}>{themeToggle}
+        <Inspiration
+          onSelectCountry={(c) => { newTripId(); handleCountrySelect(c); }}
+          onClose={() => setView(listTrips().length > 0 ? 'mytrips' : 'country')}
         />
       </div>
     );
   }
 
   if (view === 'country') {
-    return <div className={`min-h-screen ${bg}`}>{themeToggle}<CountryPicker onSelect={handleCountrySelect} /></div>;
+    return (
+      <div className={`min-h-screen ${bg}`}>{themeToggle}
+        <CountryPicker
+          onSelect={handleCountrySelect}
+          onInspire={() => setView('inspire')}
+        />
+      </div>
+    );
   }
 
   if (view === 'loading') {
