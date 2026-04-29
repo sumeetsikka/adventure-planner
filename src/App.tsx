@@ -36,6 +36,31 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
+  // Restore the most recent trip on mount (unless a shared URL trip is incoming)
+  const restoreAttempted = useRef(false);
+  useEffect(() => {
+    if (restoreAttempted.current) return;
+    restoreAttempted.current = true;
+    if (decodeTripFromUrl()) return; // shared URL takes priority — handled below
+    const id = getActiveTripId();
+    if (!id) return;
+    const trip = getTrip(id);
+    if (!trip) return;
+    setSelectedCountry(trip.config.country);
+    const dests = getDestinationsForCountry(trip.config.country.id) ?? trip.config.destinations;
+    setCountryDestinations(dests);
+    setSelectedDests(trip.config.destinations);
+    setDepartureDate(trip.config.departureDate);
+    setReturnDate(trip.config.returnDate);
+    setTravellers(trip.config.travellers);
+    setAges(trip.config.ages);
+    setVibes(trip.config.vibes);
+    setResults(trip.results);
+    // If results have any data, jump to results view
+    const hasResults = trip.results.itinerary.length > 0 || trip.results.flights.length > 0;
+    if (hasResults) setView('results');
+  }, []);
+
   // Check for shared trip URL on mount
   const sharedTripLoaded = useRef(false);
   useEffect(() => {
