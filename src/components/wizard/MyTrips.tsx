@@ -12,7 +12,7 @@ interface Props {
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
-export default function MyTrips({ onLoad, onNew }: Props) {
+export default function MyTrips({ onLoad, onNew, onInspire }: Props) {
   const [trips, setTrips] = useState<SavedTrip[]>(() => listTrips());
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
