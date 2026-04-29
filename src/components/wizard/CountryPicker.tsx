@@ -7,6 +7,7 @@ import type { Country } from '../../types';
 
 interface Props {
   onSelect: (country: Country) => void;
+  onInspire?: () => void;
 }
 
 const REGIONS: Record<string, string[]> = {
