@@ -8,8 +8,18 @@ import TravelDetails from './components/wizard/TravelDetails';
 import LoadingScreen from './components/wizard/LoadingScreen';
 import ResultsView from './components/results/ResultsView';
 import ThemeToggle from './components/shared/ThemeToggle';
+import MyTrips from './components/wizard/MyTrips';
 import { decodeTripFromUrl } from './lib/tripUrl';
 import { countries } from './data/countries';
+import {
+  saveTrip,
+  getTrip,
+  getActiveTripId,
+  setActiveTripId,
+  newTripId,
+  listTrips,
+  type SavedTrip,
+} from './lib/tripStore';
 
 const EMPTY_RESULTS: GenerationResults = {
   flights: [], hotels: [], itinerary: [], budget: [], tips: [],
