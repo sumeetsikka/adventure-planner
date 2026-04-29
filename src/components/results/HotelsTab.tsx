@@ -20,7 +20,7 @@ function estimateTotal(priceStr: string, nights: number): string {
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
-export default function HotelsTab({ hotels, destinations: _destinations, config }: Props) {
+export default function HotelsTab({ hotels, config }: Props) {
   const [expandedDest, setExpandedDest] = useState<number | null>(0);
   const [selectedHotel, setSelectedHotel] = useState<{ dest: number; hotel: number } | null>(null);
 
