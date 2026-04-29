@@ -281,18 +281,11 @@ export default function App() {
   }, [selectedDests, departureDate, returnDate, travellers, ages, vibes, selectedCountry]);
 
   const handleStartOver = () => {
-    setSelectedCountry(null);
-    setCountryDestinations([]);
-    setSelectedDests([]);
-    setDepartureDate('');
-    setReturnDate('');
-    setTravellers(2);
-    setAges([30, 30]);
-    setVibes(['adventure', 'foodie']);
-    setResults({ ...EMPTY_RESULTS });
+    // "Start Over" now means "go to My Trips" rather than wiping state.
+    // Trip persists in localStorage and will appear in the gallery.
+    setActiveTripId(null);
     setProgress({ route: false, flights: false, hotels: false, itinerary: false, budget: false, tips: false, packing: false, weather: false, visa: false, currency: false, nearby: false, transport: false });
-    setStep(1);
-    setView('country');
+    setView(listTrips().length > 0 ? 'mytrips' : 'country');
   };
 
   const handleBackToCountries = () => {
