@@ -1,7 +1,10 @@
 import { motion } from 'framer-motion';
 import type { TravelConfig, GenerationResults, ResultsTab } from '../../types';
-import { formatDateAU } from '../../lib/dateUtils';
+import { formatDateAU, todayISO, addDaysISO } from '../../lib/dateUtils';
 import { getCountryHero, getDestinationPhoto } from '../../lib/imagery';
+
+const EASE = [0.16, 1, 0.3, 1] as const;
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 interface Props {
   config: TravelConfig;
