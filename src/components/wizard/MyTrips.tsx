@@ -54,12 +54,22 @@ export default function MyTrips({ onLoad, onNew, onInspire }: Props) {
             <h1 className="font-display text-5xl sm:text-7xl text-[var(--cream)] leading-[0.95]">
               Every <em className="italic text-shimmer">journey</em>.
             </h1>
-            <button
-              onClick={onNew}
-              className="px-6 py-3 rounded-full bg-[var(--cream)] text-[var(--ink)] hover:bg-[var(--paper)] transition-colors text-sm font-medium tracking-wide"
-            >
-              + New trip
-            </button>
+            <div className="flex gap-2">
+              {onInspire && (
+                <button
+                  onClick={onInspire}
+                  className="px-5 py-3 rounded-full text-sm border border-[var(--line-strong)] text-[var(--cream)] hover:bg-[var(--ink-3)] transition-colors tracking-wide"
+                >
+                  ✦ Inspire me
+                </button>
+              )}
+              <button
+                onClick={onNew}
+                className="px-6 py-3 rounded-full bg-[var(--cream)] text-[var(--ink)] hover:bg-[var(--paper)] transition-colors text-sm font-medium tracking-wide"
+              >
+                + New trip
+              </button>
+            </div>
           </div>
           <p className="text-[var(--text-muted)] mt-4 max-w-xl font-light">
             {trips.length === 0
