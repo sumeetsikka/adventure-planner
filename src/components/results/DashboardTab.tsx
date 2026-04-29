@@ -36,8 +36,105 @@ export default function DashboardTab({ config, results, onTabChange }: Props) {
 
   const heroImage = getCountryHero(config.country?.name || 'travel', 1800, 900);
 
+  // Today panel: only show if trip is currently underway
+  const today = todayISO();
+  const daysSinceDeparture = Math.floor(
+    (new Date(today).getTime() - new Date(config.departureDate).getTime()) / (1000 * 60 * 60 * 24)
+  );
+  const tripUnderway = daysSinceDeparture >= 0 && daysSinceDeparture < totalDays;
+
+  let todayPanel: React.ReactNode = null;
+  if (tripUnderway) {
+    const todayEntry = results.itinerary[daysSinceDeparture] || null;
+    const tomorrowEntry = results.itinerary[daysSinceDeparture + 1] || null;
+    const todayDate = today;
+    const tomorrowDate = addDaysISO(today, 1);
+    const todayWeekday = DAY_NAMES[new Date(todayDate).getDay()];
+
+    const upcomingTransport = (results.transport || []).find(
+      (t) => t.date === todayDate || t.date === tomorrowDate
+    );
+
+    const todayCity = todayEntry?.location?.split('(')[0].split('/')[0].trim() || config.country?.name || '';
+    const todayWeather = (results.weather || []).find((w) => todayCity && w.destination.toLowerCase().includes(todayCity.toLowerCase()));
+
+    todayPanel = (
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: EASE }}
+        className="surface-card rounded-3xl p-7 border-[var(--gold)]/40"
+      >
+        <div className="flex items-center gap-2 mb-5">
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--gold)] animate-gentle-pulse" />
+          <span className="eyebrow text-[var(--gold)]">Live · Today</span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-2">
+            <p className="text-[var(--text-dim)] text-[11px] uppercase tracking-wider mb-2">
+              Day {daysSinceDeparture + 1} · {todayWeekday} {formatDateAU(todayDate)} · {todayCity}
+            </p>
+            {todayEntry ? (
+              <>
+                <h3 className="font-display text-3xl sm:text-4xl text-[var(--cream)] leading-tight">
+                  <em className="italic text-[var(--gold)]">{todayEntry.title}</em>
+                </h3>
+                {todayEntry.activities.length > 0 && (
+                  <ul className="mt-4 space-y-1.5">
+                    {todayEntry.activities.slice(0, 3).map((a, i) => (
+                      <li key={i} className="text-[var(--text-muted)] text-[13px] leading-relaxed">— {a}</li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            ) : (
+              <h3 className="font-display text-2xl text-[var(--cream)]">A free day.</h3>
+            )}
+
+            {tomorrowEntry && (
+              <p className="mt-5 text-[var(--text-muted)] text-sm">
+                <span className="eyebrow mr-2">Tomorrow</span>
+                <span className="text-[var(--cream)]">→ {tomorrowEntry.location.split('(')[0].split('/')[0].trim()}</span>
+                <span className="text-[var(--text-dim)]"> · {tomorrowEntry.title}</span>
+              </p>
+            )}
+
+            {upcomingTransport && (
+              <div className="mt-4 surface-soft rounded-2xl px-4 py-3">
+                <p className="eyebrow mb-1">Next leg · {upcomingTransport.date === todayDate ? 'today' : 'tomorrow'}</p>
+                <p className="text-[var(--cream)] text-sm">
+                  {upcomingTransport.from} → {upcomingTransport.to}
+                  <span className="text-[var(--text-dim)]"> · {upcomingTransport.mode} · {upcomingTransport.duration}</span>
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            {todayWeather && (
+              <div className="surface-soft rounded-2xl px-4 py-3">
+                <p className="eyebrow mb-1">Weather</p>
+                <p className="font-display text-2xl text-[var(--cream)] leading-none">
+                  {todayWeather.temp_high_c}°<span className="text-[var(--text-dim)] text-base"> / {todayWeather.temp_low_c}°</span>
+                </p>
+                <p className="text-[var(--text-muted)] text-[11px] mt-1 leading-snug">{todayWeather.description}</p>
+              </div>
+            )}
+            <div className="grid grid-cols-3 gap-2">
+              <button onClick={() => onTabChange('map')} className="surface-soft rounded-2xl px-2 py-3 text-[10px] uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--gold)] transition-colors">Map</button>
+              <button onClick={() => onTabChange('itinerary')} className="surface-soft rounded-2xl px-2 py-3 text-[10px] uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--gold)] transition-colors">Itinerary</button>
+              <button onClick={() => onTabChange('currency')} className="surface-soft rounded-2xl px-2 py-3 text-[10px] uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--gold)] transition-colors">Currency</button>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <div className="space-y-8">
+      {todayPanel}
       {/* Editorial hero */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
