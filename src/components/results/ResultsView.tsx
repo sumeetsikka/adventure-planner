@@ -21,7 +21,7 @@ import DashboardTab from './DashboardTab';
 import BookingTrackerTab from './BookingTrackerTab';
 import RouteMapTab from './RouteMapTab';
 import ChatTab from './ChatTab';
-import { encodeTripToUrl, copyToClipboard } from '../../lib/tripUrl';
+import { encodeTripToUrl, shareOrCopy } from '../../lib/tripUrl';
 
 interface Props {
   config: TravelConfig;
