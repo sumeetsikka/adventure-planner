@@ -10,6 +10,7 @@ import ResultsView from './components/results/ResultsView';
 import ThemeToggle from './components/shared/ThemeToggle';
 import InstallPrompt from './components/shared/InstallPrompt';
 import MyTrips from './components/wizard/MyTrips';
+import Inspiration from './components/wizard/Inspiration';
 import { decodeTripFromUrl } from './lib/tripUrl';
 import { countries } from './data/countries';
 import {
