@@ -299,6 +299,18 @@ export default function App() {
   const themeToggle = <ThemeToggle theme={theme} onToggle={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} />;
   const bg = 'bg-[var(--ink)] grain';
 
+  if (view === 'mytrips') {
+    return (
+      <div className={`min-h-screen ${bg}`}>{themeToggle}
+        <MyTrips
+          key={tripsVersion}
+          onLoad={loadTrip}
+          onNew={newTrip}
+        />
+      </div>
+    );
+  }
+
   if (view === 'country') {
     return <div className={`min-h-screen ${bg}`}>{themeToggle}<CountryPicker onSelect={handleCountrySelect} /></div>;
   }
