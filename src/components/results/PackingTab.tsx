@@ -9,25 +9,6 @@ interface Props {
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
-function classifyCategory(name: string): 'clothing' | 'shoes' | 'toiletries' | 'electronics' | 'documents' | 'other' {
-  const n = name.toLowerCase();
-  if (n.includes('shoe') || n.includes('footwear')) return 'shoes';
-  if (n.includes('toiletr') || n.includes('hygiene') || n.includes('grooming')) return 'toiletries';
-  if (n.includes('electron') || n.includes('tech') || n.includes('gadget')) return 'electronics';
-  if (n.includes('document') || n.includes('paper') || n.includes('travel essentials')) return 'documents';
-  if (n.includes('cloth') || n.includes('apparel') || n.includes('wear')) return 'clothing';
-  return 'other';
-}
-
-function classifyItem(item: string): 'shoes' | 'clothing' | 'electronics' | 'documents' | 'other' {
-  const n = item.toLowerCase();
-  if (/(shoes|sneakers|boots|sandals|trainers|flats|heels|slippers|footwear)/.test(n)) return 'shoes';
-  if (/(passport|visa|insurance|ticket|booking|copies|licence|license|card)/.test(n)) return 'documents';
-  if (/(charger|adapter|laptop|camera|phone|earbuds|headphone|kindle|cable|battery|power)/.test(n)) return 'electronics';
-  if (/(shirt|pants|trouser|dress|jacket|coat|sweater|jumper|jeans|shorts|socks|underwear|bra|hat|scarf|gloves|swim|bikini|jersey|top|skirt)/.test(n)) return 'clothing';
-  return 'other';
-}
-
 export default function PackingTab({ packing, config: _config }: Props) {
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
 
