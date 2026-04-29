@@ -47,6 +47,7 @@ export default function LoadingScreen({ destinations, progress }: Props) {
   useEffect(() => {
     if (destinations.length === 0) return;
     let charIndex = 0;
+    let advanceTimer: number | undefined;
     const target = destinations[destIndex];
     setDisplayText('');
 
@@ -55,14 +56,15 @@ export default function LoadingScreen({ destinations, progress }: Props) {
       setDisplayText(target.slice(0, charIndex));
       if (charIndex >= target.length) {
         if (intervalRef.current) clearInterval(intervalRef.current);
-        setTimeout(() => {
-          setDestIndex((prev) => (prev + 1) % destinations.length);
+        advanceTimer = window.setTimeout(() => {
+          setDestIndex((prev) => (destinations.length > 0 ? (prev + 1) % destinations.length : 0));
         }, 1400);
       }
     }, 60);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
+      if (advanceTimer) clearTimeout(advanceTimer);
     };
   }, [destIndex, destinations]);
 
