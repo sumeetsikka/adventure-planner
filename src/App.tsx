@@ -8,6 +8,7 @@ import TravelDetails from './components/wizard/TravelDetails';
 import LoadingScreen from './components/wizard/LoadingScreen';
 import ResultsView from './components/results/ResultsView';
 import ThemeToggle from './components/shared/ThemeToggle';
+import InstallPrompt from './components/shared/InstallPrompt';
 import MyTrips from './components/wizard/MyTrips';
 import { decodeTripFromUrl } from './lib/tripUrl';
 import { countries } from './data/countries';
