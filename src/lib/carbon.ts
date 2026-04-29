@@ -68,7 +68,7 @@ function normaliseName(s: string): string {
   return (s || '')
     .toLowerCase()
     .replace(/[()]/g, ' ')
-    .split(/[\/,]/)[0]
+    .split(/[/,]/)[0]
     .trim();
 }
 
