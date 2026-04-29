@@ -100,8 +100,13 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
             <div className="flex flex-wrap gap-2 justify-end">
               <button onClick={async () => {
                   const url = encodeTripToUrl(config);
-                  await copyToClipboard(url);
-                  setShareMsg('Link copied!');
+                  const result = await shareOrCopy({
+                    title: `${config.country?.name || 'My'} adventure`,
+                    text: `Check out my ${config.country?.name || ''} trip itinerary, planned with Adventure Planner.`,
+                    url,
+                  });
+                  if (result === 'cancelled') return;
+                  setShareMsg(result === 'shared' ? 'Shared!' : 'Link copied!');
                   setTimeout(() => setShareMsg(''), 2000);
                 }}
                 className="text-[11px] tracking-widest uppercase text-[var(--text-muted)] hover:text-[var(--cream)] border border-[var(--line)] hover:border-[var(--line-strong)] rounded-full px-3.5 py-1.5 transition-all">
