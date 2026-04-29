@@ -82,6 +82,113 @@ export default function PackingTab({ packing, config: _config }: Props) {
         <p className="text-[var(--text-muted)] text-sm mt-3 max-w-md">Weather-appropriate essentials for the trip. Tick items as you pack.</p>
       </div>
 
+      {/* Smart weight panel */}
+      {(() => {
+        const W_CLOTHING = 0.2;
+        const W_SHOES = 0.8;
+        const W_ELECTRONICS_PER_ITEM = 0.3;
+        const W_DOCUMENTS = 0.2;
+        const TOILETRIES_PER_PERSON = 1.5;
+
+        let weightKg = 0;
+        let hasToiletries = false;
+        for (const cat of packing) {
+          const catKind = classifyCategory(cat.category);
+          if (catKind === 'toiletries') { hasToiletries = true; continue; }
+          for (const item of cat.items) {
+            const kind = catKind === 'other' ? classifyItem(item) : catKind;
+            if (kind === 'shoes') weightKg += W_SHOES;
+            else if (kind === 'electronics') weightKg += W_ELECTRONICS_PER_ITEM;
+            else if (kind === 'documents') weightKg += W_DOCUMENTS;
+            else weightKg += W_CLOTHING;
+          }
+        }
+        if (hasToiletries) weightKg += TOILETRIES_PER_PERSON;
+
+        const perPerson = Math.round(weightKg * 10) / 10;
+        const QANTAS = 23;
+        const pctOf23 = Math.min(100, (perPerson / QANTAS) * 100);
+        let bar: string = 'var(--sage)';
+        if (perPerson > QANTAS) bar = 'var(--terracotta)';
+        else if (perPerson > 18) bar = 'var(--gold)';
+
+        const limits = [
+          { name: 'Qantas', kg: 23 },
+          { name: 'Jetstar', kg: 20 },
+          { name: 'AirAsia', kg: 15 },
+          { name: 'Ryanair (chk)', kg: 10 },
+          { name: 'Ryanair (cab)', kg: 7 },
+        ];
+        const overSomething = limits.some((l) => perPerson > l.kg);
+
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: EASE }}
+            className="surface-card rounded-3xl p-7 mb-6"
+          >
+            <div className="flex items-baseline justify-between mb-5 gap-4 flex-wrap">
+              <div>
+                <p className="eyebrow mb-2">Weight · per traveller</p>
+                <p className="font-display text-5xl text-[var(--cream)] leading-none tracking-tight">
+                  {perPerson}<span className="text-lg text-[var(--text-dim)]"> kg</span>
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[var(--text-dim)] text-[10px] uppercase tracking-wider">vs Qantas 23 kg</p>
+                <p className="font-display text-2xl" style={{ color: bar }}>
+                  {perPerson > QANTAS
+                    ? `+${(perPerson - QANTAS).toFixed(1)} over`
+                    : `${(QANTAS - perPerson).toFixed(1)} kg spare`}
+                </p>
+              </div>
+            </div>
+
+            <div
+              className="relative w-full h-2.5 rounded-full overflow-hidden mb-2"
+              style={{ background: 'linear-gradient(90deg, rgba(122,150,108,0.25) 0%, rgba(196,160,90,0.25) 60%, rgba(196,99,75,0.25) 100%)' }}
+            >
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${pctOf23}%` }}
+                transition={{ duration: 0.8, ease: EASE }}
+                className="absolute left-0 top-0 bottom-0"
+                style={{ background: bar, opacity: 0.85 }}
+              />
+            </div>
+            <div className="flex justify-between text-[10px] uppercase tracking-wider text-[var(--text-dim)] mb-5">
+              <span>0 kg</span>
+              <span>23 kg</span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
+              {limits.map((l) => {
+                const over = perPerson > l.kg;
+                return (
+                  <div key={l.name} className="surface-soft rounded-2xl px-3 py-3">
+                    <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">{l.name}</p>
+                    <p className="font-display text-lg" style={{ color: over ? 'var(--terracotta)' : 'var(--sage)' }}>
+                      {l.kg} kg
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {overSomething && (
+              <p className="font-display italic text-sm" style={{ color: 'var(--terracotta)' }}>
+                Remove non-essentials to save ~3.5 kg.
+              </p>
+            )}
+
+            <p className="text-[var(--text-dim)] text-[10px] mt-3 tracking-wider uppercase">
+              Estimate · clothing 200g · shoes 800g · toiletries 1.5kg · electronics ~1.5kg · documents 200g
+            </p>
+          </motion.div>
+        );
+      })()}
+
       {/* Progress */}
       <div className="surface-card rounded-3xl p-7 mb-6">
         <div className="flex items-baseline justify-between mb-5">
