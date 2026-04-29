@@ -237,6 +237,7 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
           </Suspense>
         </div>
       </div>
+      <MobileBottomNav active={activeTab} onChange={setActiveTab} />
     </div>
   );
 }
