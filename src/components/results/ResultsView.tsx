@@ -1,29 +1,40 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import type { ResultsTab, TravelConfig, GenerationResults } from '../../types';
 import { formatDateAU, addDaysISO } from '../../lib/dateUtils';
 import { openEmailWithTrip } from '../../lib/emailTrip';
 import { searchFlights, searchHotels, generateBudget, generateTips, generatePacking, generateWeather, generateVisa, generateCurrency, generateNearby, generateTransport } from '../../lib/api';
 import TabNav from '../shared/TabNav';
-import FlightsTab from './FlightsTab';
-import HotelsTab from './HotelsTab';
-import ItineraryTab from './ItineraryTab';
-import BudgetTab from './BudgetTab';
-import TipsTab from './TipsTab';
-import PackingTab from './PackingTab';
-import WeatherTab from './WeatherTab';
-import VisaTab from './VisaTab';
-import CurrencyTab from './CurrencyTab';
-import NearbyTab from './NearbyTab';
-import ChecklistTab from './ChecklistTab';
-import PhotosTab from './PhotosTab';
-import TransportTab from './TransportTab';
 import DashboardTab from './DashboardTab';
-import BookingTrackerTab from './BookingTrackerTab';
-import RouteMapTab from './RouteMapTab';
-import ChatTab from './ChatTab';
-import EventsTab from './EventsTab';
-import JournalTab from './JournalTab';
 import { encodeTripToUrl, shareOrCopy } from '../../lib/tripUrl';
+
+// Lazy-load every other tab so the initial bundle stays small.
+// Dashboard is eager because it's the default landing tab.
+const FlightsTab = lazy(() => import('./FlightsTab'));
+const HotelsTab = lazy(() => import('./HotelsTab'));
+const ItineraryTab = lazy(() => import('./ItineraryTab'));
+const BudgetTab = lazy(() => import('./BudgetTab'));
+const TipsTab = lazy(() => import('./TipsTab'));
+const PackingTab = lazy(() => import('./PackingTab'));
+const WeatherTab = lazy(() => import('./WeatherTab'));
+const VisaTab = lazy(() => import('./VisaTab'));
+const CurrencyTab = lazy(() => import('./CurrencyTab'));
+const NearbyTab = lazy(() => import('./NearbyTab'));
+const ChecklistTab = lazy(() => import('./ChecklistTab'));
+const PhotosTab = lazy(() => import('./PhotosTab'));
+const TransportTab = lazy(() => import('./TransportTab'));
+const BookingTrackerTab = lazy(() => import('./BookingTrackerTab'));
+const RouteMapTab = lazy(() => import('./RouteMapTab'));
+const ChatTab = lazy(() => import('./ChatTab'));
+const EventsTab = lazy(() => import('./EventsTab'));
+const JournalTab = lazy(() => import('./JournalTab'));
+
+function TabFallback() {
+  return (
+    <div className="flex items-center justify-center py-20">
+      <div className="w-6 h-6 border border-[var(--text-dim)] border-t-[var(--gold)] rounded-full animate-spin" />
+    </div>
+  );
+}
 
 interface Props {
   config: TravelConfig;
