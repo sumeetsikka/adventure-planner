@@ -120,14 +120,14 @@ export default function CountryPicker({ onSelect, onInspire }: Props) {
           </p>
         </motion.div>
 
-        {/* Search */}
+        {/* Search + Inspire */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.5 }}
-          className="max-w-lg mb-16"
+          className="max-w-2xl mb-16 flex flex-col sm:flex-row gap-3"
         >
-          <div className="relative group">
+          <div className="relative group flex-1 max-w-lg">
             <span className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--text-dim)]">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
             </span>
@@ -139,6 +139,14 @@ export default function CountryPicker({ onSelect, onInspire }: Props) {
               className="w-full bg-[var(--ink-2)]/80 backdrop-blur-md border border-[var(--line)] rounded-full pl-14 pr-6 py-4 text-[var(--cream)] placeholder-[var(--text-dim)] focus:outline-none focus:border-[var(--gold)]/40 transition-all font-light"
             />
           </div>
+          {onInspire && (
+            <button
+              onClick={onInspire}
+              className="px-6 py-4 rounded-full text-sm border border-[var(--gold)]/40 text-[var(--gold)] hover:bg-[var(--gold)]/10 transition-colors tracking-wide whitespace-nowrap"
+            >
+              ✦ Inspire me
+            </button>
+          )}
         </motion.div>
 
         {/* Country regions */}
