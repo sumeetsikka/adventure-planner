@@ -33,11 +33,17 @@ function findHotelForLocation(location: string, hotels: DestinationHotels[]): De
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
-export default function ItineraryTab({ itinerary, config, hotels, onUpdate }: Props) {
+export default function ItineraryTab({ itinerary, config, hotels, onUpdate, flights = [], transport = [] }: Props) {
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [regenerating, setRegenerating] = useState(false);
   const [error, setError] = useState('');
   const [reorderMode, setReorderMode] = useState(false);
+  const [conflictsExpanded, setConflictsExpanded] = useState(false);
+
+  const conflicts = useMemo(
+    () => findConflicts(config, itinerary, flights, hotels, transport),
+    [config, itinerary, flights, hotels, transport]
+  );
 
   const moveDay = (dayNum: number, direction: 'up' | 'down') => {
     const idx = itinerary.findIndex((d) => d.day === dayNum);
