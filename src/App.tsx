@@ -53,7 +53,7 @@ export default function App() {
     setReturnDate(trip.rd);
     setTravellers(trip.t);
     setAges(trip.a);
-    setVibes(trip.v as any);
+    setVibes(trip.v as VibeOption[]);
 
     // Clear the URL param without reload
     window.history.replaceState({}, '', window.location.pathname);
