@@ -1,18 +1,24 @@
 {
   "name": "Adventure Planner",
   "short_name": "Adventure",
-  "description": "Plan your perfect trip with AI-powered itineraries, flights, hotels, and more",
+  "description": "An editorial travel planner — pick a country, choose your destinations, and we craft your full itinerary.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0B1120",
-  "theme_color": "#FF6B35",
-  "orientation": "portrait-primary",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "background_color": "#0A0806",
+  "theme_color": "#0A0806",
+  "orientation": "portrait",
+  "categories": ["travel", "lifestyle", "productivity"],
   "icons": [
-    {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-192-maskable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "New trip", "short_name": "New trip", "url": "/?new=1", "description": "Plan a new adventure" },
+    { "name": "My trips", "short_name": "My trips", "url": "/", "description": "Browse saved trips" }
   ]
 }
