@@ -19,7 +19,7 @@ const REGIONS: Record<string, string[]> = {
   'Indian Ocean': ['maldives'],
 };
 
-export default function CountryPicker({ onSelect }: Props) {
+export default function CountryPicker({ onSelect, onInspire }: Props) {
   const [search, setSearch] = useState('');
   const [customCountry, setCustomCountry] = useState('');
   const [hovered, setHovered] = useState<Country | null>(null);
