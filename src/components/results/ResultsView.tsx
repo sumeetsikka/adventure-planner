@@ -219,6 +219,8 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
           {activeTab === 'checklist' && <ChecklistTab config={config} />}
           {activeTab === 'photos' && <PhotosTab destinations={config.destinations} />}
           {activeTab === 'chat' && <ChatTab config={config} />}
+          {activeTab === 'events' && <EventsTab config={config} />}
+          {activeTab === 'journal' && <JournalTab config={config} results={results} />}
         </div>
       </div>
     </div>
