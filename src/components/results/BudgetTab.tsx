@@ -39,7 +39,7 @@ function parseCostMid(cost: string): number {
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
-export default function BudgetTab({ budget, config, onUpdate }: Props) {
+export default function BudgetTab({ budget, config, onUpdate, flights = [], transport = [] }: Props) {
   const [retrying, setRetrying] = useState(false);
 
   const handleRetry = async () => {
