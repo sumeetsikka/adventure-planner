@@ -1,16 +1,19 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import type { ItineraryDay as DayType, TravelConfig, DestinationHotels } from '../../types';
+import type { ItineraryDay as DayType, TravelConfig, DestinationHotels, FlightLeg, TransportLeg } from '../../types';
 import { generateItinerary } from '../../lib/api';
 import { formatDateAU, addDaysISO } from '../../lib/dateUtils';
 import { VIBE_LABELS } from '../../lib/constants';
 import { getDestinationPhoto } from '../../lib/imagery';
+import { findConflicts } from '../../lib/conflicts';
 
 interface Props {
   itinerary: DayType[];
   config: TravelConfig;
   hotels: DestinationHotels[];
   onUpdate: (itinerary: DayType[]) => void;
+  flights?: FlightLeg[];
+  transport?: TransportLeg[];
 }
 
 function getTopPick(dest: DestinationHotels) {
