@@ -7,6 +7,7 @@ import { formatDateAU } from '../../lib/dateUtils';
 interface Props {
   onLoad: (trip: SavedTrip) => void;
   onNew: () => void;
+  onInspire?: () => void;
 }
 
 const EASE = [0.16, 1, 0.3, 1] as const;
