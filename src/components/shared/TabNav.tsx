@@ -38,6 +38,7 @@ const TAB_GROUPS: TabGroup[] = [
       { key: 'visa', label: 'Visa', icon: '⌘' },
       { key: 'currency', label: 'Currency', icon: '¤' },
       { key: 'checklist', label: 'Checklist', icon: '☑' },
+      { key: 'events', label: 'Events', icon: '❀' },
     ],
   },
   {
@@ -47,6 +48,7 @@ const TAB_GROUPS: TabGroup[] = [
       { key: 'photos', label: 'Photos', icon: '❐' },
       { key: 'tips', label: 'Tips', icon: '§' },
       { key: 'chat', label: 'Ask AI', icon: '✦' },
+      { key: 'journal', label: 'Journal', icon: '❦' },
     ],
   },
 ];
