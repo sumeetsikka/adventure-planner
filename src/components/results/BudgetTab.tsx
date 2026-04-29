@@ -236,6 +236,89 @@ export default function BudgetTab({ budget, config, onUpdate, flights = [], tran
         );
       })()}
 
+      {/* Footprint */}
+      {(() => {
+        let perPersonCO2 = 0;
+        let shortHaulFlight: FlightLeg | null = null;
+
+        for (const f of flights) {
+          let km = estimateLegDistance(f.from_code, f.to_code);
+          if (km == null && isAirportCode(f.from_code) && isAirportCode(f.to_code)) {
+            km = LONG_HAUL_FALLBACK_KM;
+          }
+          if (km == null) continue;
+          perPersonCO2 += flightCO2kg(km);
+          if (km > 0 && km < 800 && !shortHaulFlight) shortHaulFlight = f;
+        }
+
+        for (const t of transport) {
+          const km = estimateLegDistance(t.from, t.to);
+          if (km == null) continue;
+          perPersonCO2 += transportCO2(t.mode, km);
+        }
+
+        if (perPersonCO2 <= 0) return null;
+
+        const groupCO2 = perPersonCO2 * config.travellers;
+        const tonnes = perPersonCO2 / 1000;
+        const display = tonnes >= 1 ? `${tonnes.toFixed(1)} t` : `${Math.round(perPersonCO2)} kg`;
+        const groupTonnes = groupCO2 / 1000;
+        const groupDisplay = groupTonnes >= 1 ? `${groupTonnes.toFixed(1)} t` : `${Math.round(groupCO2)} kg`;
+
+        // Static comparison thresholds
+        let comparison = '≈ a month of average household electricity';
+        if (perPersonCO2 > 500) comparison = '≈ 3 months of average household electricity';
+        if (perPersonCO2 > 1000) comparison = '≈ 6 months of average household electricity';
+        if (perPersonCO2 > 2000) comparison = '≈ a year of average household electricity';
+
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: EASE }}
+            className="surface-card rounded-3xl p-8 mt-10 border border-[var(--sage)]/30"
+          >
+            <p className="eyebrow mb-3" style={{ color: 'var(--sage)' }}>Footprint</p>
+            <h3 className="font-display text-3xl text-[var(--cream)] leading-tight mb-6">
+              The <em className="italic" style={{ color: 'var(--sage)' }}>carbon</em> cost.
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+              <div>
+                <p className="eyebrow mb-2">Per traveller</p>
+                <p className="font-display text-5xl leading-none tracking-tight" style={{ color: 'var(--sage)' }}>
+                  {display}<span className="text-base text-[var(--text-dim)]"> CO₂e</span>
+                </p>
+              </div>
+              <div>
+                <p className="eyebrow mb-2">Group total · {config.travellers} traveller{config.travellers > 1 ? 's' : ''}</p>
+                <p className="font-display text-5xl text-[var(--cream)] leading-none tracking-tight">
+                  {groupDisplay}<span className="text-base text-[var(--text-dim)]"> CO₂e</span>
+                </p>
+              </div>
+            </div>
+
+            <p className="text-[var(--text-muted)] text-sm font-display italic mb-2">{comparison}</p>
+
+            {shortHaulFlight && (
+              <div
+                className="mt-5 rounded-2xl px-5 py-4 border"
+                style={{ borderColor: 'rgba(122,150,108,0.35)', background: 'rgba(122,150,108,0.08)' }}
+              >
+                <p className="eyebrow mb-1" style={{ color: 'var(--sage)' }}>Greener option</p>
+                <p className="text-[var(--cream)] text-sm leading-relaxed">
+                  A train alternative for your <span className="italic">{shortHaulFlight.from_code} → {shortHaulFlight.to_code}</span> leg could cut emissions by around <em className="italic" style={{ color: 'var(--sage)' }}>70%</em>.
+                </p>
+              </div>
+            )}
+
+            <p className="text-[var(--text-dim)] text-[10px] uppercase tracking-wider mt-5">
+              Industry-average factors · 0.115 kg/km flights · 0.041 kg/km rail
+            </p>
+          </motion.div>
+        );
+      })()}
+
       <p className="text-[var(--text-dim)] text-[10px] text-center mt-8 tracking-wider uppercase">
         Estimates based on typical Australian traveller costs. Prices vary by season.
       </p>
