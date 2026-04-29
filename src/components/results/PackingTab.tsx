@@ -28,7 +28,7 @@ function classifyItem(item: string): 'shoes' | 'clothing' | 'electronics' | 'doc
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
-export default function PackingTab({ packing }: Props) {
+export default function PackingTab({ packing, config: _config }: Props) {
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
 
   if (packing.length === 0) {
