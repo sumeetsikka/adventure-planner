@@ -233,6 +233,7 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
           {activeTab === 'chat' && <ChatTab config={config} />}
           {activeTab === 'events' && <EventsTab config={config} />}
           {activeTab === 'journal' && <JournalTab config={config} results={results} />}
+          </Suspense>
         </div>
       </div>
     </div>
