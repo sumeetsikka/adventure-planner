@@ -54,8 +54,8 @@ export default function ItineraryTab({ itinerary, config, hotels, onUpdate }: Pr
       const result = await generateItinerary(config);
       onUpdate(result);
       setSelectedDay(null);
-    } catch (err: any) {
-      setError(err.message || 'Failed to regenerate. Please try again.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to regenerate. Please try again.');
     } finally {
       setRegenerating(false);
     }
