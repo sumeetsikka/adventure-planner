@@ -297,7 +297,12 @@ export default function App() {
     setView('country');
   };
 
-  const themeToggle = <ThemeToggle theme={theme} onToggle={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} />;
+  const themeToggle = (
+    <>
+      <ThemeToggle theme={theme} onToggle={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} />
+      <InstallPrompt />
+    </>
+  );
   const bg = 'bg-[var(--ink)] grain';
 
   if (view === 'mytrips') {
