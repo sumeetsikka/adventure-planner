@@ -166,7 +166,7 @@ export interface GenerationResults {
   transport: TransportLeg[];
 }
 
-export type AppView = 'mytrips' | 'country' | 'wizard' | 'loading' | 'results';
+export type AppView = 'mytrips' | 'inspire' | 'country' | 'wizard' | 'loading' | 'results';
 export type WizardStep = 1 | 2 | 3;
 export interface ChatMessage {
   role: 'user' | 'assistant';
