@@ -16,6 +16,17 @@ interface Props {
   budget: BudgetItem[];
   config: TravelConfig;
   onUpdate?: (budget: BudgetItem[]) => void;
+  flights?: FlightLeg[];
+  transport?: TransportLeg[];
+}
+
+function transportCO2(mode: string, km: number): number {
+  const m = (mode || '').toLowerCase();
+  if (m.includes('train') || m.includes('rail')) return trainCO2kg(km);
+  if (m.includes('bus') || m.includes('coach')) return busCO2kg(km);
+  if (m.includes('car') || m.includes('drive') || m.includes('taxi')) return carCO2kg(km);
+  if (m.includes('flight') || m.includes('plane')) return flightCO2kg(km);
+  return carCO2kg(km);
 }
 
 function parseCostMid(cost: string): number {
