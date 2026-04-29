@@ -207,7 +207,7 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
             : <RetryButton label="visa" onRetry={async () => { const d = await generateVisa(config); onUpdateResults({ visa: d }); }} />
           )}
           {activeTab === 'currency' && (results.currency
-            ? <CurrencyTab currency={results.currency} />
+            ? <CurrencyTab currency={results.currency} country={config.country?.name} />
             : <RetryButton label="currency" onRetry={async () => { const d = await generateCurrency(config); onUpdateResults({ currency: d }); }} />
           )}
           {activeTab === 'nearby' && (results.nearby.length > 0
