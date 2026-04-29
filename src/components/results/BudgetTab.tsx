@@ -1,7 +1,16 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import type { BudgetItem, TravelConfig } from '../../types';
+import type { BudgetItem, TravelConfig, FlightLeg, TransportLeg } from '../../types';
 import { generateBudget } from '../../lib/api';
+import {
+  flightCO2kg,
+  trainCO2kg,
+  carCO2kg,
+  busCO2kg,
+  estimateLegDistance,
+  isAirportCode,
+  LONG_HAUL_FALLBACK_KM,
+} from '../../lib/carbon';
 
 interface Props {
   budget: BudgetItem[];
