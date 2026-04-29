@@ -103,7 +103,7 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
   };
 
   return (
-    <div className="min-h-screen relative print:bg-white">
+    <div className="min-h-screen relative print:bg-white pb-20 sm:pb-0">
       <div className="relative max-w-5xl mx-auto px-6 py-10 print:p-0">
         {/* Header */}
         <div className="mb-10 print:mb-4">
