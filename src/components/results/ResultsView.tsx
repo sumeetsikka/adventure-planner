@@ -177,6 +177,7 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
           {activeTab === 'dashboard' && (
             <DashboardTab config={config} results={results} onTabChange={setActiveTab} />
           )}
+          <Suspense fallback={<TabFallback />}>
           {activeTab === 'itinerary' && (
             <ItineraryTab itinerary={results.itinerary} config={config} hotels={results.hotels}
               onUpdate={(itinerary) => onUpdateResults({ itinerary })} />
