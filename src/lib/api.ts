@@ -1,6 +1,6 @@
 import type { Country, TravelConfig, Destination, FlightLeg, DestinationHotels, ItineraryDay, BudgetItem, Tip, PackingItem, WeatherInfo, VisaInfo, CurrencyInfo, NearbyPlace, TransportLeg } from '../types';
 
-async function postApi<T>(endpoint: string, body: any): Promise<T> {
+async function postApi<T>(endpoint: string, body: unknown): Promise<T> {
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
