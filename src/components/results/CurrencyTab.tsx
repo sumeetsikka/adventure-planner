@@ -55,6 +55,9 @@ export default function CurrencyTab({ currency, country }: Props) {
   useEffect(() => {
     if (!quoteCode) return;
     let cancelled = false;
+    // Side-effect for an async fetch lifecycle — toggling a loading flag
+    // synchronously here is the intended pattern.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFxLoading(true);
     fetchRate('AUD', quoteCode).then((r) => {
       if (cancelled) return;
@@ -72,6 +75,9 @@ export default function CurrencyTab({ currency, country }: Props) {
   // Default tip from culture text — only on first load.
   useEffect(() => {
     if (!currency || tipInitialised) return;
+    // Initial-derivation pattern: we need `currency` to compute the suggested
+    // tip and can only do so once it's available.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTipPct(suggestedTipPct(currency.tipping_culture));
     setTipInitialised(true);
   }, [currency, tipInitialised]);
