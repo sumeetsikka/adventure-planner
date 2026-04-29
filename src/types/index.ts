@@ -173,4 +173,4 @@ export interface ChatMessage {
   content: string;
 }
 
-export type ResultsTab = 'dashboard' | 'itinerary' | 'flights' | 'hotels' | 'transport' | 'bookings' | 'map' | 'budget' | 'tips' | 'packing' | 'weather' | 'visa' | 'currency' | 'nearby' | 'checklist' | 'photos' | 'chat';
+export type ResultsTab = 'dashboard' | 'itinerary' | 'flights' | 'hotels' | 'transport' | 'bookings' | 'map' | 'budget' | 'tips' | 'packing' | 'weather' | 'visa' | 'currency' | 'nearby' | 'checklist' | 'photos' | 'chat' | 'events' | 'journal';
