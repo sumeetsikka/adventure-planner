@@ -142,3 +142,138 @@ export function findConflicts(
 
   return conflicts;
 }
+
+function parseLeadingHours(s: string): number | null {
+  if (!s) return null;
+  // Find the first number followed by 'h' or 'hour'
+  const m = s.match(/(\d+(?:\.\d+)?)\s*h(?:r|our)?/i);
+  if (!m) return null;
+  const v = parseFloat(m[1]);
+  return isNaN(v) ? null : v;
+}
+
+export function findNudges(
+  config: TravelConfig,
+  itinerary: ItineraryDay[],
+  flights: FlightLeg[],
+  hotels: DestinationHotels[],
+  transport: TransportLeg[],
+  weather: WeatherInfo[]
+): Nudge[] {
+  const nudges: Nudge[] = [];
+  const seen = new Set<string>();
+  const push = (n: Nudge) => {
+    const key = `${n.severity}|${n.category}|${n.message}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    nudges.push(n);
+  };
+
+  // Tight layover / multi-stop flights
+  for (const f of flights) {
+    const stopsText = `${f.stops || ''} ${f.duration || ''}`.toLowerCase();
+    const stopsNum = parseInt((f.stops || '').match(/\d+/)?.[0] || '0', 10);
+    const hasMultiStop = stopsNum > 1 || /\b1\s*stop\b/.test(stopsText);
+    if (hasMultiStop) {
+      push({
+        severity: 'tip',
+        category: 'flight',
+        message: 'Flights with stops can be tight — consider arriving night before',
+        detail: `${f.leg || `${f.from_code} → ${f.to_code}`} · ${f.stops || ''}`.trim(),
+      });
+    }
+  }
+
+  // Weather: hot, cold, rainy
+  if (weather && weather.length > 0) {
+    // Match weather to itinerary day by destination
+    const findDayForDest = (dest: string): number | null => {
+      const k = locKey(dest);
+      const idx = itinerary.findIndex((d) => ciIncludes(d.location, k) || ciIncludes(d.title, k));
+      return idx >= 0 ? itinerary[idx].day : null;
+    };
+
+    let highRainCount = 0;
+    for (const w of weather) {
+      const day = findDayForDest(w.destination) ?? 1;
+      if (typeof w.temp_high_c === 'number' && w.temp_high_c > 32) {
+        push({
+          severity: 'tip',
+          category: 'general',
+          message: `Hot day on Day ${day} — pack water, hat, sunscreen`,
+          detail: `${w.destination} · high ${w.temp_high_c}°C`,
+        });
+      }
+      if (typeof w.temp_low_c === 'number' && w.temp_low_c < 5) {
+        push({
+          severity: 'tip',
+          category: 'general',
+          message: `Cold morning on Day ${day} — layers recommended`,
+          detail: `${w.destination} · low ${w.temp_low_c}°C`,
+        });
+      }
+      if (typeof w.rainfall_mm === 'number' && w.rainfall_mm > 100) {
+        highRainCount++;
+      }
+    }
+    if (highRainCount > 0) {
+      push({
+        severity: 'tip',
+        category: 'general',
+        message: 'Pack a light rain jacket',
+        detail: `${highRainCount} destination${highRainCount > 1 ? 's' : ''} with high rainfall`,
+      });
+    }
+  }
+
+  // Long transport legs (>= 10h)
+  for (const t of transport) {
+    const hours = parseLeadingHours(t.duration);
+    if (hours != null && hours >= 10) {
+      const drift = config.departureDate ? dateDiffDays(config.departureDate, t.date) : -1;
+      const dayNum = Math.max(1, drift + 1);
+      push({
+        severity: 'caution',
+        category: 'transport',
+        message: `Long ${t.mode || 'transport'} journey on Day ${dayNum} — consider an overnight option`,
+        detail: `${t.from} → ${t.to} · ${t.duration}`,
+      });
+    }
+  }
+
+  // No buffer day: last activity on return flight day
+  if (config.departureDate && config.returnDate && itinerary.length > 0) {
+    const totalDays = dateDiffDays(config.departureDate, config.returnDate) + 1;
+    const lastDay = itinerary[itinerary.length - 1];
+    if (lastDay && lastDay.activities && lastDay.activities.length > 1 && lastDay.day >= totalDays) {
+      push({
+        severity: 'caution',
+        category: 'flight',
+        message: `Return flight is on Day ${lastDay.day} — leave time for transit`,
+        detail: 'Consider lighter plans on the final day.',
+      });
+    }
+  }
+
+  // Tight check-in: hotel check-in date doesn't match itinerary day
+  if (config.departureDate) {
+    for (const h of hotels) {
+      if (!h.check_in) continue;
+      const targetIdx = itinerary.findIndex((d) => ciIncludes(d.location, locKey(h.destination)));
+      if (targetIdx < 0) continue;
+      const expectedDate = new Date(config.departureDate).getTime() + targetIdx * 24 * 60 * 60 * 1000;
+      const checkIn = new Date(h.check_in).getTime();
+      const driftDays = Math.abs(Math.round((checkIn - expectedDate) / (1000 * 60 * 60 * 24)));
+      if (driftDays >= 1) {
+        push({
+          severity: 'caution',
+          category: 'hotel',
+          message: `Tight check-in for ${h.destination} — dates don't match the plan`,
+          detail: `Hotel check-in ${h.check_in} vs Day ${itinerary[targetIdx].day}`,
+        });
+      }
+    }
+  }
+
+  return nudges;
+}
