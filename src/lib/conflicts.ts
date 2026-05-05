@@ -1,10 +1,17 @@
-import type { ItineraryDay, FlightLeg, DestinationHotels, TransportLeg, TravelConfig } from '../types';
+import type { ItineraryDay, FlightLeg, DestinationHotels, TransportLeg, TravelConfig, WeatherInfo } from '../types';
 
 export interface Conflict {
   severity: 'warning' | 'info';
   day: number;
   message: string;
   hint?: string;
+}
+
+export interface Nudge {
+  severity: 'tip' | 'caution';
+  category: 'flight' | 'hotel' | 'transport' | 'general';
+  message: string;
+  detail?: string;
 }
 
 function ciIncludes(haystack: string, needle: string): boolean {
