@@ -146,6 +146,22 @@ export interface DestinationRestaurants {
   restaurants: Restaurant[];
 }
 
+export interface Activity {
+  name: string;
+  category: 'culture' | 'nature' | 'adventure' | 'food' | 'wellness' | 'family' | 'nightlife' | 'shopping';
+  duration: string;             // e.g. "2 hours", "Half day"
+  price_estimate_aud: string;   // "$0", "$30-50", etc.
+  difficulty?: 'easy' | 'moderate' | 'hard';
+  why: string;
+  best_time?: string;            // "Sunrise", "Evening", "Year-round"
+  booking_link?: string;         // Klook / Viator / GetYourGuide / official site
+}
+
+export interface DestinationActivities {
+  destination: string;
+  activities: Activity[];
+}
+
 export interface NearbyPlace {
   destination: string;
   name: string;
