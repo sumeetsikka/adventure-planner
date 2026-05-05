@@ -87,7 +87,8 @@ export default function NearbyTab({ nearby }: Props) {
                     <p className="text-[var(--text-muted)] text-[13px] leading-relaxed mb-4 flex-1">{place.why_visit}</p>
                     <div className="pt-4 border-t border-[var(--line)]">
                       <p className="eyebrow mb-1">Highlight</p>
-                      <p className="font-display-soft italic text-[var(--cream)] text-[13px] leading-relaxed">{place.highlight}</p>
+                      <p className="font-display-soft italic text-[var(--cream)] text-[13px] leading-relaxed mb-3">{place.highlight}</p>
+                      <PlaceActions place={place.name} compact />
                     </div>
                   </div>
                 </motion.article>
