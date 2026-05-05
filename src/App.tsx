@@ -205,6 +205,7 @@ export default function App() {
     country: selectedCountry!,
     destinations: selectedDests,
     departureDate, returnDate, travellers, ages, vibes,
+    origin, homeCurrency,
   });
 
   const handleGenerate = useCallback(async () => {
@@ -212,6 +213,7 @@ export default function App() {
       country: selectedCountry!,
       destinations: selectedDests,
       departureDate, returnDate, travellers, ages, vibes,
+      origin, homeCurrency,
     };
     setView('loading');
     setProgress({ route: false, flights: false, hotels: false, itinerary: false, budget: false, tips: false, packing: false, weather: false, visa: false, currency: false, nearby: false, transport: false, restaurants: false, activities: false });
