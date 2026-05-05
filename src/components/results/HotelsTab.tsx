@@ -158,6 +158,9 @@ export default function HotelsTab({ hotels, config }: Props) {
                   <div>
                     <p className="eyebrow mb-2">{dest.nights} night{dest.nights > 1 ? 's' : ''} · {formatDateAU(dest.check_in)}</p>
                     <h3 className="font-display text-2xl sm:text-3xl text-[var(--cream)] leading-tight">{dest.destination}</h3>
+                    <div className="mt-2.5" onClick={(e) => e.stopPropagation()}>
+                      <PlaceActions place={dest.destination} compact />
+                    </div>
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="text-[var(--text-muted)] text-[11px] uppercase tracking-wider">{dest.hotels.length} hotels</p>
