@@ -44,6 +44,57 @@ const EASE = [0.16, 1, 0.3, 1] as const;
 
 export default function BudgetTab({ budget, config, onUpdate, flights = [], transport = [] }: Props) {
   const [retrying, setRetrying] = useState(false);
+  const [displayCurrency, setDisplayCurrency] = useState<string>(config.homeCurrency || 'AUD');
+  const [fxRate, setFxRate] = useState<number | null>(1);
+  const [fxLoading, setFxLoading] = useState(false);
+  const [fxFailed, setFxFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      if (displayCurrency === 'AUD') {
+        setFxRate(1);
+        setFxFailed(false);
+        return;
+      }
+      setFxLoading(true);
+      setFxFailed(false);
+      const rate = await fetchRate('AUD', displayCurrency);
+      if (cancelled) return;
+      if (rate == null) {
+        setFxRate(null);
+        setFxFailed(true);
+      } else {
+        setFxRate(rate);
+      }
+      setFxLoading(false);
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [displayCurrency]);
+
+  const effectiveCurrency = fxFailed || fxRate == null ? 'AUD' : displayCurrency;
+  const effectiveRate = fxFailed || fxRate == null ? 1 : fxRate;
+  const symbol = CURRENCY_SYMBOLS[effectiveCurrency] || '';
+
+  const formatMoney = (audAmount: number): string => {
+    const v = audAmount * effectiveRate;
+    // JPY has no decimals; INR/most others render as integers for clean editorial look.
+    const rounded = effectiveCurrency === 'JPY' ? Math.round(v) : Math.round(v);
+    return `${symbol}${rounded.toLocaleString()}`;
+  };
+
+  const convertCostString = (cost: string): string => {
+    // Replace each numeric run in the cost string (e.g. "$120-180") with converted value.
+    return cost.replace(/[\d,]+/g, (match) => {
+      const n = parseInt(match.replace(/,/g, ''), 10);
+      if (!isFinite(n)) return match;
+      const converted = Math.round(n * effectiveRate);
+      return converted.toLocaleString();
+    }).replace(/\$/g, symbol || '$');
+  };
 
   const handleRetry = async () => {
     if (!onUpdate) return;
