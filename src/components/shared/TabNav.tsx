@@ -44,6 +44,7 @@ const TAB_GROUPS: TabGroup[] = [
   {
     label: 'Explore',
     tabs: [
+      { key: 'taste', label: 'Taste', icon: '◐' },
       { key: 'nearby', label: 'Nearby', icon: '✦' },
       { key: 'photos', label: 'Photos', icon: '❐' },
       { key: 'tips', label: 'Tips', icon: '§' },
