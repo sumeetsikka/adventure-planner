@@ -28,6 +28,7 @@ const RouteMapTab = lazy(() => import('./RouteMapTab'));
 const ChatTab = lazy(() => import('./ChatTab'));
 const EventsTab = lazy(() => import('./EventsTab'));
 const JournalTab = lazy(() => import('./JournalTab'));
+const TasteTab = lazy(() => import('./TasteTab'));
 
 function TabFallback() {
   return (
