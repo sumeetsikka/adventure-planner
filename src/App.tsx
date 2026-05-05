@@ -116,7 +116,7 @@ export default function App() {
 
   const [progress, setProgress] = useState({
     route: false, flights: false, hotels: false, itinerary: false, budget: false, tips: false,
-    packing: false, weather: false, visa: false, currency: false, nearby: false, transport: false, restaurants: false,
+    packing: false, weather: false, visa: false, currency: false, nearby: false, transport: false, restaurants: false, activities: false,
   });
   const [results, setResults] = useState<GenerationResults>({ ...EMPTY_RESULTS });
 
@@ -205,7 +205,7 @@ export default function App() {
       departureDate, returnDate, travellers, ages, vibes,
     };
     setView('loading');
-    setProgress({ route: false, flights: false, hotels: false, itinerary: false, budget: false, tips: false, packing: false, weather: false, visa: false, currency: false, nearby: false, transport: false, restaurants: false });
+    setProgress({ route: false, flights: false, hotels: false, itinerary: false, budget: false, tips: false, packing: false, weather: false, visa: false, currency: false, nearby: false, transport: false, restaurants: false, activities: false });
     setResults({ ...EMPTY_RESULTS });
 
     await new Promise((r) => setTimeout(r, 500));
@@ -285,7 +285,13 @@ export default function App() {
       .then((d) => { setResults((r) => ({ ...r, restaurants: d })); setProgress((p) => ({ ...p, restaurants: true })); })
       .catch(() => setProgress((p) => ({ ...p, restaurants: true })));
 
-    await Promise.all([p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12]);
+    await stagger(800);
+
+    const p13 = generateActivities(config)
+      .then((d) => { setResults((r) => ({ ...r, activities: d })); setProgress((p) => ({ ...p, activities: true })); })
+      .catch(() => setProgress((p) => ({ ...p, activities: true })));
+
+    await Promise.all([p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13]);
     setView('results');
   }, [selectedDests, departureDate, returnDate, travellers, ages, vibes, selectedCountry]);
 
@@ -293,7 +299,7 @@ export default function App() {
     // "Start Over" now means "go to My Trips" rather than wiping state.
     // Trip persists in localStorage and will appear in the gallery.
     setActiveTripId(null);
-    setProgress({ route: false, flights: false, hotels: false, itinerary: false, budget: false, tips: false, packing: false, weather: false, visa: false, currency: false, nearby: false, transport: false, restaurants: false });
+    setProgress({ route: false, flights: false, hotels: false, itinerary: false, budget: false, tips: false, packing: false, weather: false, visa: false, currency: false, nearby: false, transport: false, restaurants: false, activities: false });
     setView(listTrips().length > 0 ? 'mytrips' : 'country');
   };
 
