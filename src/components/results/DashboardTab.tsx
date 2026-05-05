@@ -45,6 +45,10 @@ export default function DashboardTab({ config, results, onTabChange }: Props) {
   );
   const tripUnderway = daysSinceDeparture >= 0 && daysSinceDeparture < totalDays;
 
+  // Geolocation only fires while the trip is underway — no permission prompt
+  // for users planning future trips.
+  const geo = useGeolocation(tripUnderway);
+
   let todayPanel: React.ReactNode = null;
   if (tripUnderway) {
     const todayEntry = results.itinerary[daysSinceDeparture] || null;
