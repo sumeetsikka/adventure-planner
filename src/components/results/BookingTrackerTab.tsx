@@ -22,6 +22,13 @@ const EASE = [0.16, 1, 0.3, 1] as const;
 
 export default function BookingTrackerTab({ config, results }: Props) {
   const [booked, setBooked] = useState<Set<string>>(new Set());
+  const [emailText, setEmailText] = useState('');
+  const [parsing, setParsing] = useState(false);
+  const [parseError, setParseError] = useState('');
+  const [parsed, setParsed] = useState<ParsedBooking | null>(null);
+  const [parsedMatchId, setParsedMatchId] = useState<string | null>(null);
+  const [savedNotes, setSavedNotes] = useState<ParsedBooking[]>([]);
+  const [statusMsg, setStatusMsg] = useState('');
 
   const toggle = (id: string) => {
     setBooked((prev) => {
