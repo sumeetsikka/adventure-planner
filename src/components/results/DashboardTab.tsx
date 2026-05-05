@@ -127,6 +127,36 @@ export default function DashboardTab({ config, results, onTabChange }: Props) {
                 <p className="text-[var(--text-muted)] text-[11px] mt-1 leading-snug">{todayWeather.description}</p>
               </div>
             )}
+
+            {/* Live location card */}
+            <div className="surface-soft rounded-2xl px-4 py-3">
+              <p className="eyebrow mb-1">You are</p>
+              {geo.status === 'requesting' && (
+                <p className="text-[var(--text-muted)] text-[12px] italic font-light">Locating…</p>
+              )}
+              {geo.status === 'granted' && geo.lat !== null && geo.lng !== null && (
+                <>
+                  <p className="text-[var(--cream)] text-[13px] font-light">
+                    Near {todayCity}
+                  </p>
+                  <a
+                    href={directionsUrl(todayCity)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block mt-2 text-[10px] tracking-[0.2em] uppercase text-[var(--gold)] hover:text-[var(--gold-soft)] transition-colors"
+                  >
+                    ➞ Get me there
+                  </a>
+                </>
+              )}
+              {geo.status === 'denied' && (
+                <p className="text-[var(--text-dim)] text-[11px] font-light italic leading-snug">Location off — turn on for live routing.</p>
+              )}
+              {(geo.status === 'idle' || geo.status === 'unavailable') && geo.status !== 'denied' && (
+                <p className="text-[var(--text-dim)] text-[11px] font-light italic leading-snug">{todayCity}</p>
+              )}
+            </div>
+
             <div className="grid grid-cols-3 gap-2">
               <button onClick={() => onTabChange('map')} className="surface-soft rounded-2xl px-2 py-3 text-[10px] uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--gold)] transition-colors">Map</button>
               <button onClick={() => onTabChange('itinerary')} className="surface-soft rounded-2xl px-2 py-3 text-[10px] uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--gold)] transition-colors">Itinerary</button>
