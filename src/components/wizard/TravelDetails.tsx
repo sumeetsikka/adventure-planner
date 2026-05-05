@@ -53,6 +53,8 @@ export default function TravelDetails({
   travellers,
   ages,
   vibes,
+  origin,
+  homeCurrency,
   onUpdate,
   onBack,
   onGenerate,
