@@ -325,6 +325,32 @@ async function handleDestinations(config: any) {
   return parseResult(await callLLM(DEST_SYSTEM, userMessage));
 }
 
+async function handleParseBooking(body: any) {
+  const PARSE_BOOKING_SYSTEM = `You are a travel-confirmation parser. Read the email body and extract booking details. Return ONLY a JSON object:
+{
+  "type": "flight" | "hotel" | "activity" | "transport" | "unknown",
+  "confidence": "high" | "medium" | "low",
+  "flight": { "airline": string, "flightNumber": string, "from": string, "to": string, "departureDate": "YYYY-MM-DD", "departureTime": string, "arrivalTime": string, "pnr": string } | null,
+  "hotel": { "name": string, "address": string, "checkIn": "YYYY-MM-DD", "checkOut": "YYYY-MM-DD", "confirmationNumber": string, "totalAud": string } | null,
+  "activity": { "name": string, "date": "YYYY-MM-DD", "time": string, "venue": string, "confirmationNumber": string } | null
+}
+Use null for fields not found. Be conservative on confidence: "high" only when you're certain.`;
+
+  const text = (body?.text || '').toString().slice(0, 8000);
+  if (!text.trim()) {
+    return { type: 'unknown', confidence: 'low', flight: null, hotel: null, activity: null };
+  }
+  const result = await callLLM(PARSE_BOOKING_SYSTEM, `Confirmation email body:\n\n${text}`);
+  const parsed = Array.isArray(result) ? result[0] : result;
+  return {
+    type: parsed?.type || 'unknown',
+    confidence: parsed?.confidence || 'low',
+    flight: parsed?.flight || null,
+    hotel: parsed?.hotel || null,
+    activity: parsed?.activity || null,
+  };
+}
+
 async function handleChat(config: any) {
   const CHAT_SYSTEM = `You are a friendly travel expert helping an Australian traveller. Answer concisely (2-4 sentences). Use Australian English. Return as JSON: {"answer": "your response"}`;
   const { question, country, destinations } = config;
