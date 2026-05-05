@@ -73,6 +73,20 @@ export default function TravelDetails({
     ages.length === travellers ? ages : Array(travellers).fill(30)
   );
   const [localVibes, setLocalVibes] = useState<VibeOption[]>(vibes.length > 0 ? vibes : ['adventure', 'foodie']);
+  const [localOrigin, setLocalOrigin] = useState<string>(origin || DEFAULT_ORIGIN);
+  const [localHomeCurrency, setLocalHomeCurrency] = useState<string>(homeCurrency || DEFAULT_HOME_CURRENCY);
+  const [originSearch, setOriginSearch] = useState('');
+
+  const filteredOrigins = useMemo(() => {
+    const q = originSearch.trim().toLowerCase();
+    if (!q) return ORIGIN_AIRPORTS;
+    return ORIGIN_AIRPORTS.filter(
+      (a) =>
+        a.city.toLowerCase().includes(q) ||
+        a.iata.toLowerCase().includes(q) ||
+        a.country.toLowerCase().includes(q)
+    );
+  }, [originSearch]);
 
   const endDate = addDaysISO(startDate, tripDays);
 
