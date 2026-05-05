@@ -131,6 +131,21 @@ export interface CurrencyInfo {
   common_costs: { item: string; local_price: string; aud_price: string }[];
 }
 
+export interface Restaurant {
+  name: string;
+  cuisine: string;
+  price_tier: '$' | '$$' | '$$$' | '$$$$';
+  signature_dish: string;
+  neighbourhood: string;
+  why: string;
+  reservation_link?: string; // OpenTable / Resy / Tabelog / local URL
+}
+
+export interface DestinationRestaurants {
+  destination: string;
+  restaurants: Restaurant[];
+}
+
 export interface NearbyPlace {
   destination: string;
   name: string;
