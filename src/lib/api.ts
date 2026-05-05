@@ -67,3 +67,7 @@ export async function generateTransport(config: TravelConfig): Promise<Transport
 export async function generateRestaurants(config: TravelConfig): Promise<DestinationRestaurants[]> {
   return postApi<DestinationRestaurants[]>('/api/restaurants', config);
 }
+
+export async function generateActivities(config: TravelConfig): Promise<DestinationActivities[]> {
+  return postApi<DestinationActivities[]>('/api/activities', config);
+}
