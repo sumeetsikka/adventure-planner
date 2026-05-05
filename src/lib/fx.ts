@@ -43,3 +43,33 @@ export async function fetchRate(base: string, quote: string): Promise<number | n
     return null;
   }
 }
+
+export async function convert(
+  amount: number,
+  from: string,
+  to: string
+): Promise<number | null> {
+  if (!isFinite(amount)) return null;
+  const f = (from || '').toUpperCase();
+  const t = (to || '').toUpperCase();
+  if (!f || !t) return null;
+  if (f === t) return amount;
+  const rate = await fetchRate(f, t);
+  if (rate == null) return null;
+  return amount * rate;
+}
+
+export const CURRENCY_SYMBOLS: Record<string, string> = {
+  AUD: '$',
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  JPY: '¥',
+  SGD: 'S$',
+  HKD: 'HK$',
+  NZD: 'NZ$',
+  CAD: 'C$',
+  INR: '₹',
+  AED: 'د.إ',
+  ZAR: 'R',
+};
