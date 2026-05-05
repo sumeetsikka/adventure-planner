@@ -17,6 +17,7 @@ interface Props {
     currency: boolean;
     nearby: boolean;
     transport: boolean;
+    restaurants: boolean;
   };
 }
 
