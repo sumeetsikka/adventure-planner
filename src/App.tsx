@@ -9,6 +9,7 @@ import LoadingScreen from './components/wizard/LoadingScreen';
 import ResultsView from './components/results/ResultsView';
 import ThemeToggle from './components/shared/ThemeToggle';
 import InstallPrompt from './components/shared/InstallPrompt';
+import OnboardingTour from './components/shared/OnboardingTour';
 import MyTrips from './components/wizard/MyTrips';
 import Inspiration from './components/wizard/Inspiration';
 import Wishlist from './components/wizard/Wishlist';
