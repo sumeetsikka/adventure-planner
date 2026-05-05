@@ -152,7 +152,7 @@ export default function DashboardTab({ config, results, onTabChange }: Props) {
               {geo.status === 'denied' && (
                 <p className="text-[var(--text-dim)] text-[11px] font-light italic leading-snug">Location off — turn on for live routing.</p>
               )}
-              {(geo.status === 'idle' || geo.status === 'unavailable') && geo.status !== 'denied' && (
+              {(geo.status === 'idle' || geo.status === 'unavailable') && (
                 <p className="text-[var(--text-dim)] text-[11px] font-light italic leading-snug">{todayCity}</p>
               )}
             </div>
