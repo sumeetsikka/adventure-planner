@@ -278,14 +278,27 @@ function CountryTile({ country, onSelect, onHover }: { country: Country; onSelec
       <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(10,8,6,0.1) 0%, rgba(10,8,6,0.65) 70%, rgba(10,8,6,0.95) 100%)' }} />
       <div className="absolute inset-0 opacity-0 group-hover:opacity-40 transition-opacity duration-500 mix-blend-multiply" style={{ background: country.colour }} />
 
-      {/* Top row: flag + destination count */}
+      {/* Top row: flag + destination count + star toggle */}
       <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-10">
         <span className="text-3xl drop-shadow-lg">{country.emoji}</span>
-        {destCount > 0 && (
-          <span className="text-[9px] tracking-[0.2em] uppercase text-[var(--cream)] bg-[var(--ink)]/60 backdrop-blur-sm rounded-full px-2.5 py-1 border border-[var(--line-strong)]">
-            {destCount} stops
-          </span>
-        )}
+        <div className="flex items-center gap-1.5">
+          {destCount > 0 && (
+            <span className="text-[9px] tracking-[0.2em] uppercase text-[var(--cream)] bg-[var(--ink)]/60 backdrop-blur-sm rounded-full px-2.5 py-1 border border-[var(--line-strong)]">
+              {destCount} stops
+            </span>
+          )}
+          <button
+            onClick={handleStarClick}
+            aria-label={saved ? `Remove ${country.name} from wishlist` : `Save ${country.name} to wishlist`}
+            className={`w-8 h-8 rounded-full backdrop-blur-sm flex items-center justify-center text-base transition-all border ${
+              saved
+                ? 'bg-[var(--gold)]/90 text-[var(--ink)] border-[var(--gold)]'
+                : 'bg-[var(--ink)]/60 text-[var(--cream)] border-[var(--line-strong)] hover:bg-[var(--ink)]/80'
+            }`}
+          >
+            ★
+          </button>
+        </div>
       </div>
 
       {/* Content */}
