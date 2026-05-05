@@ -135,6 +135,7 @@ export default function App() {
       country: selectedCountry,
       destinations: selectedDests,
       departureDate, returnDate, travellers, ages, vibes,
+      origin, homeCurrency,
     };
     const hasMeaningfulData =
       selectedDests.length > 0 ||
