@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import type { TravelConfig, GenerationResults } from '../../types';
 import { formatDateAU } from '../../lib/dateUtils';
 import { getFlightLinks, getHotelLinks } from '../../lib/bookingLinks';
+import { parseBookingEmail, type ParsedBooking } from '../../lib/api';
 
 interface Props {
   config: TravelConfig;
