@@ -317,6 +317,7 @@ export default function App() {
     <>
       <ThemeToggle theme={theme} onToggle={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} />
       <InstallPrompt />
+      <OnboardingTour />
     </>
   );
   const bg = 'bg-[var(--ink)] grain';
