@@ -227,7 +227,7 @@ export default function BudgetTab({ budget, config, onUpdate, flights = [], tran
                   <div className="flex-1 min-w-0">
                     <p className="font-display text-lg text-[var(--cream)] leading-snug">{item.category}</p>
                   </div>
-                  <p className="font-display text-2xl text-[var(--gold)] flex-shrink-0">{item.cost}</p>
+                  <p className="font-display text-2xl text-[var(--gold)] flex-shrink-0">{convertCostString(item.cost)}</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="flex-1 h-[2px] bg-[var(--line)] rounded-full overflow-hidden">
