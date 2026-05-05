@@ -112,6 +112,8 @@ export default function TravelDetails({
       travellers: localTravellers,
       ages: localAges,
       vibes: localVibes.length > 0 ? localVibes : ['adventure', 'foodie'],
+      origin: localOrigin,
+      homeCurrency: localHomeCurrency,
     });
     onGenerate();
   };
