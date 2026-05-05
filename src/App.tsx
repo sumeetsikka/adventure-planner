@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Country, Destination, VibeOption, TravelConfig, GenerationResults, AppView, WizardStep } from './types';
-import { searchFlights, searchHotels, generateItinerary, generateBudget, generateTips, generateDestinations, generatePacking, generateWeather, generateVisa, generateCurrency, generateNearby, generateTransport, generateRestaurants } from './lib/api';
+import { searchFlights, searchHotels, generateItinerary, generateBudget, generateTips, generateDestinations, generatePacking, generateWeather, generateVisa, generateCurrency, generateNearby, generateTransport, generateRestaurants, generateActivities } from './lib/api';
 import { getDestinationsForCountry } from './data/destinations';
 import CountryPicker from './components/wizard/CountryPicker';
 import DestinationPicker from './components/wizard/DestinationPicker';
