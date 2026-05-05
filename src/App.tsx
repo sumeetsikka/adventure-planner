@@ -115,6 +115,8 @@ export default function App() {
   const [travellers, setTravellers] = useState(2);
   const [ages, setAges] = useState<number[]>([30, 30]);
   const [vibes, setVibes] = useState<VibeOption[]>(['adventure', 'foodie']);
+  const [origin, setOrigin] = useState<string>('MEL');
+  const [homeCurrency, setHomeCurrency] = useState<string>('AUD');
 
   const [progress, setProgress] = useState({
     route: false, flights: false, hotels: false, itinerary: false, budget: false, tips: false,
