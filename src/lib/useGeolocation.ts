@@ -34,15 +34,19 @@ export function useGeolocation(enabled: boolean): GeoPosition {
 
   useEffect(() => {
     if (!enabled) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPos(initial);
       return;
     }
     if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPos({ ...initial, status: 'unavailable', error: 'Geolocation not supported' });
       return;
     }
 
     let cancelled = false;
+    // Browser-API lifecycle pattern — requesting flag toggled before async work
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPos((p) => ({ ...p, status: 'requesting' }));
 
     navigator.geolocation.getCurrentPosition(
