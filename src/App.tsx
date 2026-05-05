@@ -328,6 +328,7 @@ export default function App() {
           onLoad={loadTrip}
           onNew={newTrip}
           onInspire={() => setView('inspire')}
+          onWishlist={() => setView('wishlist')}
         />
       </div>
     );
