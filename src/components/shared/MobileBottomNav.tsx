@@ -64,6 +64,7 @@ const SHEET_GROUPS: Array<{ label: string; tabs: NavItem[] }> = [
   {
     label: 'Explore',
     tabs: [
+      { key: 'taste', label: 'Taste', icon: '◐' },
       { key: 'nearby', label: 'Nearby', icon: '✦' },
       { key: 'photos', label: 'Photos', icon: '❐' },
       { key: 'tips', label: 'Tips', icon: '§' },
