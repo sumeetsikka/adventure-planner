@@ -344,6 +344,17 @@ export default function App() {
     );
   }
 
+  if (view === 'wishlist') {
+    return (
+      <div className={`min-h-screen ${bg}`}>{themeToggle}
+        <Wishlist
+          onPlanTrip={(c) => { newTripId(); handleCountrySelect(c); }}
+          onBack={() => setView(listTrips().length > 0 ? 'mytrips' : 'country')}
+        />
+      </div>
+    );
+  }
+
   if (view === 'country') {
     return (
       <div className={`min-h-screen ${bg}`}>{themeToggle}
