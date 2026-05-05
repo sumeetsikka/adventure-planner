@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { countries } from '../../data/countries';
 import { getDestinationsForCountry } from '../../data/destinations';
 import { useWikiImage } from '../../lib/useWikiImage';
+import { isInWishlist, toggleWishlist } from '../../lib/wishlist';
 import type { Country } from '../../types';
 
 interface Props {
