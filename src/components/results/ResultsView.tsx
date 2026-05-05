@@ -240,6 +240,10 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
             ? <TasteTab restaurants={results.restaurants} />
             : <RetryButton label="restaurants" onRetry={async () => { const d = await import('../../lib/api').then(m => m.generateRestaurants(config)); onUpdateResults({ restaurants: d }); }} />
           )}
+          {activeTab === 'do' && (results.activities && results.activities.length > 0
+            ? <DoTab activities={results.activities} />
+            : <RetryButton label="activities" onRetry={async () => { const d = await import('../../lib/api').then(m => m.generateActivities(config)); onUpdateResults({ activities: d }); }} />
+          )}
           </Suspense>
         </div>
       </div>
