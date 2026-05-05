@@ -55,7 +55,15 @@ export default function MyTrips({ onLoad, onNew, onInspire, onWishlist }: Props)
             <h1 className="font-display text-5xl sm:text-7xl text-[var(--cream)] leading-[0.95]">
               Every <em className="italic text-shimmer">journey</em>.
             </h1>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              {onWishlist && (
+                <button
+                  onClick={onWishlist}
+                  className="px-5 py-3 rounded-full text-sm border border-[var(--line-strong)] text-[var(--cream)] hover:bg-[var(--ink-3)] transition-colors tracking-wide"
+                >
+                  ★ Wishlist
+                </button>
+              )}
               {onInspire && (
                 <button
                   onClick={onInspire}
