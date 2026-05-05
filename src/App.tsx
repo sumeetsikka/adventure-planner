@@ -26,7 +26,7 @@ import {
 const EMPTY_RESULTS: GenerationResults = {
   flights: [], hotels: [], itinerary: [], budget: [], tips: [],
   packing: [], weather: [], visa: null, currency: null, nearby: [], transport: [],
-  restaurants: [],
+  restaurants: [], activities: [],
 };
 
 export default function App() {
