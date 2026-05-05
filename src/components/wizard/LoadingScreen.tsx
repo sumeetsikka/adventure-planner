@@ -18,6 +18,7 @@ interface Props {
     nearby: boolean;
     transport: boolean;
     restaurants: boolean;
+    activities: boolean;
   };
 }
 
