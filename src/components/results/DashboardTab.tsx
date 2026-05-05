@@ -160,9 +160,20 @@ export default function DashboardTab({ config, results, onTabChange }: Props) {
               )}
               {geo.status === 'granted' && geo.lat !== null && geo.lng !== null && (
                 <>
-                  <p className="text-[var(--cream)] text-[13px] font-light">
-                    Near {todayCity}
-                  </p>
+                  {distanceToToday !== null ? (
+                    <>
+                      <p className="font-display text-2xl text-[var(--cream)] leading-none">
+                        {distanceToToday < 1
+                          ? `${Math.round(distanceToToday * 1000)} m`
+                          : `${distanceToToday.toFixed(1)} km`}
+                      </p>
+                      <p className="text-[var(--text-muted)] text-[11px] mt-1 leading-snug">
+                        from {todayCity} · ~{etaMinutes} min
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-[var(--cream)] text-[13px] font-light">Near {todayCity}</p>
+                  )}
                   <a
                     href={directionsUrl(todayCity)}
                     target="_blank"
