@@ -82,6 +82,68 @@ export default function BookingTrackerTab({ config, results }: Props) {
   const pct = total > 0 ? (done / total) * 100 : 0;
   const categories = Array.from(new Set(items.map(i => i.category)));
 
+  // Match a parsed booking to an existing booking item
+  const findMatchId = (p: ParsedBooking): string | null => {
+    if (p.type === 'flight' && p.flight) {
+      const f = p.flight;
+      for (let i = 0; i < results.flights.length; i++) {
+        const fl = results.flights[i];
+        const sameDate = f.departureDate && fl.date && fl.date === f.departureDate;
+        const airlineMatch = f.airline && (fl.airlines || []).some(a => a.toLowerCase().includes(String(f.airline).toLowerCase()) || String(f.airline).toLowerCase().includes(a.toLowerCase()));
+        if (sameDate && airlineMatch) return `flight-${i}`;
+        if (sameDate) return `flight-${i}`;
+      }
+    }
+    if (p.type === 'hotel' && p.hotel) {
+      const h = p.hotel;
+      const name = (h.name || '').toLowerCase();
+      for (let i = 0; i < results.hotels.length; i++) {
+        const dest = results.hotels[i];
+        const top = dest.hotels.find(x => x.recommended) || dest.hotels[0];
+        if (top && name && top.name.toLowerCase().includes(name)) return `hotel-${i}`;
+        if (top && name && name.includes(top.name.toLowerCase())) return `hotel-${i}`;
+      }
+    }
+    return null;
+  };
+
+  const handleParse = async () => {
+    setParsing(true);
+    setParseError('');
+    setParsed(null);
+    setParsedMatchId(null);
+    setStatusMsg('');
+    try {
+      const result = await parseBookingEmail(emailText);
+      setParsed(result);
+      setParsedMatchId(findMatchId(result));
+    } catch (err) {
+      setParseError(err instanceof Error ? err.message : 'Parse failed');
+    } finally {
+      setParsing(false);
+    }
+  };
+
+  const confirmBooked = () => {
+    if (parsedMatchId) {
+      setBooked(prev => new Set(prev).add(parsedMatchId));
+      setStatusMsg('Marked as booked.');
+      setParsed(null);
+      setParsedMatchId(null);
+      setEmailText('');
+    }
+  };
+
+  const saveAsNote = () => {
+    if (parsed) {
+      setSavedNotes(prev => [...prev, parsed]);
+      setStatusMsg('Saved as note.');
+      setParsed(null);
+      setParsedMatchId(null);
+      setEmailText('');
+    }
+  };
+
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: EASE }}>
       <div className="mb-10">
