@@ -2,6 +2,8 @@ import { motion } from 'framer-motion';
 import type { TravelConfig, GenerationResults, ResultsTab } from '../../types';
 import { formatDateAU, todayISO, addDaysISO } from '../../lib/dateUtils';
 import { getCountryHero, getDestinationPhoto } from '../../lib/imagery';
+import { useGeolocation } from '../../lib/useGeolocation';
+import { directionsUrl } from '../../lib/deepLinks';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
