@@ -362,6 +362,7 @@ export default function App() {
         <CountryPicker
           onSelect={handleCountrySelect}
           onInspire={() => setView('inspire')}
+          onWishlist={() => setView('wishlist')}
         />
       </div>
     );
