@@ -166,6 +166,89 @@ export default function TravelDetails({
             </div>
           </motion.div>
 
+          {/* Origin & Home currency */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.12 }}
+            className="surface-soft p-6"
+          >
+            <div className="flex items-baseline justify-between mb-4">
+              <span className="eyebrow">Where are you flying from?</span>
+              <span className="text-[11px] text-[var(--text-dim)] font-light">
+                {localOrigin}
+              </span>
+            </div>
+
+            <input
+              type="text"
+              value={originSearch}
+              onChange={(e) => setOriginSearch(e.target.value)}
+              placeholder="Search city, IATA, or country…"
+              className="w-full bg-[var(--ink-3)] border border-[var(--line)] rounded-xl px-4 py-2.5 text-[var(--cream)] focus:outline-none focus:border-[var(--gold)]/40 transition-colors mb-3 text-sm font-light placeholder:text-[var(--text-dim)]"
+            />
+
+            <div className="max-h-44 overflow-y-auto pr-1">
+              <div className="flex flex-wrap gap-2">
+                {filteredOrigins.map((a) => {
+                  const isActive = localOrigin === a.iata;
+                  return (
+                    <button
+                      key={a.iata}
+                      type="button"
+                      onClick={() => setLocalOrigin(a.iata)}
+                      className={`px-3 py-1.5 rounded-full text-xs transition-all border ${
+                        isActive
+                          ? 'border-[var(--gold)]/60 bg-[var(--gold)]/10 text-[var(--cream)]'
+                          : 'border-[var(--line)] bg-[var(--ink-3)] text-[var(--text-muted)] hover:border-[var(--line-strong)] hover:text-[var(--cream)]'
+                      }`}
+                    >
+                      <span className="mr-1.5">{a.flag}</span>
+                      <span className="font-medium">{a.city}</span>
+                      <span className="text-[var(--text-dim)] ml-1.5 tracking-wider text-[10px]">
+                        {a.iata}
+                      </span>
+                    </button>
+                  );
+                })}
+                {filteredOrigins.length === 0 && (
+                  <p className="text-[var(--text-dim)] text-xs italic font-light px-1 py-2">
+                    No matches — try a different search.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="divider my-5" />
+
+            <div className="flex items-baseline justify-between mb-3">
+              <span className="eyebrow">Home currency</span>
+              <span className="text-[11px] text-[var(--text-dim)] font-light">
+                {localHomeCurrency}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {HOME_CURRENCIES.map((c) => {
+                const isActive = localHomeCurrency === c.code;
+                return (
+                  <button
+                    key={c.code}
+                    type="button"
+                    onClick={() => setLocalHomeCurrency(c.code)}
+                    title={c.label}
+                    className={`px-3 py-1.5 rounded-full text-xs tracking-wider transition-all border ${
+                      isActive
+                        ? 'border-[var(--gold)]/60 bg-[var(--gold)]/10 text-[var(--cream)]'
+                        : 'border-[var(--line)] bg-[var(--ink-3)] text-[var(--text-muted)] hover:border-[var(--line-strong)] hover:text-[var(--cream)]'
+                    }`}
+                  >
+                    {c.code}
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+
           {/* Trip Length */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
