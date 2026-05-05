@@ -4,6 +4,7 @@ import type { DestinationHotels, Destination, TravelConfig } from '../../types';
 import { formatDateAU } from '../../lib/dateUtils';
 import { getHotelLinks } from '../../lib/bookingLinks';
 import { getDestinationPhoto } from '../../lib/imagery';
+import { PlaceActions } from '../shared/PlaceLink';
 
 interface Props {
   hotels: DestinationHotels[];
