@@ -154,6 +154,123 @@ export default function BookingTrackerTab({ config, results }: Props) {
         <p className="text-[var(--text-muted)] text-sm mt-3 max-w-md">Tick each booking off as you confirm it. Links open with your details pre-filled.</p>
       </div>
 
+      {/* Paste confirmation email */}
+      <details className="surface-soft rounded-2xl mb-6 group">
+        <summary className="cursor-pointer list-none px-5 py-4 flex items-center justify-between">
+          <span className="flex items-center gap-3">
+            <span className="eyebrow">Quick add</span>
+            <span className="text-[var(--cream)] font-display text-base italic">Paste a confirmation email</span>
+          </span>
+          <span className="text-[var(--text-muted)] text-sm group-open:rotate-180 transition-transform">▾</span>
+        </summary>
+        <div className="px-5 pb-5 pt-1 border-t border-[var(--line)]">
+          <textarea
+            value={emailText}
+            onChange={(e) => setEmailText(e.target.value)}
+            placeholder="Paste your flight, hotel or activity confirmation here…"
+            className="w-full min-h-[140px] mt-4 px-4 py-3 rounded-xl bg-[var(--ink)]/40 border border-[var(--line)] focus:border-[var(--gold)]/50 outline-none text-[var(--cream)] text-sm leading-relaxed placeholder:text-[var(--text-dim)] transition-colors"
+          />
+          <div className="mt-3 flex items-center justify-between gap-3 flex-wrap">
+            <p className="text-[var(--text-dim)] text-[11px] uppercase tracking-wider">
+              We'll try to match it to an existing booking.
+            </p>
+            <button
+              type="button"
+              onClick={handleParse}
+              disabled={!emailText.trim() || parsing}
+              className="px-5 py-2 rounded-full text-xs font-medium text-[var(--ink)] bg-[var(--cream)] hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {parsing ? 'Parsing…' : 'Parse & add'}
+            </button>
+          </div>
+
+          {parseError && (
+            <p className="text-[var(--terracotta)] text-xs mt-3">{parseError}</p>
+          )}
+          {statusMsg && !parsed && (
+            <p className="text-[var(--gold)] text-xs mt-3 italic">{statusMsg}</p>
+          )}
+
+          {parsed && (
+            <div className="mt-5 surface-card rounded-2xl p-5">
+              <div className="flex items-baseline justify-between mb-3">
+                <p className="eyebrow">Extracted · {parsed.type}</p>
+                <p className="text-[var(--text-dim)] text-[10px] uppercase tracking-wider">Confidence · {parsed.confidence}</p>
+              </div>
+              <div className="divider mb-4" />
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                {parsed.flight && Object.entries(parsed.flight).filter(([, v]) => v).map(([k, v]) => (
+                  <div key={k} className="flex justify-between gap-3">
+                    <dt className="text-[var(--text-dim)] text-[11px] uppercase tracking-wider">{k}</dt>
+                    <dd className="text-[var(--cream)] text-right">{String(v)}</dd>
+                  </div>
+                ))}
+                {parsed.hotel && Object.entries(parsed.hotel).filter(([, v]) => v).map(([k, v]) => (
+                  <div key={k} className="flex justify-between gap-3">
+                    <dt className="text-[var(--text-dim)] text-[11px] uppercase tracking-wider">{k}</dt>
+                    <dd className="text-[var(--cream)] text-right">{String(v)}</dd>
+                  </div>
+                ))}
+                {parsed.activity && Object.entries(parsed.activity).filter(([, v]) => v).map(([k, v]) => (
+                  <div key={k} className="flex justify-between gap-3">
+                    <dt className="text-[var(--text-dim)] text-[11px] uppercase tracking-wider">{k}</dt>
+                    <dd className="text-[var(--cream)] text-right">{String(v)}</dd>
+                  </div>
+                ))}
+              </dl>
+
+              <div className="mt-5 pt-4 border-t border-[var(--line)] flex items-center justify-between gap-3 flex-wrap">
+                {parsedMatchId ? (
+                  <>
+                    <p className="text-[var(--text-muted)] text-xs italic">
+                      Matched to {items.find(i => i.id === parsedMatchId)?.title || 'an existing booking'}.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={confirmBooked}
+                      className="px-5 py-2 rounded-full text-xs font-medium text-[var(--ink)] bg-[var(--gold)] hover:opacity-90 transition-all"
+                    >
+                      Mark as booked?
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-[var(--text-muted)] text-xs italic">
+                      Couldn't match this to an existing booking. Add it as a note?
+                    </p>
+                    <button
+                      type="button"
+                      onClick={saveAsNote}
+                      className="px-5 py-2 rounded-full text-xs font-medium text-[var(--cream)] border border-[var(--line-strong)] hover:border-[var(--gold)]/50 transition-all"
+                    >
+                      Save
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {savedNotes.length > 0 && (
+            <div className="mt-5">
+              <p className="eyebrow mb-2">Notes · {savedNotes.length}</p>
+              <ul className="space-y-2">
+                {savedNotes.map((n, i) => {
+                  const head = n.flight?.airline || n.hotel?.name || n.activity?.name || n.type;
+                  const sub = n.flight?.departureDate || n.hotel?.checkIn || n.activity?.date || '';
+                  return (
+                    <li key={i} className="text-[var(--text-muted)] text-xs flex justify-between border-l-2 border-[var(--line-strong)] pl-3">
+                      <span className="text-[var(--cream)]">{head}</span>
+                      <span className="text-[var(--text-dim)]">{sub}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+        </div>
+      </details>
+
       {/* Progress */}
       <div className="surface-card rounded-3xl p-7 mb-10">
         <div className="flex items-baseline justify-between mb-5">
