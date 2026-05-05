@@ -219,6 +219,65 @@ export default function ItineraryTab({ itinerary, config, hotels, onUpdate, flig
         );
       })()}
 
+      {nudges.length > 0 && (() => {
+        const visible = nudgesExpanded || nudges.length <= 3 ? nudges : nudges.slice(0, 3);
+        const remaining = nudges.length - visible.length;
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: EASE }}
+            className="surface-card rounded-3xl p-7 mb-10 border border-[var(--gold)]/20"
+          >
+            <p className="eyebrow mb-3" style={{ color: 'var(--gold)' }}>
+              AI tips · {nudges.length}
+            </p>
+            <h3 className="font-display text-2xl text-[var(--cream)] leading-tight mb-5">
+              Heads <em className="italic" style={{ color: 'var(--gold)' }}>up</em>.
+            </h3>
+
+            <ul className="space-y-2">
+              {visible.map((n, i) => (
+                <li key={i} className="surface-soft rounded-2xl px-4 py-3 flex gap-4 items-start">
+                  <span
+                    className="font-display text-xl leading-none mt-0.5"
+                    style={{ color: n.severity === 'caution' ? 'var(--terracotta)' : 'var(--gold)' }}
+                  >
+                    {n.severity === 'caution' ? '⚠' : '◉'}
+                  </span>
+                  <div className="flex-1">
+                    <p className="text-[var(--cream)] text-sm leading-snug">
+                      <span className="text-[var(--text-dim)] text-[10px] uppercase tracking-wider mr-2">{n.category}</span>
+                      {n.message}
+                    </p>
+                    {n.detail && (
+                      <p className="text-[var(--text-muted)] text-xs mt-1 italic">{n.detail}</p>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            {remaining > 0 && (
+              <button
+                onClick={() => setNudgesExpanded(true)}
+                className="mt-4 text-[11px] uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--cream)] transition-colors"
+              >
+                Show {remaining} more →
+              </button>
+            )}
+            {nudgesExpanded && nudges.length > 3 && (
+              <button
+                onClick={() => setNudgesExpanded(false)}
+                className="mt-4 text-[11px] uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--cream)] transition-colors"
+              >
+                Show less ↑
+              </button>
+            )}
+          </motion.div>
+        );
+      })()}
+
       {/* Selected day detail */}
       {selectedDayData && (() => {
         const hotelMatch = findHotelForLocation(selectedDayData.location, hotels);
