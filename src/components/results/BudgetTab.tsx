@@ -184,9 +184,12 @@ export default function BudgetTab({ budget, config, onUpdate, flights = [], tran
         >
           <p className="eyebrow mb-4">Per person</p>
           <p className="font-display text-5xl sm:text-6xl text-[var(--cream)] leading-none tracking-tight">
-            ${perPersonTotal.toLocaleString()}
+            {formatMoney(perPersonTotal)}
           </p>
-          <p className="text-[var(--text-dim)] text-xs uppercase tracking-wider mt-4">estimated total</p>
+          <p className="text-[var(--text-dim)] text-xs uppercase tracking-wider mt-4">
+            estimated total {effectiveCurrency !== 'AUD' && <span className="italic normal-case tracking-normal text-[var(--text-dim)]">· from AUD via ECB</span>}
+            {fxFailed && <span className="italic normal-case tracking-normal text-[var(--terracotta)]"> · live rate unavailable</span>}
+          </p>
         </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -196,7 +199,7 @@ export default function BudgetTab({ budget, config, onUpdate, flights = [], tran
         >
           <p className="eyebrow mb-4">Group · {config.travellers} traveller{config.travellers > 1 ? 's' : ''}</p>
           <p className="font-display text-5xl sm:text-6xl text-[var(--gold)] leading-none tracking-tight">
-            ${groupTotal.toLocaleString()}
+            {formatMoney(groupTotal)}
           </p>
           <p className="text-[var(--text-dim)] text-xs uppercase tracking-wider mt-4">estimated total</p>
         </motion.div>
