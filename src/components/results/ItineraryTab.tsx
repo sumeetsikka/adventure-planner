@@ -244,6 +244,9 @@ export default function ItineraryTab({ itinerary, config, hotels, onUpdate, flig
                 <p className="eyebrow mb-2">Day {selectedDayData.day} · {VIBE_LABELS[selectedDayData.vibe] || selectedDayData.vibe}</p>
                 <h3 className="font-display text-3xl sm:text-4xl text-[var(--cream)] leading-tight">{selectedDayData.title}</h3>
                 <p className="text-[var(--text-muted)] text-sm mt-2">{selectedDayData.location} · {formatDateAU(dayDate)}</p>
+                <div className="mt-3">
+                  <PlaceActions place={selectedDayData.location} compact />
+                </div>
               </div>
             </div>
 
