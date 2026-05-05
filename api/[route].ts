@@ -267,6 +267,35 @@ Rules: REAL restaurants only — do not invent names. Mix price tiers (1 $, 2 $$
   return parseResult(await callLLM(RESTAURANTS_SYSTEM, userMessage));
 }
 
+async function handleActivities(config: any) {
+  const ACTIVITIES_SYSTEM = `You are a travel editor curating things to do. For each destination, recommend 6 activities ranging from free/walking-tour to paid/full-day. Return ONLY a valid JSON array, one object per destination:
+[
+  {
+    "destination": "Kyoto",
+    "activities": [
+      {
+        "name": "Activity name",
+        "category": "culture" | "nature" | "adventure" | "food" | "wellness" | "family" | "nightlife" | "shopping",
+        "duration": "2 hours" | "Half day" | "Full day" | "Evening",
+        "price_estimate_aud": "$0" | "$30-50" | "$120" | etc,
+        "difficulty": "easy" | "moderate" | "hard" (optional, only for adventure/nature),
+        "best_time": "Sunrise" | "Morning" | "Afternoon" | "Evening" | "Year-round",
+        "why": "1 sentence why this activity",
+        "booking_link": "https://... if known (Klook/Viator/GetYourGuide/official site), otherwise omit"
+      }
+    ]
+  }
+]
+Rules: REAL activities tied to the destination — temples, hikes, classes, tours, museums. Mix free and paid. Include at least one local/cultural experience and one outdoor/active option per destination. Do NOT invent. Omit booking_link if unsure.`;
+  const countryName = config.country?.name || 'the destination';
+  const entryCity = determineEntryCity(config.destinations);
+  const ordered = orderDestinations(config.destinations, entryCity);
+  const destNames = ordered.map((d: any) => d.name).join(', ');
+  const vibes = (config.vibes || []).join(', ');
+  const userMessage = `Country: ${countryName}. Destinations: ${destNames}. Traveller vibes: ${vibes || 'general'}. Recommend things to do per destination — culture, nature, adventure, family-friendly mix.`;
+  return parseResult(await callLLM(ACTIVITIES_SYSTEM, userMessage));
+}
+
 async function handleTransport(config: any) {
   const TRANSPORT_SYSTEM = `You are a transport expert. Generate inter-city transport as a JSON array. Each object: {from, to, date (YYYY-MM-DD), mode, operator, duration, price_estimate_aud, tip, booking_sites[], booking_urls[]}. No flights. Only trains, buses, ferries, cars. Use EXACT dates provided. Return ONLY valid JSON array.`;
   const countryName = config.country?.name || 'the destination';
