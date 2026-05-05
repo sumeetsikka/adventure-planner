@@ -156,6 +156,8 @@ export default function App() {
     setTravellers(trip.config.travellers);
     setAges(trip.config.ages);
     setVibes(trip.config.vibes);
+    if (trip.config.origin) setOrigin(trip.config.origin);
+    if (trip.config.homeCurrency) setHomeCurrency(trip.config.homeCurrency);
     setResults(trip.results);
     const hasResults = trip.results.itinerary.length > 0 || trip.results.flights.length > 0;
     setView(hasResults ? 'results' : 'wizard');
