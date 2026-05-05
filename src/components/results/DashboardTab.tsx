@@ -58,7 +58,12 @@ export default function DashboardTab({ config, results, onTabChange }: Props) {
     : '';
   const [todayCoords, setTodayCoords] = useState<{ lat: number; lng: number } | null>(null);
   useEffect(() => {
-    if (!todayCityForGeo) { setTodayCoords(null); return; }
+    if (!todayCityForGeo) {
+      // Reset coords when there's no city to geocode (e.g. trip ended).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTodayCoords(null);
+      return;
+    }
     let cancelled = false;
     geocodeDestination(todayCityForGeo).then((g) => {
       if (cancelled || !g) return;
@@ -164,8 +169,8 @@ export default function DashboardTab({ config, results, onTabChange }: Props) {
                     <>
                       <p className="font-display text-2xl text-[var(--cream)] leading-none">
                         {distanceToToday < 1
-                          ? `${Math.round(distanceToToday * 1000)} m`
-                          : `${distanceToToday.toFixed(1)} km`}
+                          ? `${Math.round(distanceToToday * 1000)} m`
+                          : `${distanceToToday.toFixed(1)} km`}
                       </p>
                       <p className="text-[var(--text-muted)] text-[11px] mt-1 leading-snug">
                         from {todayCity} · ~{etaMinutes} min
