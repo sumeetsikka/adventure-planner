@@ -34,6 +34,8 @@ export interface TravelConfig {
   travellers: number;
   ages: number[];
   vibes: VibeOption[];
+  origin?: string;
+  homeCurrency?: string;
 }
 
 export interface FlightLeg {
