@@ -51,6 +51,28 @@ export default function DashboardTab({ config, results, onTabChange }: Props) {
   // for users planning future trips.
   const geo = useGeolocation(tripUnderway);
 
+  // Geocode today's city once, then compute distance from the user's current
+  // location to it. Re-resolves whenever today's city changes.
+  const todayCityForGeo = tripUnderway
+    ? results.itinerary[daysSinceDeparture]?.location?.split('(')[0].split('/')[0].trim() || config.country?.name || ''
+    : '';
+  const [todayCoords, setTodayCoords] = useState<{ lat: number; lng: number } | null>(null);
+  useEffect(() => {
+    if (!todayCityForGeo) { setTodayCoords(null); return; }
+    let cancelled = false;
+    geocodeDestination(todayCityForGeo).then((g) => {
+      if (cancelled || !g) return;
+      setTodayCoords({ lat: g.lat, lng: g.lon });
+    });
+    return () => { cancelled = true; };
+  }, [todayCityForGeo]);
+
+  const distanceToToday =
+    geo.status === 'granted' && geo.lat !== null && geo.lng !== null && todayCoords
+      ? distanceKm({ lat: geo.lat, lng: geo.lng }, todayCoords)
+      : null;
+  const etaMinutes = distanceToToday !== null ? Math.max(1, Math.round((distanceToToday / 30) * 60)) : null; // ~30 km/h average
+
   let todayPanel: React.ReactNode = null;
   if (tripUnderway) {
     const todayEntry = results.itinerary[daysSinceDeparture] || null;
