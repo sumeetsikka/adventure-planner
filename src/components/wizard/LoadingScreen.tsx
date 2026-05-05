@@ -27,6 +27,7 @@ const STEPS = [
   { key: 'flights', label: 'Scouting flights' },
   { key: 'hotels', label: 'Curating hotels' },
   { key: 'transport', label: 'Planning inter-city journeys' },
+  { key: 'restaurants', label: 'Curating restaurants' },
   { key: 'budget', label: 'Calculating the budget' },
   { key: 'tips', label: 'Gathering insider tips' },
   { key: 'packing', label: 'Packing your bag' },
