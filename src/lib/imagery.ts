@@ -92,6 +92,15 @@ export function getDestinationPhoto(destinationName: string, width = 800, height
   return loremflickr(destinationName, width, height, 'travel');
 }
 
+/** Three different photos of the same destination (varied tags + seeds). */
+export function getDestinationPhotoStrip(destinationName: string, width = 1000, height = 700): string[] {
+  return [
+    loremflickr(`${destinationName} 1`, width, height, 'travel'),
+    loremflickr(`${destinationName} 2`, width, height, 'landscape'),
+    loremflickr(`${destinationName} 3`, width, height, 'street'),
+  ];
+}
+
 export function getDestinationThumbnail(destinationName: string): string {
   return getDestinationPhoto(destinationName, 600, 400);
 }
