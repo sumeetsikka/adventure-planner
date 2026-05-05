@@ -279,7 +279,13 @@ export default function App() {
       .then((d) => { setResults((r) => ({ ...r, transport: d })); setProgress((p) => ({ ...p, transport: true })); })
       .catch(() => setProgress((p) => ({ ...p, transport: true })));
 
-    await Promise.all([p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11]);
+    await stagger(800);
+
+    const p12 = generateRestaurants(config)
+      .then((d) => { setResults((r) => ({ ...r, restaurants: d })); setProgress((p) => ({ ...p, restaurants: true })); })
+      .catch(() => setProgress((p) => ({ ...p, restaurants: true })));
+
+    await Promise.all([p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12]);
     setView('results');
   }, [selectedDests, departureDate, returnDate, travellers, ages, vibes, selectedCountry]);
 
