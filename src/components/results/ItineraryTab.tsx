@@ -6,6 +6,7 @@ import { formatDateAU, addDaysISO } from '../../lib/dateUtils';
 import { VIBE_LABELS } from '../../lib/constants';
 import { getDestinationPhoto } from '../../lib/imagery';
 import { findConflicts } from '../../lib/conflicts';
+import { PlaceActions } from '../shared/PlaceLink';
 
 interface Props {
   itinerary: DayType[];
