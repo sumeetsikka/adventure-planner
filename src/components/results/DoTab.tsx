@@ -1,0 +1,209 @@
+import { useState, useMemo } from 'react';
+import { motion } from 'framer-motion';
+import type { DestinationActivities, Activity } from '../../types';
+import { mapsUrl, directionsUrl } from '../../lib/deepLinks';
+
+interface Props {
+  activities: DestinationActivities[];
+}
+
+const EASE = [0.16, 1, 0.3, 1] as const;
+
+const CATEGORY_META: Record<Activity['category'], { label: string; icon: string; color: string }> = {
+  culture: { label: 'Culture', icon: '🏛', color: 'var(--gold)' },
+  nature: { label: 'Nature', icon: '🌿', color: 'var(--sage)' },
+  adventure: { label: 'Adventure', icon: '⚡', color: 'var(--terracotta)' },
+  food: { label: 'Food', icon: '🍴', color: 'var(--gold-soft)' },
+  wellness: { label: 'Wellness', icon: '✦', color: 'var(--sage)' },
+  family: { label: 'Family', icon: '◉', color: 'var(--gold-soft)' },
+  nightlife: { label: 'Nightlife', icon: '✶', color: 'var(--terracotta)' },
+  shopping: { label: 'Shopping', icon: '◐', color: 'var(--gold)' },
+};
+
+const ALL_CATEGORIES = Object.keys(CATEGORY_META) as Activity['category'][];
+
+export default function DoTab({ activities }: Props) {
+  const [filter, setFilter] = useState<Activity['category'] | 'all'>('all');
+
+  const visibleByDest = useMemo(() => {
+    return activities.map((dest) => ({
+      destination: dest.destination,
+      list: filter === 'all' ? dest.activities : (dest.activities ?? []).filter((a) => a.category === filter),
+    }));
+  }, [activities, filter]);
+
+  const totalCount = activities.reduce((s, d) => s + (d.activities?.length ?? 0), 0);
+
+  const presentCategories = useMemo(() => {
+    const set = new Set<Activity['category']>();
+    activities.forEach((d) => (d.activities ?? []).forEach((a) => set.add(a.category)));
+    return ALL_CATEGORIES.filter((c) => set.has(c));
+  }, [activities]);
+
+  if (activities.length === 0) {
+    return (
+      <div className="text-center py-20">
+        <p className="eyebrow mb-4">Things to do</p>
+        <h2 className="font-display text-3xl text-[var(--cream)] mb-3">Curating <em>activities</em>…</h2>
+        <p className="text-[var(--text-muted)] text-sm max-w-md mx-auto">
+          Six picks per stop — culture, nature, adventure, family-friendly, with booking links where they exist.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7, ease: EASE }}
+    >
+      <div className="mb-8">
+        <p className="eyebrow mb-3">Things to do · {totalCount} ideas</p>
+        <h2 className="font-display text-4xl sm:text-5xl text-[var(--cream)] leading-[1.05] tracking-tight">
+          The <em className="italic text-[var(--gold)]">field</em>.
+        </h2>
+        <p className="text-[var(--text-muted)] text-sm mt-3 max-w-md">
+          Hand-picked things to do per stop — temples, hikes, classes, tastings. Filter by mood.
+        </p>
+      </div>
+
+      {/* Category filter */}
+      <div className="flex flex-wrap gap-1.5 mb-10">
+        <button
+          onClick={() => setFilter('all')}
+          className={`px-3.5 py-1.5 rounded-full text-[11px] tracking-wide transition-all ${
+            filter === 'all'
+              ? 'bg-[var(--cream)] text-[var(--ink)] font-medium'
+              : 'border border-[var(--line)] text-[var(--text-muted)] hover:text-[var(--cream)] hover:border-[var(--line-strong)]'
+          }`}
+        >
+          All
+        </button>
+        {presentCategories.map((cat) => {
+          const meta = CATEGORY_META[cat];
+          const isActive = filter === cat;
+          return (
+            <button
+              key={cat}
+              onClick={() => setFilter(cat)}
+              className={`px-3.5 py-1.5 rounded-full text-[11px] tracking-wide transition-all ${
+                isActive
+                  ? 'bg-[var(--cream)] text-[var(--ink)] font-medium'
+                  : 'border border-[var(--line)] text-[var(--text-muted)] hover:text-[var(--cream)] hover:border-[var(--line-strong)]'
+              }`}
+            >
+              <span className="mr-1.5">{meta.icon}</span>{meta.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="space-y-12">
+        {visibleByDest.map((dest, di) =>
+          dest.list.length === 0 ? null : (
+            <motion.section
+              key={`${dest.destination}-${di}`}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: di * 0.08, ease: EASE }}
+            >
+              <div className="flex items-baseline gap-6 mb-6">
+                <span className="eyebrow">Stop {String(di + 1).padStart(2, '0')}</span>
+                <h3 className="font-display text-2xl sm:text-3xl text-[var(--cream)]">{dest.destination}</h3>
+                <div className="flex-1 h-px bg-[var(--line)]" />
+                <span className="eyebrow text-[var(--text-dim)]">{dest.list.length} ideas</span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {dest.list.map((a, ai) => (
+                  <ActivityCard key={`${a.name}-${ai}`} activity={a} place={`${a.name}, ${dest.destination}`} />
+                ))}
+              </div>
+            </motion.section>
+          )
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+function ActivityCard({ activity: a, place }: { activity: Activity; place: string }) {
+  const meta = CATEGORY_META[a.category] || CATEGORY_META.culture;
+
+  return (
+    <motion.article
+      whileHover={{ y: -2 }}
+      transition={{ duration: 0.4, ease: EASE }}
+      className="surface-card rounded-2xl p-5"
+    >
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="min-w-0 flex-1">
+          <p className="eyebrow mb-1" style={{ color: meta.color }}>
+            {meta.icon} {meta.label}
+          </p>
+          <h4 className="font-display text-xl text-[var(--cream)] leading-tight">{a.name}</h4>
+        </div>
+        <div className="text-right shrink-0">
+          <p className="font-display text-base text-[var(--gold)] leading-none">{a.price_estimate_aud}</p>
+          {a.duration && (
+            <p className="text-[10px] tracking-wider uppercase text-[var(--text-dim)] mt-1">{a.duration}</p>
+          )}
+        </div>
+      </div>
+
+      <p className="text-[var(--text-muted)] text-[13px] leading-relaxed mb-4">{a.why}</p>
+
+      {(a.best_time || a.difficulty) && (
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {a.best_time && (
+            <span className="text-[10px] tracking-wider uppercase px-2 py-0.5 rounded-full bg-[var(--ink-3)] text-[var(--text-muted)] border border-[var(--line)]">
+              {a.best_time}
+            </span>
+          )}
+          {a.difficulty && (
+            <span
+              className="text-[10px] tracking-wider uppercase px-2 py-0.5 rounded-full"
+              style={{
+                background: 'rgba(122, 144, 130, 0.1)',
+                color: 'var(--sage)',
+                border: '1px solid rgba(122, 144, 130, 0.3)',
+              }}
+            >
+              {a.difficulty}
+            </span>
+          )}
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-1.5 pt-3 border-t border-[var(--line)]">
+        {a.booking_link && (
+          <a
+            href={a.booking_link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[10px] tracking-[0.2em] uppercase text-[var(--gold)] hover:bg-[var(--gold)]/10 border border-[var(--gold)]/30 rounded-full px-3 py-1.5 transition-colors"
+          >
+            Book ↗
+          </a>
+        )}
+        <a
+          href={mapsUrl(place)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[10px] tracking-[0.2em] uppercase text-[var(--text-muted)] hover:text-[var(--cream)] border border-[var(--line)] hover:border-[var(--line-strong)] rounded-full px-3 py-1.5 transition-colors"
+        >
+          ◎ Map
+        </a>
+        <a
+          href={directionsUrl(place)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[10px] tracking-[0.2em] uppercase text-[var(--text-muted)] hover:text-[var(--cream)] border border-[var(--line)] hover:border-[var(--line-strong)] rounded-full px-3 py-1.5 transition-colors"
+        >
+          ➞ Directions
+        </a>
+      </div>
+    </motion.article>
+  );
+}
