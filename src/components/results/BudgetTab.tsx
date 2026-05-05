@@ -135,7 +135,7 @@ export default function BudgetTab({ budget, config, onUpdate, flights = [], tran
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: EASE }}>
-      <div className="mb-10">
+      <div className="mb-8">
         <p className="eyebrow mb-3">Costed · {budget.length} categories</p>
         <h2 className="font-display text-4xl sm:text-5xl text-[var(--cream)] leading-[1.05] tracking-tight">
           The <em className="italic text-[var(--gold)]">numbers</em>.
@@ -143,6 +143,35 @@ export default function BudgetTab({ budget, config, onUpdate, flights = [], tran
         <p className="text-[var(--text-muted)] text-sm mt-3 max-w-md">
           Complete cost breakdown — flights, hotels, activities, transport.
         </p>
+      </div>
+
+      {/* Currency toggle */}
+      <div className="surface-soft p-5 mb-8">
+        <div className="flex items-baseline justify-between mb-3">
+          <span className="eyebrow">Show in</span>
+          <span className="text-[10px] text-[var(--text-dim)] tracking-wider uppercase">
+            {fxLoading ? 'Fetching rate…' : fxFailed ? 'Falling back to AUD' : effectiveCurrency === 'AUD' ? 'Source currency' : `1 AUD = ${effectiveRate.toFixed(3)} ${effectiveCurrency}`}
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {CURRENCY_CHIPS.map((c) => {
+            const isActive = displayCurrency === c;
+            return (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setDisplayCurrency(c)}
+                className={`px-3 py-1.5 rounded-full text-xs tracking-wider transition-all border ${
+                  isActive
+                    ? 'border-[var(--gold)]/60 bg-[var(--gold)]/10 text-[var(--cream)]'
+                    : 'border-[var(--line)] bg-[var(--ink-3)] text-[var(--text-muted)] hover:border-[var(--line-strong)] hover:text-[var(--cream)]'
+                }`}
+              >
+                {c}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Totals spread */}
