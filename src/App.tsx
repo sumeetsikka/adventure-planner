@@ -409,7 +409,16 @@ export default function App() {
       {step === 2 && (
         <TravelDetails destinations={selectedDests} departureDate={departureDate} returnDate={returnDate}
           travellers={travellers} ages={ages} vibes={vibes}
-          onUpdate={(d) => { setDepartureDate(d.departureDate); setReturnDate(d.returnDate); setTravellers(d.travellers); setAges(d.ages); setVibes(d.vibes); }}
+          origin={origin} homeCurrency={homeCurrency}
+          onUpdate={(d) => {
+            setDepartureDate(d.departureDate);
+            setReturnDate(d.returnDate);
+            setTravellers(d.travellers);
+            setAges(d.ages);
+            setVibes(d.vibes);
+            if (d.origin) setOrigin(d.origin);
+            if (d.homeCurrency) setHomeCurrency(d.homeCurrency);
+          }}
           onBack={() => setStep(1)} onGenerate={handleGenerate} />
       )}
     </div>
