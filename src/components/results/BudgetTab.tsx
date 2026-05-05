@@ -298,7 +298,7 @@ export default function BudgetTab({ budget, config, onUpdate, flights = [], tran
                 <div className="flex items-baseline justify-between text-[11px] uppercase tracking-wider mb-2">
                   <span className="text-[var(--text-muted)]">Your trip</span>
                   <span className={`font-display text-lg normal-case tracking-normal ${isBelow ? 'text-[var(--sage)]' : 'text-[var(--gold)]'}`}>
-                    ${perPersonTotal.toLocaleString()}
+                    {formatMoney(perPersonTotal)}
                   </span>
                 </div>
                 <div className="w-full h-[2px] bg-[var(--line)] rounded-full overflow-hidden">
