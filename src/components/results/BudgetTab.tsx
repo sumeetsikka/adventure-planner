@@ -316,7 +316,7 @@ export default function BudgetTab({ budget, config, onUpdate, flights = [], tran
                'Right on the average.'}
             </p>
             <p className="text-[var(--text-dim)] text-[10px] uppercase tracking-wider mt-3">
-              Based on ~${avgDaily}/day for mid-range Australian travellers · {totalDays} days
+              Based on ~{formatMoney(avgDaily)}/day for mid-range Australian travellers · {totalDays} days
             </p>
           </motion.div>
         );
