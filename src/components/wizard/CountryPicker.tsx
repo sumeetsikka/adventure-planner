@@ -238,6 +238,12 @@ export default function CountryPicker({ onSelect, onInspire, onWishlist }: Props
 function CountryTile({ country, onSelect, onHover }: { country: Country; onSelect: (c: Country) => void; onHover: (c: Country | null) => void }) {
   const destCount = getDestinationsForCountry(country.id)?.length ?? 0;
   const photo = useWikiImage(country.name, 'country');
+  const [saved, setSaved] = useState<boolean>(() => isInWishlist(country.id));
+
+  const handleStarClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSaved(toggleWishlist(country.id));
+  };
 
   return (
     <motion.button
