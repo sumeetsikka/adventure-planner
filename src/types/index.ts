@@ -179,6 +179,7 @@ export interface GenerationResults {
   currency: CurrencyInfo | null;
   nearby: NearbyPlace[];
   transport: TransportLeg[];
+  restaurants: DestinationRestaurants[];
 }
 
 export type AppView = 'mytrips' | 'inspire' | 'country' | 'wizard' | 'loading' | 'results';
