@@ -287,7 +287,7 @@ export default function BudgetTab({ budget, config, onUpdate, flights = [], tran
                 <div className="flex items-baseline justify-between text-[11px] uppercase tracking-wider mb-2">
                   <span className="text-[var(--text-muted)]">Average for {config.country?.name}</span>
                   <span className="font-display text-lg text-[var(--text)] normal-case tracking-normal">
-                    ${avgTotal.toLocaleString()}
+                    {formatMoney(avgTotal)}
                   </span>
                 </div>
                 <div className="w-full h-[2px] bg-[var(--line)] rounded-full overflow-hidden">
