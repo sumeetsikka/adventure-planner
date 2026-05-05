@@ -63,3 +63,7 @@ export async function generateNearby(config: TravelConfig): Promise<NearbyPlace[
 export async function generateTransport(config: TravelConfig): Promise<TransportLeg[]> {
   return postApi<TransportLeg[]>('/api/transport', config);
 }
+
+export async function generateRestaurants(config: TravelConfig): Promise<DestinationRestaurants[]> {
+  return postApi<DestinationRestaurants[]>('/api/restaurants', config);
+}
