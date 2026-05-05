@@ -183,6 +183,7 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
           <Suspense fallback={<TabFallback />}>
           {activeTab === 'itinerary' && (
             <ItineraryTab itinerary={results.itinerary} config={config} hotels={results.hotels}
+              flights={results.flights} transport={results.transport} weather={results.weather}
               onUpdate={(itinerary) => onUpdateResults({ itinerary })} />
           )}
           {activeTab === 'flights' && (results.flights.length > 0
