@@ -140,6 +140,14 @@ export default function CountryPicker({ onSelect, onInspire, onWishlist }: Props
               className="w-full bg-[var(--ink-2)]/80 backdrop-blur-md border border-[var(--line)] rounded-full pl-14 pr-6 py-4 text-[var(--cream)] placeholder-[var(--text-dim)] focus:outline-none focus:border-[var(--gold)]/40 transition-all font-light"
             />
           </div>
+          {onWishlist && (
+            <button
+              onClick={onWishlist}
+              className="px-5 py-4 rounded-full text-sm border border-[var(--line-strong)] text-[var(--cream)] hover:bg-[var(--ink-3)] transition-colors tracking-wide whitespace-nowrap"
+            >
+              ★ Wishlist
+            </button>
+          )}
           {onInspire && (
             <button
               onClick={onInspire}
