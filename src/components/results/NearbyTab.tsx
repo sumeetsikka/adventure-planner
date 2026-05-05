@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import type { NearbyPlace, Destination } from '../../types';
 import { getDestinationPhoto } from '../../lib/imagery';
+import { PlaceActions } from '../shared/PlaceLink';
 
 interface Props {
   nearby: NearbyPlace[];
