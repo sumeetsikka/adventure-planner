@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import type { BudgetItem, TravelConfig, FlightLeg, TransportLeg } from '../../types';
 import { generateBudget } from '../../lib/api';
+import { fetchRate, CURRENCY_SYMBOLS } from '../../lib/fx';
 import {
   flightCO2kg,
   trainCO2kg,
@@ -11,6 +12,8 @@ import {
   isAirportCode,
   LONG_HAUL_FALLBACK_KM,
 } from '../../lib/carbon';
+
+const CURRENCY_CHIPS = ['AUD', 'USD', 'EUR', 'GBP', 'JPY', 'SGD', 'NZD', 'CAD', 'INR', 'AED', 'HKD', 'ZAR'];
 
 interface Props {
   budget: BudgetItem[];
