@@ -196,6 +196,7 @@ export interface GenerationResults {
   nearby: NearbyPlace[];
   transport: TransportLeg[];
   restaurants: DestinationRestaurants[];
+  activities: DestinationActivities[];
 }
 
 export type AppView = 'mytrips' | 'inspire' | 'country' | 'wizard' | 'loading' | 'results';
