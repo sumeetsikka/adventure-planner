@@ -3,6 +3,12 @@ import { motion } from 'framer-motion';
 import type { Destination, VibeOption } from '../../types';
 import { calculateMidpointDays, determineEntryCity, orderDestinations } from '../../lib/routePlanner';
 import { formatDateAU, addDaysISO, todayISO } from '../../lib/dateUtils';
+import {
+  ORIGIN_AIRPORTS,
+  DEFAULT_ORIGIN,
+  HOME_CURRENCIES,
+  DEFAULT_HOME_CURRENCY,
+} from '../../lib/originAirports';
 
 interface Props {
   destinations: Destination[];
@@ -11,12 +17,16 @@ interface Props {
   travellers: number;
   ages: number[];
   vibes: VibeOption[];
+  origin?: string;
+  homeCurrency?: string;
   onUpdate: (data: {
     departureDate: string;
     returnDate: string;
     travellers: number;
     ages: number[];
     vibes: VibeOption[];
+    origin?: string;
+    homeCurrency?: string;
   }) => void;
   onBack: () => void;
   onGenerate: () => void;
