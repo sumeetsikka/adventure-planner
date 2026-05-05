@@ -71,3 +71,43 @@ export async function generateRestaurants(config: TravelConfig): Promise<Destina
 export async function generateActivities(config: TravelConfig): Promise<DestinationActivities[]> {
   return postApi<DestinationActivities[]>('/api/activities', config);
 }
+
+export interface ParsedBookingFlight {
+  airline?: string;
+  flightNumber?: string;
+  from?: string;
+  to?: string;
+  departureDate?: string;
+  departureTime?: string;
+  arrivalTime?: string;
+  pnr?: string;
+}
+
+export interface ParsedBookingHotel {
+  name?: string;
+  address?: string;
+  checkIn?: string;
+  checkOut?: string;
+  confirmationNumber?: string;
+  totalAud?: string;
+}
+
+export interface ParsedBookingActivity {
+  name?: string;
+  date?: string;
+  time?: string;
+  venue?: string;
+  confirmationNumber?: string;
+}
+
+export interface ParsedBooking {
+  type: 'flight' | 'hotel' | 'activity' | 'transport' | 'unknown';
+  confidence: 'high' | 'medium' | 'low';
+  flight: ParsedBookingFlight | null;
+  hotel: ParsedBookingHotel | null;
+  activity: ParsedBookingActivity | null;
+}
+
+export async function parseBookingEmail(text: string): Promise<ParsedBooking> {
+  return postApi<ParsedBooking>('/api/parseBooking', { text });
+}
