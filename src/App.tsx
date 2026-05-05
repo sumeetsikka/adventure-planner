@@ -11,6 +11,7 @@ import ThemeToggle from './components/shared/ThemeToggle';
 import InstallPrompt from './components/shared/InstallPrompt';
 import MyTrips from './components/wizard/MyTrips';
 import Inspiration from './components/wizard/Inspiration';
+import Wishlist from './components/wizard/Wishlist';
 import { decodeTripFromUrl } from './lib/tripUrl';
 import { countries } from './data/countries';
 import {
