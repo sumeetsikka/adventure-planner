@@ -1,11 +1,11 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import type { ItineraryDay as DayType, TravelConfig, DestinationHotels, FlightLeg, TransportLeg } from '../../types';
+import type { ItineraryDay as DayType, TravelConfig, DestinationHotels, FlightLeg, TransportLeg, WeatherInfo } from '../../types';
 import { generateItinerary } from '../../lib/api';
 import { formatDateAU, addDaysISO } from '../../lib/dateUtils';
 import { VIBE_LABELS } from '../../lib/constants';
 import { getDestinationPhoto } from '../../lib/imagery';
-import { findConflicts } from '../../lib/conflicts';
+import { findConflicts, findNudges } from '../../lib/conflicts';
 import { PlaceActions } from '../shared/PlaceLink';
 
 interface Props {
@@ -15,6 +15,7 @@ interface Props {
   onUpdate: (itinerary: DayType[]) => void;
   flights?: FlightLeg[];
   transport?: TransportLeg[];
+  weather?: WeatherInfo[];
 }
 
 function getTopPick(dest: DestinationHotels) {
