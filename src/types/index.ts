@@ -199,7 +199,7 @@ export interface GenerationResults {
   activities: DestinationActivities[];
 }
 
-export type AppView = 'mytrips' | 'inspire' | 'country' | 'wizard' | 'loading' | 'results';
+export type AppView = 'mytrips' | 'inspire' | 'wishlist' | 'country' | 'wizard' | 'loading' | 'results';
 export type WizardStep = 1 | 2 | 3;
 export interface ChatMessage {
   role: 'user' | 'assistant';
