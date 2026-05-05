@@ -238,6 +238,34 @@ async function handleNearby(config: any) {
   return parseResult(await callLLM(NEARBY_SYSTEM, userMessage));
 }
 
+async function handleRestaurants(config: any) {
+  const RESTAURANTS_SYSTEM = `You are a food editor for a luxury travel magazine. For each destination, recommend 5 restaurants spanning street-food to fine dining. Return ONLY a valid JSON array of objects, one per destination, in this shape:
+[
+  {
+    "destination": "Hanoi",
+    "restaurants": [
+      {
+        "name": "Restaurant name",
+        "cuisine": "Cuisine style (e.g. 'Vietnamese · Pho')",
+        "price_tier": "$" | "$$" | "$$$" | "$$$$",
+        "signature_dish": "1-3 word dish name",
+        "neighbourhood": "neighbourhood/area",
+        "why": "1 sentence why this restaurant",
+        "reservation_link": "https://... if known (OpenTable/Resy/Tabelog/local), otherwise omit"
+      }
+    ]
+  }
+]
+Rules: REAL restaurants only — do not invent names. Mix price tiers (1 $, 2 $$, 1 $$$, 1 $$$$ ideally). Use proper nouns. Do NOT include placeholder text. If unsure on reservation_link, omit the field entirely.`;
+  const countryName = config.country?.name || 'the destination';
+  const entryCity = determineEntryCity(config.destinations);
+  const ordered = orderDestinations(config.destinations, entryCity);
+  const destNames = ordered.map((d: any) => d.name).join(', ');
+  const vibes = (config.vibes || []).join(', ');
+  const userMessage = `Country: ${countryName}. Destinations: ${destNames}. Traveller vibes: ${vibes || 'general'}. Recommend restaurants per destination, mixing street food, mid-range, and one fine-dining pick each.`;
+  return parseResult(await callLLM(RESTAURANTS_SYSTEM, userMessage));
+}
+
 async function handleTransport(config: any) {
   const TRANSPORT_SYSTEM = `You are a transport expert. Generate inter-city transport as a JSON array. Each object: {from, to, date (YYYY-MM-DD), mode, operator, duration, price_estimate_aud, tip, booking_sites[], booking_urls[]}. No flights. Only trains, buses, ferries, cars. Use EXACT dates provided. Return ONLY valid JSON array.`;
   const countryName = config.country?.name || 'the destination';
