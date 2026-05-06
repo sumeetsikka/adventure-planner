@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getCountryHero, getDestinationPhoto, picsum } from './imagery';
+import { getCountryHero, getDestinationPhoto } from './imagery';
 
 // Cache Wikipedia lookups so each name only fires once per session.
 const wikiCache = new Map<string, string | null>();
@@ -134,11 +134,4 @@ export function useWikiImage(
 
   if (!wikiQuery) return null;
   return resolved[wikiQuery] ?? instant;
-}
-
-/** Hook variant for any image — same API with explicit Picsum ultimate fallback. */
-export function useReliableImage(name: string | null | undefined, type: 'country' | 'destination' = 'destination'): string {
-  const u = useWikiImage(name, type);
-  if (u) return u;
-  return name ? picsum(name, 1200, 800) : '';
 }

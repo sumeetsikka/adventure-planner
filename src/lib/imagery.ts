@@ -101,30 +101,3 @@ export function getDestinationPhotoStrip(destinationName: string, width = 1000, 
   ];
 }
 
-export function getDestinationThumbnail(destinationName: string): string {
-  return getDestinationPhoto(destinationName, 600, 400);
-}
-
-export function getHotelPhoto(_hotelName: string, destination: string, width = 800, height = 600): string {
-  // Combine hotel + destination so photos look location-relevant
-  const query = `${cleanQuery(destination)} hotel`;
-  return loremflickr(query, width, height, 'hotel');
-}
-
-export function getCountryPhotoStrip(countryName: string): string[] {
-  return [
-    loremflickr(countryName + ' 1', 1200, 800, 'travel'),
-    loremflickr(countryName + ' 2', 1200, 800, 'landscape'),
-    loremflickr(countryName + ' 3', 1200, 800, 'culture'),
-  ];
-}
-
-/** On <img onError>, swap to picsum so the card never ends up blank. */
-export function fallbackToPicsum(query: string, width: number, height: number) {
-  return (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = e.currentTarget;
-    if (img.dataset.fell) return; // prevent loop
-    img.dataset.fell = 'true';
-    img.src = picsum(query, width, height);
-  };
-}
