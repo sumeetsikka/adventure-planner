@@ -25,3 +25,7 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Auto-commit hook scratch files
+.claude/auto-commit.pending
+.claude/auto-commit.lock
