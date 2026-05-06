@@ -341,7 +341,7 @@ export default function JournalTab({ config, results }: Props) {
                       <button
                         type="button"
                         onClick={() => handleRemovePhoto(d.day, idx)}
-                        className="absolute top-2 right-2 w-7 h-7 rounded-full bg-[var(--ink)]/70 text-[var(--cream)] text-xs opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                        className="absolute top-2 right-2 w-11 h-11 sm:w-7 sm:h-7 rounded-full bg-[var(--ink)]/70 text-[var(--cream)] text-base sm:text-xs opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity print:hidden"
                         aria-label="Remove photo"
                       >
                         ×
