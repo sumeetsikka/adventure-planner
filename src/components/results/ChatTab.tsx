@@ -24,10 +24,20 @@ export default function ChatTab({ config }: Props) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Abort any in-flight chat request when the user navigates away from the
+  // tab — prevents an orphaned setState after unmount + saves the user from
+  // a useless background request continuing to consume LLM tokens.
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
 
   const sendMessage = async (question: string) => {
     if (!question.trim() || loading) return;
@@ -36,6 +46,11 @@ export default function ChatTab({ config }: Props) {
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
     setLoading(true);
+
+    // Replace any prior in-flight request — only the latest user message wins.
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     try {
       const res = await fetch('/api/chat', {
@@ -46,14 +61,18 @@ export default function ChatTab({ config }: Props) {
           country: config.country,
           destinations: config.destinations,
         }),
+        signal: controller.signal,
       });
       const data = await res.json();
       const answer = data.answer || data.error || 'Sorry, I could not answer that right now.';
       setMessages((prev) => [...prev, { role: 'assistant', content: answer }]);
-    } catch {
+    } catch (err) {
+      // Aborts are intentional — don't surface a fake error message.
+      if (err instanceof DOMException && err.name === 'AbortError') return;
       setMessages((prev) => [...prev, { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' }]);
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) setLoading(false);
+      if (abortRef.current === controller) abortRef.current = null;
     }
   };
 
