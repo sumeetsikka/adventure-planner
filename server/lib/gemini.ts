@@ -254,7 +254,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 }
 
 export async function callLLM(systemPrompt: string, userMessage: string): Promise<any> {
-  // Chain: Groq → Cerebras → Mistral → OpenRouter → Gemini → GitHub Models → Ollama
+  // Chain: Groq → Cerebras → Mistral → OpenRouter → Gemini → GitHub Models → Ollama Cloud → Ollama (local)
   const providers: Array<{ name: string; fn: () => Promise<string> }> = [];
 
   if (groq) providers.push({ name: 'Groq', fn: () => callGroq(systemPrompt, userMessage) });
@@ -263,6 +263,7 @@ export async function callLLM(systemPrompt: string, userMessage: string): Promis
   if (openRouter) providers.push({ name: 'OpenRouter', fn: () => callOpenRouter(systemPrompt, userMessage) });
   if (genAI) providers.push({ name: 'Gemini', fn: () => callGeminiWithRetry(systemPrompt, userMessage) });
   if (githubModels) providers.push({ name: 'GitHub Models', fn: () => callGitHubModels(systemPrompt, userMessage) });
+  if (ollamaCloudKey) providers.push({ name: `Ollama Cloud (${OLLAMA_CLOUD_MODEL})`, fn: () => callOllamaCloud(systemPrompt, userMessage) });
   providers.push({ name: `Ollama (${OLLAMA_MODEL})`, fn: () => callOllama(systemPrompt, userMessage) });
 
   let lastError: Error | null = null;
