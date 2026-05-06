@@ -248,6 +248,7 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
             : <RetryButton label="activities" onRetry={async () => { const d = await import('../../lib/api').then(m => m.generateActivities(config)); onUpdateResults({ activities: d }); }} />
           )}
           </Suspense>
+          </ErrorBoundary>
         </div>
       </div>
       <MobileBottomNav active={activeTab} onChange={setActiveTab} />
