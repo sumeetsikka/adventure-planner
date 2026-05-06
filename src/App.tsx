@@ -144,7 +144,7 @@ export default function App() {
     if (!hasMeaningfulData) return;
     saveTrip({ config, results });
     setTripsVersion((v) => v + 1);
-  }, [selectedCountry, selectedDests, departureDate, returnDate, travellers, ages, vibes, results]);
+  }, [selectedCountry, selectedDests, departureDate, returnDate, travellers, ages, vibes, origin, homeCurrency, results]);
 
   const loadTrip = (trip: SavedTrip) => {
     setActiveTripId(trip.id);
