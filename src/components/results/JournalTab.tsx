@@ -50,13 +50,53 @@ function writeEntry(tripId: string, dayNumber: number, entry: DayEntry): { ok: b
   }
 }
 
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
+/**
+ * Read a file as a data URL with optional in-browser downscale + JPEG re-encode.
+ * Why: raw smartphone photos are 4-8 MB; localStorage caps at ~5 MB total.
+ * After downscale-to-1280-and-recompress, a typical photo is ~120-180 KB.
+ */
+async function fileToDataUrl(file: File, maxDimension = 1280, quality = 0.82): Promise<string> {
+  // Non-image (or HEIC etc the browser can't decode) — fall back to raw bytes.
+  if (!file.type.startsWith('image/')) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Decode to a canvas, downscale, re-encode as JPEG.
+  const bitmap = await createImageBitmap(file).catch(() => null);
+  if (!bitmap) {
+    // Browser can't decode (e.g. iOS HEIC pre-Safari-17) — fall back.
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+  const w = Math.max(1, Math.round(bitmap.width * scale));
+  const h = Math.max(1, Math.round(bitmap.height * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    bitmap.close();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  }
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  bitmap.close();
+  return canvas.toDataURL('image/jpeg', quality);
 }
 
 function determinePhase(departure: string, ret: string): TripPhase {
