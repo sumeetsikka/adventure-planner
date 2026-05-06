@@ -150,7 +150,7 @@ export default function JournalTab({ config, results }: Props) {
     setErrorMsg('');
     try {
       const arr = Array.from(files);
-      const dataUrls = await Promise.all(arr.map(fileToDataUrl));
+      const dataUrls = await Promise.all(arr.map((f) => fileToDataUrl(f)));
       setEntries((prev) => {
         const current = prev[dayNumber] ?? { photos: [], note: '' };
         const next: DayEntry = { ...current, photos: [...current.photos, ...dataUrls] };
