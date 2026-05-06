@@ -196,6 +196,30 @@ async function callGitHubModels(systemPrompt: string, userMessage: string): Prom
   throw lastErr || new Error('All GitHub Models unavailable');
 }
 
+// --- Ollama Cloud (hosted, paid) ---
+async function callOllamaCloud(systemPrompt: string, userMessage: string): Promise<string> {
+  if (!ollamaCloudKey) throw new Error('OLLAMA_API_KEY not set');
+  const res = await fetch(`${OLLAMA_CLOUD_URL}/api/chat`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${ollamaCloudKey}`,
+    },
+    body: JSON.stringify({
+      model: OLLAMA_CLOUD_MODEL,
+      messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userMessage }],
+      stream: false,
+      options: { temperature: 0.7 },
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Ollama Cloud returned ${res.status}${body ? ': ' + body.slice(0, 200) : ''}`);
+  }
+  const data = await res.json();
+  return data.message?.content || '';
+}
+
 // --- Ollama (local) ---
 async function callOllama(systemPrompt: string, userMessage: string): Promise<string> {
   const res = await fetch(`${OLLAMA_URL}/api/chat`, {
