@@ -197,19 +197,19 @@ function TripCard({
           {hasResults ? 'Ready' : 'Drafting'}
         </span>
         <div
-          className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
           onClick={(e) => e.stopPropagation()}
         >
           <button
             onClick={onStartRename}
-            className="w-7 h-7 rounded-full bg-[var(--ink)]/70 backdrop-blur-sm flex items-center justify-center text-[var(--cream)] text-[10px] hover:bg-[var(--ink)]/90 border border-[var(--line-strong)]"
+            className="w-11 h-11 sm:w-7 sm:h-7 rounded-full bg-[var(--ink)]/70 backdrop-blur-sm flex items-center justify-center text-[var(--cream)] text-base sm:text-[10px] hover:bg-[var(--ink)]/90 border border-[var(--line-strong)]"
             aria-label="Rename trip"
           >
             ✎
           </button>
           <button
             onClick={onDelete}
-            className="w-7 h-7 rounded-full bg-[var(--ink)]/70 backdrop-blur-sm flex items-center justify-center text-[var(--cream)] text-[10px] hover:bg-[var(--terracotta)]/80 border border-[var(--line-strong)]"
+            className="w-11 h-11 sm:w-7 sm:h-7 rounded-full bg-[var(--ink)]/70 backdrop-blur-sm flex items-center justify-center text-[var(--cream)] text-base sm:text-[10px] hover:bg-[var(--terracotta)]/80 border border-[var(--line-strong)]"
             aria-label="Delete trip"
           >
             ×
