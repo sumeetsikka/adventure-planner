@@ -5,6 +5,7 @@ import { openEmailWithTrip } from '../../lib/emailTrip';
 import { searchFlights, searchHotels, generateBudget, generateTips, generatePacking, generateWeather, generateVisa, generateCurrency, generateNearby, generateTransport } from '../../lib/api';
 import TabNav from '../shared/TabNav';
 import MobileBottomNav from '../shared/MobileBottomNav';
+import ErrorBoundary from '../shared/ErrorBoundary';
 import DashboardTab from './DashboardTab';
 import { encodeTripToUrl, shareOrCopy } from '../../lib/tripUrl';
 
