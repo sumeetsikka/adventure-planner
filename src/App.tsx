@@ -304,7 +304,7 @@ export default function App() {
 
     await Promise.all([p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13]);
     setView('results');
-  }, [selectedDests, departureDate, returnDate, travellers, ages, vibes, selectedCountry]);
+  }, [selectedDests, departureDate, returnDate, travellers, ages, vibes, selectedCountry, origin, homeCurrency]);
 
   const handleStartOver = () => {
     // "Start Over" now means "go to My Trips" rather than wiping state.
