@@ -120,7 +120,7 @@ function SavedTile({
         <span className="text-2xl drop-shadow-lg">{country.emoji}</span>
         <button
           onClick={(e) => { e.stopPropagation(); onRemove(); }}
-          className="w-7 h-7 rounded-full bg-[var(--ink)]/70 backdrop-blur-sm flex items-center justify-center text-[var(--cream)] text-[10px] hover:bg-[var(--terracotta)]/80 border border-[var(--line-strong)] transition-colors"
+          className="w-11 h-11 sm:w-7 sm:h-7 rounded-full bg-[var(--ink)]/70 backdrop-blur-sm flex items-center justify-center text-[var(--cream)] text-base sm:text-[10px] hover:bg-[var(--terracotta)]/80 border border-[var(--line-strong)] transition-colors"
           aria-label="Remove from wishlist"
         >
           ×
