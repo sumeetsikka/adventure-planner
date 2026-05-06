@@ -6,7 +6,9 @@
 //
 // Cache name uses a date stamp so each deployment busts old caches.
 
-const CACHE = 'adventure-planner-2026-04-30-v1';
+// Vite build replaces __BUILD_VERSION__ with the deploy timestamp on every
+// production build; that way each new deploy invalidates the previous cache.
+const CACHE = 'adventure-planner-__BUILD_VERSION__';
 const SHELL = ['/', '/index.html', '/favicon.svg', '/manifest.json'];
 
 self.addEventListener('install', (event) => {
