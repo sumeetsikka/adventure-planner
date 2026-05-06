@@ -31,7 +31,14 @@ const genAI = geminiKey ? new GoogleGenerativeAI(geminiKey) : null;
 const githubToken = process.env.GITHUB_MODELS_TOKEN || '';
 const githubModels = githubToken ? new OpenAI({ apiKey: githubToken, baseURL: 'https://models.inference.ai.azure.com' }) : null;
 
-// 7. Ollama: local, no key, unlimited
+// 7. Ollama Cloud: paid, API-key based — last cloud fallback
+//    Uses the same /api/chat shape as local Ollama, just with a Bearer token
+//    against ollama.com. Defaults to gpt-oss:20b (widely available, capable).
+const ollamaCloudKey = process.env.OLLAMA_API_KEY || '';
+const OLLAMA_CLOUD_URL = process.env.OLLAMA_CLOUD_URL || 'https://ollama.com';
+const OLLAMA_CLOUD_MODEL = process.env.OLLAMA_CLOUD_MODEL || 'gpt-oss:20b';
+
+// 8. Ollama (local): only in dev — no key, free, unlimited
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3';
 
