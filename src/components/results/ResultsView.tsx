@@ -110,11 +110,11 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
       <div className="relative max-w-5xl mx-auto px-6 py-10 print:p-0">
         {/* Header */}
         <div className="mb-10 print:mb-4">
-          <div className="flex items-center justify-between mb-8 print:hidden">
-            <button onClick={onStartOver} className="eyebrow text-[var(--text-muted)] hover:text-[var(--cream)] transition-colors">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 print:hidden">
+            <button onClick={onStartOver} className="eyebrow text-[var(--text-muted)] hover:text-[var(--cream)] transition-colors self-start">
               ← Start Over
             </button>
-            <div className="flex flex-wrap gap-2 justify-end">
+            <div className="flex flex-wrap gap-2 sm:justify-end">
               <button onClick={async () => {
                   const url = encodeTripToUrl(config);
                   const result = await shareOrCopy({
