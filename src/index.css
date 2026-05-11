@@ -244,9 +244,11 @@ html { scroll-behavior: smooth; }
   html { overscroll-behavior: none; }
   .chat-input-fixed {
     position: sticky;
-    bottom: 0;
+    /* Lift above the MobileBottomNav (~64px tall) on small screens.
+       safe-area-inset-bottom covers iPhone home-indicator padding. */
+    bottom: calc(64px + env(safe-area-inset-bottom, 8px));
     background: var(--ink);
-    padding-bottom: env(safe-area-inset-bottom, 8px);
+    padding-bottom: 8px;
     z-index: 10;
   }
 }
