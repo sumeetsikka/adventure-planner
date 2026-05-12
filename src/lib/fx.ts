@@ -59,6 +59,56 @@ export async function convert(
   return amount * rate;
 }
 
+/**
+ * Daily FX rates over the last N days from frankfurter.app.
+ * Used by the editorial CurrencyTab sparkline.
+ *
+ * Returns an array of `{ date: 'YYYY-MM-DD', rate: number }` ordered oldest → newest.
+ * Cached per pair for 6h since historical data doesn't churn.
+ */
+interface SeriesCacheEntry {
+  series: Array<{ date: string; rate: number }>;
+  fetchedAt: number;
+}
+const SERIES_TTL_MS = 6 * 60 * 60 * 1000;
+const seriesCache: Map<string, SeriesCacheEntry> = new Map();
+
+export async function fetchSeries(
+  base: string,
+  quote: string,
+  days = 30,
+): Promise<Array<{ date: string; rate: number }> | null> {
+  const b = (base || '').toUpperCase();
+  const q = (quote || '').toUpperCase();
+  if (!b || !q || b === q) return null;
+
+  const cacheKey = `${b}_${q}_${days}`;
+  const cached = seriesCache.get(cacheKey);
+  if (cached && Date.now() - cached.fetchedAt < SERIES_TTL_MS) return cached.series;
+
+  const end = new Date();
+  const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
+  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+
+  try {
+    const url = `https://api.frankfurter.app/${fmt(start)}..${fmt(end)}?base=${encodeURIComponent(b)}&symbols=${encodeURIComponent(q)}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const rates = data?.rates as Record<string, Record<string, number>> | undefined;
+    if (!rates) return null;
+    const series = Object.entries(rates)
+      .map(([date, vals]) => ({ date, rate: vals[q] }))
+      .filter((p) => typeof p.rate === 'number' && isFinite(p.rate))
+      .sort((a, b2) => a.date.localeCompare(b2.date));
+    if (series.length === 0) return null;
+    seriesCache.set(cacheKey, { series, fetchedAt: Date.now() });
+    return series;
+  } catch {
+    return null;
+  }
+}
+
 export const CURRENCY_SYMBOLS: Record<string, string> = {
   AUD: '$',
   USD: '$',

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import type { FlightLeg, TravelConfig } from '../../types';
 import { formatDateAU } from '../../lib/dateUtils';
 import { getFlightLinks } from '../../lib/bookingLinks';
+import { flightCO2kg, estimateLegDistance } from '../../lib/carbon';
 
 interface Props {
   flights: FlightLeg[];
@@ -150,10 +151,23 @@ export default function FlightsTab({ flights, config }: Props) {
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 text-[11px] uppercase tracking-wider text-[var(--text-muted)] mb-4 pb-4 border-b border-[var(--line)]">
+              <div className="flex items-center flex-wrap gap-x-4 gap-y-2 text-[11px] uppercase tracking-wider text-[var(--text-muted)] mb-4 pb-4 border-b border-[var(--line)]">
                 <span>{f.duration}</span>
                 <span className="w-1 h-1 rounded-full bg-[var(--line-strong)]" />
                 <span>{f.stops}</span>
+                {(() => {
+                  const dist = estimateLegDistance(f.from_code, f.to_code);
+                  if (dist == null) return null;
+                  const co2 = flightCO2kg(dist);
+                  return (
+                    <>
+                      <span className="w-1 h-1 rounded-full bg-[var(--line-strong)]" />
+                      <span className="text-[var(--sage)]" title="Estimated CO₂e per passenger">
+                        ≈ {co2.toFixed(co2 < 10 ? 1 : 0)} kg CO₂
+                      </span>
+                    </>
+                  );
+                })()}
               </div>
 
               <div className="flex flex-wrap gap-1.5 mb-4">

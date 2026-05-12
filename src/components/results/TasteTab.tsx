@@ -1,5 +1,6 @@
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import type { DestinationRestaurants, Restaurant } from '../../types';
+import type { DestinationRestaurants, Restaurant, DietaryOption } from '../../types';
 import { mapsUrl, directionsUrl } from '../../lib/deepLinks';
 
 interface Props {
@@ -8,7 +9,48 @@ interface Props {
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
+type DietaryFilter = 'all' | DietaryOption;
+
+const DIETARY_FILTERS: { id: DietaryFilter; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'vegetarian', label: 'Vegetarian' },
+  { id: 'vegan', label: 'Vegan' },
+  { id: 'halal', label: 'Halal' },
+  { id: 'gluten-free', label: 'Gluten-free' },
+];
+
 export default function TasteTab({ restaurants }: Props) {
+  const [dietFilter, setDietFilter] = useState<DietaryFilter>('all');
+
+  const visibleByDest = useMemo(() => {
+    return restaurants.map((dest) => ({
+      destination: dest.destination,
+      list:
+        dietFilter === 'all'
+          ? (dest.restaurants ?? [])
+          : (dest.restaurants ?? []).filter((r) =>
+              (r.dietary_options ?? []).includes(dietFilter)
+            ),
+    }));
+  }, [restaurants, dietFilter]);
+
+  const filteredTotal = useMemo(
+    () => visibleByDest.reduce((s, d) => s + d.list.length, 0),
+    [visibleByDest]
+  );
+
+  const presentDietary = useMemo(() => {
+    const set = new Set<DietaryOption>();
+    restaurants.forEach((d) =>
+      (d.restaurants ?? []).forEach((r) => (r.dietary_options ?? []).forEach((o) => set.add(o)))
+    );
+    return set;
+  }, [restaurants]);
+
+  const availableFilters = DIETARY_FILTERS.filter(
+    (f) => f.id === 'all' || presentDietary.has(f.id as DietaryOption)
+  );
+
   if (restaurants.length === 0) {
     return (
       <div className="text-center py-20">
@@ -22,6 +64,11 @@ export default function TasteTab({ restaurants }: Props) {
       </div>
     );
   }
+
+  const filterLabel =
+    dietFilter === 'all'
+      ? null
+      : DIETARY_FILTERS.find((f) => f.id === dietFilter)?.label.toLowerCase() ?? dietFilter;
 
   return (
     <motion.div
@@ -39,30 +86,82 @@ export default function TasteTab({ restaurants }: Props) {
         </p>
       </div>
 
-      <div className="space-y-12">
-        {restaurants.map((dest, di) => (
-          <motion.section
-            key={`${dest.destination}-${di}`}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: di * 0.08, ease: EASE }}
-          >
-            <div className="flex items-baseline gap-6 mb-6">
-              <span className="eyebrow">Stop {String(di + 1).padStart(2, '0')}</span>
-              <h3 className="font-display text-2xl sm:text-3xl text-[var(--cream)]">{dest.destination}</h3>
-              <div className="flex-1 h-px bg-[var(--line)]" />
-              <span className="eyebrow text-[var(--text-dim)]">
-                {dest.restaurants?.length ?? 0} places
-              </span>
-            </div>
+      {/* Dietary filter */}
+      {availableFilters.length > 1 && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: EASE, delay: 0.05 }}
+          className="mb-6"
+        >
+          <p className="text-[10px] tracking-[0.2em] uppercase text-[var(--text-dim)] mb-2">Dietary</p>
+          <div className="flex flex-wrap gap-1.5">
+            {availableFilters.map((f) => {
+              const isActive = dietFilter === f.id;
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => setDietFilter(f.id)}
+                  className={`px-3.5 py-1.5 rounded-full text-[11px] tracking-wide transition-all ${
+                    isActive
+                      ? 'bg-[var(--cream)] text-[var(--ink)] font-medium'
+                      : 'border border-[var(--line)] text-[var(--text-muted)] hover:text-[var(--cream)] hover:border-[var(--line-strong)]'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {(dest.restaurants ?? []).map((r, ri) => (
-                <RestaurantCard key={`${r.name}-${ri}`} restaurant={r} place={`${r.name}, ${dest.destination}`} />
-              ))}
-            </div>
-          </motion.section>
-        ))}
+      {filterLabel && (
+        <motion.p
+          key={dietFilter}
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: EASE }}
+          className="eyebrow text-[var(--sage)] mb-8"
+        >
+          {filteredTotal} {filterLabel} {filteredTotal === 1 ? 'place' : 'places'} across your trip
+        </motion.p>
+      )}
+
+      {dietFilter !== 'all' && filteredTotal === 0 && (
+        <div className="surface-soft rounded-2xl p-6 text-center">
+          <p className="text-[var(--text-muted)] text-sm">
+            No {filterLabel} options surfaced yet — try a different filter.
+          </p>
+        </div>
+      )}
+
+      <div className="space-y-12">
+        {visibleByDest.map((dest, di) =>
+          dest.list.length === 0 ? null : (
+            <motion.section
+              key={`${dest.destination}-${di}`}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: di * 0.08, ease: EASE }}
+            >
+              <div className="flex items-baseline gap-6 mb-6">
+                <span className="eyebrow">Stop {String(di + 1).padStart(2, '0')}</span>
+                <h3 className="font-display text-2xl sm:text-3xl text-[var(--cream)]">{dest.destination}</h3>
+                <div className="flex-1 h-px bg-[var(--line)]" />
+                <span className="eyebrow text-[var(--text-dim)]">
+                  {dest.list.length} places
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {dest.list.map((r, ri) => (
+                  <RestaurantCard key={`${r.name}-${ri}`} restaurant={r} place={`${r.name}, ${dest.destination}`} />
+                ))}
+              </div>
+            </motion.section>
+          )
+        )}
       </div>
     </motion.div>
   );
@@ -110,6 +209,24 @@ function RestaurantCard({ restaurant: r, place }: { restaurant: Restaurant; plac
       <p className="text-[var(--text-muted)] text-[13px] leading-relaxed mb-4">
         {r.why}
       </p>
+
+      {r.dietary_options && r.dietary_options.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-4">
+          {r.dietary_options.map((opt) => (
+            <span
+              key={opt}
+              className="text-[10px] tracking-wider uppercase px-2 py-0.5 rounded-full"
+              style={{
+                background: 'rgba(122, 144, 130, 0.1)',
+                color: 'var(--sage)',
+                border: '1px solid rgba(122, 144, 130, 0.3)',
+              }}
+            >
+              {opt}
+            </span>
+          ))}
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-1.5 pt-3 border-t border-[var(--line)]">
         {r.reservation_link && (

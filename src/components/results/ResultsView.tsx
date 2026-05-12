@@ -137,7 +137,23 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
                 className="text-[11px] tracking-widest uppercase text-[var(--text-muted)] hover:text-[var(--cream)] border border-[var(--line)] hover:border-[var(--line-strong)] rounded-full px-3.5 py-1.5 transition-all">
                 Calendar
               </button>
-              <button onClick={() => window.print()}
+              <button onClick={async () => {
+                  setShareMsg('Generating PDF…');
+                  try {
+                    const { generateTripPdf } = await import('../../lib/tripPdf');
+                    const blob = await generateTripPdf(config, results);
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${config.country?.name || 'trip'}-adventure-planner.pdf`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    setShareMsg('PDF saved!');
+                  } catch {
+                    setShareMsg('PDF failed — try again');
+                  }
+                  setTimeout(() => setShareMsg(''), 2400);
+                }}
                 className="text-[11px] tracking-widest uppercase text-[var(--text-muted)] hover:text-[var(--cream)] border border-[var(--line)] hover:border-[var(--line-strong)] rounded-full px-3.5 py-1.5 transition-all">
                 PDF
               </button>

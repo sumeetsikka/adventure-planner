@@ -98,6 +98,17 @@ export interface PackingItem {
   items: string[];
 }
 
+export interface WeatherDay {
+  date: string;          // YYYY-MM-DD
+  temp_high_c: number;
+  temp_low_c: number;
+  rainfall_mm: number;
+  description: string;
+  sunrise?: string;      // HH:MM
+  sunset?: string;       // HH:MM
+  uv_index?: number;
+}
+
 export interface WeatherInfo {
   destination: string;
   month: string;
@@ -107,6 +118,7 @@ export interface WeatherInfo {
   humidity_percent: number;
   description: string;
   what_to_pack: string;
+  forecast?: WeatherDay[];  // daily breakdown — optional, fall back to existing fields
 }
 
 export interface VisaInfo {
@@ -119,6 +131,14 @@ export interface VisaInfo {
   documents_needed: string[];
   how_to_apply: string;
   important_notes: string[];
+  evisa_url?: string;
+  passport_validity_required_months: number;
+  blank_pages_required?: number;
+  exit_fee_aud?: string;
+  onward_ticket_required?: boolean;
+  embassy?: { city: string; address?: string; phone?: string; email?: string; website?: string };
+  emergency_phone?: string;
+  vaccinations?: { name: string; recommendation: 'required' | 'recommended' | 'consider' }[];
 }
 
 export interface CurrencyInfo {
@@ -133,6 +153,8 @@ export interface CurrencyInfo {
   common_costs: { item: string; local_price: string; aud_price: string }[];
 }
 
+export type DietaryOption = 'vegetarian' | 'vegan' | 'halal' | 'kosher' | 'gluten-free' | 'nut-free';
+
 export interface Restaurant {
   name: string;
   cuisine: string;
@@ -141,12 +163,16 @@ export interface Restaurant {
   neighbourhood: string;
   why: string;
   reservation_link?: string; // OpenTable / Resy / Tabelog / local URL
+  dietary_options?: DietaryOption[];
 }
 
 export interface DestinationRestaurants {
   destination: string;
   restaurants: Restaurant[];
 }
+
+export type ActivityWeather = 'sunny' | 'any' | 'indoor' | 'all-weather';
+export type ActivityTimeFit = 'morning' | 'afternoon' | 'evening' | 'full-day';
 
 export interface Activity {
   name: string;
@@ -157,6 +183,8 @@ export interface Activity {
   why: string;
   best_time?: string;            // "Sunrise", "Evening", "Year-round"
   booking_link?: string;         // Klook / Viator / GetYourGuide / official site
+  weather?: ActivityWeather;     // requirement: 'sunny' | 'any' | 'indoor' | 'all-weather'
+  fits?: ActivityTimeFit[];      // time-of-day suitability
 }
 
 export interface DestinationActivities {

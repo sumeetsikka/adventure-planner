@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { CurrencyInfo } from '../../types';
-import { fetchRate } from '../../lib/fx';
+import { fetchRate, fetchSeries } from '../../lib/fx';
 import { getPhrases, type Phrase } from '../../lib/phrases';
 
 interface Props {
@@ -39,6 +39,7 @@ export default function CurrencyTab({ currency, country }: Props) {
   const [liveRate, setLiveRate] = useState<number | null>(null);
   const [rateFetchedAt, setRateFetchedAt] = useState<number | null>(null);
   const [fxLoading, setFxLoading] = useState<boolean>(false);
+  const [fxSeries, setFxSeries] = useState<Array<{ date: string; rate: number }> | null>(null);
 
   // Bill splitter
   const [billAmount, setBillAmount] = useState<number>(0);
@@ -66,6 +67,11 @@ export default function CurrencyTab({ currency, country }: Props) {
         setRateFetchedAt(Date.now());
       }
       setFxLoading(false);
+    });
+    // Parallel: load 30-day history for the sparkline.
+    fetchSeries('AUD', quoteCode, 30).then((s) => {
+      if (cancelled) return;
+      setFxSeries(s);
     });
     return () => {
       cancelled = true;
@@ -195,6 +201,11 @@ export default function CurrencyTab({ currency, country }: Props) {
                 ? 'Loading…'
                 : 'Estimated'}
           </p>
+
+          {/* 30-day FX sparkline */}
+          {fxSeries && fxSeries.length > 1 && (
+            <FxSparkline series={fxSeries} currentRate={rate} symbol={currency.symbol} quote={currency.currency_code} />
+          )}
         </div>
 
         <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -443,5 +454,71 @@ export default function CurrencyTab({ currency, country }: Props) {
         </div>
       )}
     </motion.div>
+  );
+}
+
+/**
+ * 30-day FX sparkline — pure SVG, no charting library.
+ * Up = AUD buys more local currency than 30 days ago → favourable for traveller.
+ */
+function FxSparkline({ series, currentRate, symbol, quote }: { series: Array<{ date: string; rate: number }>; currentRate: number; symbol: string; quote: string }) {
+  if (series.length < 2) return null;
+  const w = 560;
+  const h = 80;
+  const padX = 4;
+  const padY = 8;
+  const rates = series.map((p) => p.rate);
+  const min = Math.min(...rates);
+  const max = Math.max(...rates);
+  const range = max - min || 1;
+  const stepX = (w - padX * 2) / (series.length - 1);
+
+  const points = series.map((p, i) => ({
+    x: padX + i * stepX,
+    y: padY + (h - padY * 2) * (1 - (p.rate - min) / range),
+  }));
+
+  const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ');
+  const area = `${path} L${points[points.length - 1].x},${h - padY} L${points[0].x},${h - padY} Z`;
+
+  const first = series[0].rate;
+  const last = series[series.length - 1].rate;
+  const deltaPct = ((last - first) / first) * 100;
+  const trend: 'up' | 'down' | 'flat' = Math.abs(deltaPct) < 0.05 ? 'flat' : deltaPct > 0 ? 'up' : 'down';
+  const colour = trend === 'up' ? 'var(--sage)' : trend === 'down' ? 'var(--terracotta)' : 'var(--gold)';
+
+  return (
+    <div className="mt-6 pt-6 border-t border-[var(--line)]">
+      <div className="flex items-baseline justify-between mb-3">
+        <p className="eyebrow text-[var(--text-dim)]">Last 30 days</p>
+        <div className="flex items-baseline gap-2">
+          <span className="text-[var(--text-muted)] text-[11px] font-light">
+            {symbol}{first.toFixed(2)} → {symbol}{last.toFixed(2)}
+          </span>
+          <span className="text-[11px] font-medium tracking-wide" style={{ color: colour }}>
+            {deltaPct > 0 ? '+' : ''}{deltaPct.toFixed(2)}%
+          </span>
+        </div>
+      </div>
+      <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-20" preserveAspectRatio="none" aria-label={`30-day rate chart for AUD to ${quote}`}>
+        <defs>
+          <linearGradient id="fx-area" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={colour} stopOpacity="0.35" />
+            <stop offset="100%" stopColor={colour} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={area} fill="url(#fx-area)" />
+        <path d={path} stroke={colour} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx={points[points.length - 1].x} cy={points[points.length - 1].y} r="3" fill={colour} />
+      </svg>
+      <p className="text-[var(--text-dim)] text-[10px] tracking-wider mt-1 italic font-light">
+        {trend === 'up'
+          ? `Your AUD now buys ${deltaPct.toFixed(1)}% more ${quote} than a month ago — favourable.`
+          : trend === 'down'
+            ? `Your AUD now buys ${Math.abs(deltaPct).toFixed(1)}% less ${quote} than a month ago.`
+            : 'The rate has been steady over the past month.'}
+        {' Live now: '}{symbol}{currentRate.toFixed(2)}.
+      </p>
+    </div>
   );
 }

@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import type { Destination } from '../../types';
 import { getDestinationPhotoStrip } from '../../lib/imagery';
+import Lightbox, { type LightboxImage } from '../shared/Lightbox';
 
 interface Props {
   destinations: Destination[];
@@ -10,6 +11,20 @@ interface Props {
 const EASE = [0.16, 1, 0.3, 1] as const;
 
 export default function PhotosTab({ destinations }: Props) {
+  // Build a flat list of all photos (3 per destination) so the lightbox can
+  // navigate across the whole gallery, not just within one destination.
+  const allImages = useMemo<LightboxImage[]>(() => {
+    return destinations.flatMap((d) =>
+      getDestinationPhotoStrip(d.name, 1600, 1100).map((src) => ({
+        src,
+        caption: `${d.name} · ${d.region}`,
+        alt: d.name,
+      })),
+    );
+  }, [destinations]);
+
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -23,20 +38,37 @@ export default function PhotosTab({ destinations }: Props) {
         </h2>
         <div className="divider my-5 max-w-[120px]" />
         <p className="text-[var(--text-muted)] text-sm max-w-xl">
-          Three scenes from each place you&apos;re bound for.
+          Three scenes from each place you&apos;re bound for. Tap any photo to open.
         </p>
       </div>
 
       <div className="space-y-12">
         {destinations.map((d, i) => (
-          <DestinationStrip key={d.id} destination={d} index={i} />
+          <DestinationStrip
+            key={d.id}
+            destination={d}
+            index={i}
+            globalOffset={i * 3}
+            onOpenLightbox={(idx) => setLightboxIndex(idx)}
+          />
         ))}
       </div>
+
+      {lightboxIndex !== null && (
+        <Lightbox
+          images={allImages}
+          index={lightboxIndex}
+          onIndexChange={setLightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
+      )}
     </motion.div>
   );
 }
 
-function DestinationStrip({ destination: d, index }: { destination: Destination; index: number }) {
+function DestinationStrip({
+  destination: d, index, globalOffset, onOpenLightbox,
+}: { destination: Destination; index: number; globalOffset: number; onOpenLightbox: (i: number) => void }) {
   const [photos] = useState(() => getDestinationPhotoStrip(d.name, 1200, 800));
   const [failed, setFailed] = useState<Set<number>>(new Set());
 
@@ -89,15 +121,18 @@ function DestinationStrip({ destination: d, index }: { destination: Destination;
         <div className="grid grid-cols-3 gap-2 sm:gap-3 h-[280px] sm:h-[360px]">
           {photos.map((url, i) => {
             if (failed.has(i)) return null;
-            // First photo spans 2 columns, larger; the next two stack on the right
             const isHero = i === 0;
             return (
-              <motion.div
+              <motion.button
+                type="button"
                 key={i}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5, delay: i * 0.1 }}
-                className={`relative overflow-hidden rounded-2xl ${
+                whileHover={{ scale: 1.01 }}
+                onClick={() => onOpenLightbox(globalOffset + i)}
+                aria-label={`Open photo ${i + 1} of ${d.name}`}
+                className={`relative overflow-hidden rounded-2xl cursor-zoom-in ${
                   isHero ? 'col-span-2 row-span-2' : 'col-span-1'
                 }`}
               >
@@ -114,7 +149,7 @@ function DestinationStrip({ destination: d, index }: { destination: Destination;
                   }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[var(--ink)]/40 to-transparent pointer-events-none" />
-              </motion.div>
+              </motion.button>
             );
           })}
         </div>

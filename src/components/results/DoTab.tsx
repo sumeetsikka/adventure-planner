@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import type { DestinationActivities, Activity } from '../../types';
+import type { DestinationActivities, Activity, ActivityTimeFit, ActivityWeather } from '../../types';
 import { mapsUrl, directionsUrl } from '../../lib/deepLinks';
 
 interface Props {
@@ -22,15 +22,50 @@ const CATEGORY_META: Record<Activity['category'], { label: string; icon: string;
 
 const ALL_CATEGORIES = Object.keys(CATEGORY_META) as Activity['category'][];
 
+type TimeFilter = 'any' | ActivityTimeFit;
+type WeatherFilter = 'any' | 'indoor' | 'all-weather';
+
+const TIME_FILTERS: { id: TimeFilter; label: string }[] = [
+  { id: 'any', label: 'Any' },
+  { id: 'morning', label: 'Morning' },
+  { id: 'afternoon', label: 'Afternoon' },
+  { id: 'evening', label: 'Evening' },
+  { id: 'full-day', label: 'Full-day' },
+];
+
+const WEATHER_FILTERS: { id: WeatherFilter; label: string }[] = [
+  { id: 'any', label: 'Any' },
+  { id: 'indoor', label: 'Indoor' },
+  { id: 'all-weather', label: 'All-weather' },
+];
+
 export default function DoTab({ activities }: Props) {
   const [filter, setFilter] = useState<Activity['category'] | 'all'>('all');
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('any');
+  const [weatherFilter, setWeatherFilter] = useState<WeatherFilter>('any');
 
   const visibleByDest = useMemo(() => {
     return activities.map((dest) => ({
       destination: dest.destination,
-      list: filter === 'all' ? dest.activities : (dest.activities ?? []).filter((a) => a.category === filter),
+      list: (dest.activities ?? []).filter((a) => {
+        if (filter !== 'all' && a.category !== filter) return false;
+        if (timeFilter !== 'any') {
+          const fits = a.fits ?? [];
+          if (!fits.includes(timeFilter)) return false;
+        }
+        if (weatherFilter !== 'any') {
+          const w: ActivityWeather | undefined = a.weather;
+          if (w !== weatherFilter) return false;
+        }
+        return true;
+      }),
     }));
-  }, [activities, filter]);
+  }, [activities, filter, timeFilter, weatherFilter]);
+
+  const filteredTotal = useMemo(
+    () => visibleByDest.reduce((s, d) => s + d.list.length, 0),
+    [visibleByDest]
+  );
 
   const totalCount = activities.reduce((s, d) => s + (d.activities?.length ?? 0), 0);
 
@@ -39,6 +74,15 @@ export default function DoTab({ activities }: Props) {
     activities.forEach((d) => (d.activities ?? []).forEach((a) => set.add(a.category)));
     return ALL_CATEGORIES.filter((c) => set.has(c));
   }, [activities]);
+
+  const hasTimeData = useMemo(
+    () => activities.some((d) => (d.activities ?? []).some((a) => (a.fits ?? []).length > 0)),
+    [activities]
+  );
+  const hasWeatherData = useMemo(
+    () => activities.some((d) => (d.activities ?? []).some((a) => !!a.weather)),
+    [activities]
+  );
 
   if (activities.length === 0) {
     return (
@@ -51,6 +95,9 @@ export default function DoTab({ activities }: Props) {
       </div>
     );
   }
+
+  const filtersActive = filter !== 'all' || timeFilter !== 'any' || weatherFilter !== 'any';
+  const countLabel = buildCountLabel(filteredTotal, filter, timeFilter, weatherFilter);
 
   return (
     <motion.div
@@ -69,35 +116,119 @@ export default function DoTab({ activities }: Props) {
       </div>
 
       {/* Category filter */}
-      <div className="flex flex-wrap gap-1.5 mb-10">
-        <button
-          onClick={() => setFilter('all')}
-          className={`px-3.5 py-1.5 rounded-full text-[11px] tracking-wide transition-all ${
-            filter === 'all'
-              ? 'bg-[var(--cream)] text-[var(--ink)] font-medium'
-              : 'border border-[var(--line)] text-[var(--text-muted)] hover:text-[var(--cream)] hover:border-[var(--line-strong)]'
-          }`}
-        >
-          All
-        </button>
-        {presentCategories.map((cat) => {
-          const meta = CATEGORY_META[cat];
-          const isActive = filter === cat;
-          return (
-            <button
-              key={cat}
-              onClick={() => setFilter(cat)}
-              className={`px-3.5 py-1.5 rounded-full text-[11px] tracking-wide transition-all ${
-                isActive
-                  ? 'bg-[var(--cream)] text-[var(--ink)] font-medium'
-                  : 'border border-[var(--line)] text-[var(--text-muted)] hover:text-[var(--cream)] hover:border-[var(--line-strong)]'
-              }`}
-            >
-              <span className="mr-1.5">{meta.icon}</span>{meta.label}
-            </button>
-          );
-        })}
+      <div className="mb-4">
+        <p className="text-[10px] tracking-[0.2em] uppercase text-[var(--text-dim)] mb-2">Category</p>
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            onClick={() => setFilter('all')}
+            className={`px-3.5 py-1.5 rounded-full text-[11px] tracking-wide transition-all ${
+              filter === 'all'
+                ? 'bg-[var(--cream)] text-[var(--ink)] font-medium'
+                : 'border border-[var(--line)] text-[var(--text-muted)] hover:text-[var(--cream)] hover:border-[var(--line-strong)]'
+            }`}
+          >
+            All
+          </button>
+          {presentCategories.map((cat) => {
+            const meta = CATEGORY_META[cat];
+            const isActive = filter === cat;
+            return (
+              <button
+                key={cat}
+                onClick={() => setFilter(cat)}
+                className={`px-3.5 py-1.5 rounded-full text-[11px] tracking-wide transition-all ${
+                  isActive
+                    ? 'bg-[var(--cream)] text-[var(--ink)] font-medium'
+                    : 'border border-[var(--line)] text-[var(--text-muted)] hover:text-[var(--cream)] hover:border-[var(--line-strong)]'
+                }`}
+              >
+                <span className="mr-1.5">{meta.icon}</span>{meta.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
+
+      {/* Time-of-day filter */}
+      {hasTimeData && (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: EASE, delay: 0.05 }}
+          className="mb-4"
+        >
+          <p className="text-[10px] tracking-[0.2em] uppercase text-[var(--text-dim)] mb-2">Time of day</p>
+          <div className="flex flex-wrap gap-1.5">
+            {TIME_FILTERS.map((f) => {
+              const isActive = timeFilter === f.id;
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => setTimeFilter(f.id)}
+                  className={`px-3.5 py-1.5 rounded-full text-[11px] tracking-wide transition-all ${
+                    isActive
+                      ? 'bg-[var(--cream)] text-[var(--ink)] font-medium'
+                      : 'border border-[var(--line)] text-[var(--text-muted)] hover:text-[var(--cream)] hover:border-[var(--line-strong)]'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Weather filter */}
+      {hasWeatherData && (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: EASE, delay: 0.1 }}
+          className="mb-6"
+        >
+          <p className="text-[10px] tracking-[0.2em] uppercase text-[var(--text-dim)] mb-2">Weather</p>
+          <div className="flex flex-wrap gap-1.5">
+            {WEATHER_FILTERS.map((f) => {
+              const isActive = weatherFilter === f.id;
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => setWeatherFilter(f.id)}
+                  className={`px-3.5 py-1.5 rounded-full text-[11px] tracking-wide transition-all ${
+                    isActive
+                      ? 'bg-[var(--cream)] text-[var(--ink)] font-medium'
+                      : 'border border-[var(--line)] text-[var(--text-muted)] hover:text-[var(--cream)] hover:border-[var(--line-strong)]'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+
+      {filtersActive && (
+        <motion.p
+          key={`${filter}-${timeFilter}-${weatherFilter}`}
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: EASE }}
+          className="eyebrow text-[var(--sage)] mb-8"
+        >
+          {countLabel}
+        </motion.p>
+      )}
+      {!filtersActive && <div className="mb-10" />}
+
+      {filtersActive && filteredTotal === 0 && (
+        <div className="surface-soft rounded-2xl p-6 text-center">
+          <p className="text-[var(--text-muted)] text-sm">
+            No activities match these filters — try widening one.
+          </p>
+        </div>
+      )}
 
       <div className="space-y-12">
         {visibleByDest.map((dest, di) =>
@@ -128,6 +259,23 @@ export default function DoTab({ activities }: Props) {
   );
 }
 
+function buildCountLabel(
+  count: number,
+  cat: Activity['category'] | 'all',
+  time: TimeFilter,
+  weather: WeatherFilter
+): string {
+  const noun = count === 1 ? 'activity' : 'activities';
+  const catLabel = cat === 'all' ? '' : CATEGORY_META[cat].label.toLowerCase();
+  const timeLabel =
+    time === 'any' ? '' : time === 'full-day' ? 'full-day' : `${time}s`;
+  const weatherLabel = weather === 'any' ? '' : weather === 'indoor' ? 'indoor' : 'all-weather';
+
+  const qualifiers = [weatherLabel, catLabel, timeLabel].filter(Boolean).join(' ');
+  if (!qualifiers) return `${count} ${noun}`;
+  return `${count} ${qualifiers} ${noun}`.replace(/\s+/g, ' ').trim();
+}
+
 function ActivityCard({ activity: a, place }: { activity: Activity; place: string }) {
   const meta = CATEGORY_META[a.category] || CATEGORY_META.culture;
 
@@ -154,11 +302,36 @@ function ActivityCard({ activity: a, place }: { activity: Activity; place: strin
 
       <p className="text-[var(--text-muted)] text-[13px] leading-relaxed mb-4">{a.why}</p>
 
-      {(a.best_time || a.difficulty) && (
+      {(a.best_time || a.difficulty || a.weather || (a.fits && a.fits.length > 0)) && (
         <div className="flex flex-wrap gap-1.5 mb-4">
           {a.best_time && (
             <span className="text-[10px] tracking-wider uppercase px-2 py-0.5 rounded-full bg-[var(--ink-3)] text-[var(--text-muted)] border border-[var(--line)]">
               {a.best_time}
+            </span>
+          )}
+          {a.fits && a.fits.length > 0 && a.fits.map((fit) => (
+            <span
+              key={fit}
+              className="text-[10px] tracking-wider uppercase px-2 py-0.5 rounded-full"
+              style={{
+                background: 'rgba(193, 154, 107, 0.08)',
+                color: 'var(--gold-soft)',
+                border: '1px solid rgba(193, 154, 107, 0.25)',
+              }}
+            >
+              {fit}
+            </span>
+          ))}
+          {a.weather && a.weather !== 'any' && (
+            <span
+              className="text-[10px] tracking-wider uppercase px-2 py-0.5 rounded-full"
+              style={{
+                background: 'rgba(196, 110, 84, 0.08)',
+                color: 'var(--terracotta)',
+                border: '1px solid rgba(196, 110, 84, 0.25)',
+              }}
+            >
+              {a.weather}
             </span>
           )}
           {a.difficulty && (
