@@ -1,10 +1,25 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import type { DestinationHotels, Destination, TravelConfig } from '../../types';
+import type { DestinationHotels, Destination, TravelConfig, HotelAmenity } from '../../types';
 import { formatDateAU } from '../../lib/dateUtils';
 import { getHotelLinks } from '../../lib/bookingLinks';
 import { getDestinationPhoto } from '../../lib/imagery';
 import { PlaceActions } from '../shared/PlaceLink';
+
+const AMENITY_META: Record<HotelAmenity, { label: string; icon: string }> = {
+  wifi: { label: 'Free Wi-Fi', icon: '⌁' },
+  breakfast: { label: 'Breakfast', icon: '☕' },
+  pool: { label: 'Pool', icon: '◡' },
+  gym: { label: 'Gym', icon: '⊙' },
+  parking: { label: 'Parking', icon: 'Ⓟ' },
+  spa: { label: 'Spa', icon: '✿' },
+  bar: { label: 'Bar', icon: '⚲' },
+  kitchen: { label: 'Kitchen', icon: '⌂' },
+  aircon: { label: 'Air-con', icon: '❄' },
+  laundry: { label: 'Laundry', icon: '⊞' },
+  'pet-friendly': { label: 'Pet-friendly', icon: '⚇' },
+  'airport-shuttle': { label: 'Airport shuttle', icon: '✈' },
+};
 
 interface Props {
   hotels: DestinationHotels[];
@@ -194,9 +209,16 @@ export default function HotelsTab({ hotels, config }: Props) {
                               <p className="text-[var(--gold)] text-[11px] tracking-widest">{'★'.repeat(h.stars)}</p>
                               <p className="text-[var(--text-dim)] text-[10px] uppercase tracking-wider mt-0.5">{h.style}</p>
                             </div>
-                            {h.recommended && (
-                              <span className="eyebrow text-[var(--gold)]">Pick</span>
-                            )}
+                            <div className="flex flex-col items-end gap-1">
+                              {h.recommended && (
+                                <span className="eyebrow text-[var(--gold)]">Pick</span>
+                              )}
+                              {h.best_for && (
+                                <span className="text-[9px] tracking-[0.16em] uppercase px-2 py-0.5 rounded-full bg-[var(--ink-4)] text-[var(--text-muted)] border border-[var(--line)]">
+                                  Best for {h.best_for}
+                                </span>
+                              )}
+                            </div>
                           </div>
 
                           <h4 className="font-display text-lg text-[var(--cream)] mb-1 leading-snug">{h.name}</h4>
@@ -206,6 +228,20 @@ export default function HotelsTab({ hotels, config }: Props) {
                             <span className="font-display text-xl text-[var(--gold)]">{h.price_per_night_aud}</span>
                             <span className="text-[var(--text-dim)] text-[10px] uppercase tracking-wider">per night</span>
                           </div>
+
+                          {h.amenities && h.amenities.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mb-3">
+                              {h.amenities.slice(0, 6).map((a) => (
+                                <span
+                                  key={a}
+                                  title={AMENITY_META[a]?.label ?? a}
+                                  className="text-[13px] leading-none w-6 h-6 rounded-full bg-[var(--ink-4)] border border-[var(--line)] flex items-center justify-center"
+                                >
+                                  {AMENITY_META[a]?.icon ?? '•'}
+                                </span>
+                              ))}
+                            </div>
+                          )}
 
                           <div className="flex flex-wrap gap-1 mb-4">
                             {h.highlights.slice(0, 3).map((hl) => (
