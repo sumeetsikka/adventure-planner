@@ -4,6 +4,7 @@ import type { TravelConfig, GenerationResults } from '../../types';
 import { formatDateAU } from '../../lib/dateUtils';
 import { getFlightLinks, getHotelLinks } from '../../lib/bookingLinks';
 import { parseBookingEmail, type ParsedBooking } from '../../lib/api';
+import { tapHaptic } from '../../lib/haptics';
 
 interface Props {
   config: TravelConfig;
@@ -31,6 +32,7 @@ export default function BookingTrackerTab({ config, results }: Props) {
   const [statusMsg, setStatusMsg] = useState('');
 
   const toggle = (id: string) => {
+    tapHaptic();
     setBooked((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);

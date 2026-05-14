@@ -10,6 +10,7 @@ import ResultsView from './components/results/ResultsView';
 import ThemeToggle from './components/shared/ThemeToggle';
 import InstallPrompt from './components/shared/InstallPrompt';
 import OnboardingTour from './components/shared/OnboardingTour';
+import { ToastProvider } from './components/shared/Toast';
 import MyTrips from './components/wizard/MyTrips';
 import Inspiration from './components/wizard/Inspiration';
 import Wishlist from './components/wizard/Wishlist';
@@ -32,6 +33,14 @@ const EMPTY_RESULTS: GenerationResults = {
 };
 
 export default function App() {
+  return (
+    <ToastProvider>
+      <AppInner />
+    </ToastProvider>
+  );
+}
+
+function AppInner() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [view, setView] = useState<AppView>(() => (listTrips().length > 0 ? 'mytrips' : 'country'));
   const [step, setStep] = useState<WizardStep>(1);

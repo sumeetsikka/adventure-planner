@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import type { TravelConfig } from '../../types';
+import { tapHaptic } from '../../lib/haptics';
 
 interface Props {
   config: TravelConfig;
@@ -33,6 +34,7 @@ export default function ChecklistTab({ config }: Props) {
   const [checked, setChecked] = useState<Set<string>>(new Set());
 
   const toggle = (id: string) => {
+    tapHaptic();
     setChecked((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);

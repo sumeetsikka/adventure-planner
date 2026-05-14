@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import type { PackingItem, TravelConfig } from '../../types';
+import { tapHaptic } from '../../lib/haptics';
 
 interface Props {
   packing: PackingItem[];
@@ -45,6 +46,7 @@ export default function PackingTab({ packing, config: _config }: Props) {
   const progressPct = totalItems > 0 ? (packedCount / totalItems) * 100 : 0;
 
   function toggleItem(category: string, item: string) {
+    tapHaptic();
     const key = `${category}-${item}`;
     setCheckedItems((prev) => {
       const next = new Set(prev);

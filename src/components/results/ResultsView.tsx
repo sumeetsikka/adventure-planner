@@ -6,6 +6,7 @@ import { searchFlights, searchHotels, generateBudget, generateTips, generatePack
 import TabNav from '../shared/TabNav';
 import MobileBottomNav from '../shared/MobileBottomNav';
 import ErrorBoundary from '../shared/ErrorBoundary';
+import { useToast } from '../shared/Toast';
 import DashboardTab from './DashboardTab';
 import { encodeTripToUrl, shareOrCopy } from '../../lib/tripUrl';
 
@@ -93,7 +94,8 @@ function RetryButton({ label, onRetry }: { label: string; onRetry: () => Promise
 
 export default function ResultsView({ config, results, onStartOver, onUpdateResults }: Props) {
   const [activeTab, setActiveTab] = useState<ResultsTab>('dashboard');
-  const [shareMsg, setShareMsg] = useState('');
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const toast = useToast();
 
   const totalDays = Math.round(
     (new Date(config.returnDate).getTime() - new Date(config.departureDate).getTime()) /
@@ -103,6 +105,7 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
   const handleCalendarExport = () => {
     const ics = generateICS(results, config);
     downloadFile(ics, `${config.country?.name || 'trip'}-itinerary.ics`, 'text/calendar');
+    toast('Calendar file downloaded', 'success');
   };
 
   return (
@@ -123,13 +126,12 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
                     url,
                   });
                   if (result === 'cancelled') return;
-                  setShareMsg(result === 'shared' ? 'Shared!' : 'Link copied!');
-                  setTimeout(() => setShareMsg(''), 2000);
+                  toast(result === 'shared' ? 'Shared!' : 'Link copied to clipboard', 'success');
                 }}
                 className="text-[11px] tracking-widest uppercase text-[var(--text-muted)] hover:text-[var(--cream)] border border-[var(--line)] hover:border-[var(--line-strong)] rounded-full px-3.5 py-1.5 transition-all">
-                {shareMsg || 'Share'}
+                Share
               </button>
-              <button onClick={() => openEmailWithTrip(config, results)}
+              <button onClick={() => { openEmailWithTrip(config, results); toast('Opening your email client…'); }}
                 className="text-[11px] tracking-widest uppercase text-[var(--text-muted)] hover:text-[var(--cream)] border border-[var(--line)] hover:border-[var(--line-strong)] rounded-full px-3.5 py-1.5 transition-all">
                 Email
               </button>
@@ -137,8 +139,11 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
                 className="text-[11px] tracking-widest uppercase text-[var(--text-muted)] hover:text-[var(--cream)] border border-[var(--line)] hover:border-[var(--line-strong)] rounded-full px-3.5 py-1.5 transition-all">
                 Calendar
               </button>
-              <button onClick={async () => {
-                  setShareMsg('Generating PDF…');
+              <button
+                disabled={pdfBusy}
+                onClick={async () => {
+                  setPdfBusy(true);
+                  toast('Generating your PDF…');
                   try {
                     const { generateTripPdf } = await import('../../lib/tripPdf');
                     const blob = await generateTripPdf(config, results);
@@ -148,14 +153,15 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
                     a.download = `${config.country?.name || 'trip'}-adventure-planner.pdf`;
                     a.click();
                     URL.revokeObjectURL(url);
-                    setShareMsg('PDF saved!');
+                    toast('PDF saved', 'success');
                   } catch {
-                    setShareMsg('PDF failed — try again');
+                    toast('PDF failed — try again', 'error');
+                  } finally {
+                    setPdfBusy(false);
                   }
-                  setTimeout(() => setShareMsg(''), 2400);
                 }}
-                className="text-[11px] tracking-widest uppercase text-[var(--text-muted)] hover:text-[var(--cream)] border border-[var(--line)] hover:border-[var(--line-strong)] rounded-full px-3.5 py-1.5 transition-all">
-                PDF
+                className="text-[11px] tracking-widest uppercase text-[var(--text-muted)] hover:text-[var(--cream)] border border-[var(--line)] hover:border-[var(--line-strong)] rounded-full px-3.5 py-1.5 transition-all disabled:opacity-50">
+                {pdfBusy ? 'PDF…' : 'PDF'}
               </button>
             </div>
           </div>

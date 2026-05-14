@@ -6,6 +6,7 @@ import { getCountryHero, getDestinationPhoto } from '../../lib/imagery';
 import { useGeolocation, distanceKm } from '../../lib/useGeolocation';
 import { directionsUrl } from '../../lib/deepLinks';
 import { geocodeDestination } from '../../lib/geocode';
+import AnimatedNumber from '../shared/AnimatedNumber';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -249,7 +250,9 @@ export default function DashboardTab({ config, results, onTabChange }: Props) {
             className="surface-card p-5 text-left"
           >
             <p className="eyebrow text-[var(--text-dim)] mb-2">{s.label}</p>
-            <p className="font-display text-4xl text-[var(--cream)]">{s.value}</p>
+            <p className="font-display text-4xl text-[var(--cream)]">
+              <AnimatedNumber value={s.value} />
+            </p>
           </motion.button>
         ))}
       </div>
@@ -263,12 +266,16 @@ export default function DashboardTab({ config, results, onTabChange }: Props) {
       >
         <div>
           <p className="eyebrow text-[var(--text-dim)] mb-2">Per person</p>
-          <p className="font-display text-5xl text-[var(--cream)]">${perPersonBudget.toLocaleString()}</p>
+          <p className="font-display text-5xl text-[var(--cream)]">
+            <AnimatedNumber value={perPersonBudget} prefix="$" />
+          </p>
           <p className="text-[var(--text-muted)] text-xs mt-1 font-light">All-in estimate</p>
         </div>
         <div>
           <p className="eyebrow text-[var(--text-dim)] mb-2">Group total</p>
-          <p className="font-display text-5xl text-[var(--gold)]">${groupBudget.toLocaleString()}</p>
+          <p className="font-display text-5xl text-[var(--gold)]">
+            <AnimatedNumber value={groupBudget} prefix="$" />
+          </p>
           <p className="text-[var(--text-muted)] text-xs mt-1 font-light">{config.travellers} traveller{config.travellers > 1 ? 's' : ''}</p>
         </div>
       </motion.div>
