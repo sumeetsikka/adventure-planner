@@ -62,6 +62,8 @@ Return a JSON array of objects, one per destination. Each object has:
   - recommended (boolean): true for your single top pick per destination, false for others
   - why (string): 3-4 sentences explaining why you recommend this hotel
   - booking_sites (string array): 2-3 booking sites
+  - amenities (string array): pick from ["wifi","breakfast","pool","gym","parking","spa","bar","kitchen","aircon","laundry","pet-friendly","airport-shuttle"] — only ones the hotel genuinely has, 3-6 items
+  - best_for (string): single best-fit traveller type — one of ["families","couples","solo","business","groups","budget","luxury"]
 
 CRITICAL: Use the EXACT check-in and check-out dates provided in the user message. Do NOT change or invent dates.
 
@@ -84,9 +86,11 @@ Include ALL applicable categories:
 Be specific and realistic for Australian travellers. Give a price range for each.
 Return ONLY valid JSON array, no markdown.`;
 
-export const TIPS_SYSTEM = `Generate 5-7 travel tips as a JSON array of objects with 'icon' (emoji), 'title' (string), 'text' (string, 1-2 sentences).
+export const TIPS_SYSTEM = `Generate 7-9 travel tips as a JSON array of objects with 'icon' (emoji), 'title' (string), 'text' (string, 1-2 sentences), 'category' (string).
 
-Include: weather for the travel month, visa info for Australian passport holders, currency/ATMs, local SIM cards, safety tips, and destination-specific practical advice.
+'category' must be one of: "money", "safety", "etiquette", "food", "transport", "health", "general".
+
+Cover a spread across categories: money (currency/ATMs/tipping/scams), safety (areas to avoid, common scams), etiquette (local customs, dress codes), food (what to try, dietary notes), transport (getting around), health (water, vaccinations), and general practical advice. Make tips destination-specific, not generic.
 Return ONLY valid JSON array, no markdown.`;
 
 export const PACKING_SYSTEM = `You are a professional travel packing expert. Generate a packing list as a JSON array of objects with 'category' (string) and 'items' (string array).
@@ -149,5 +153,7 @@ For each destination provided, include 2-3 nearby places worth visiting as a day
 - travel_time (string): approximate travel time from the base destination e.g. "1.5 hours by bus"
 - why_visit (string): 1-2 sentences on why it is worth visiting
 - highlight (string): the single best thing to do or see there
+- category (string): one of "beach", "nature", "culture", "adventure", "food", "town", "landmark"
+- trip_length (string): "half-day" or "full-day"
 
 Return ONLY valid JSON array, no markdown backticks.`;

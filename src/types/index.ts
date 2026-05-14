@@ -52,6 +52,9 @@ export interface FlightLeg {
   booking_sites: string[];
 }
 
+export type HotelAmenity = 'wifi' | 'breakfast' | 'pool' | 'gym' | 'parking' | 'spa' | 'bar' | 'kitchen' | 'aircon' | 'laundry' | 'pet-friendly' | 'airport-shuttle';
+export type HotelBestFor = 'families' | 'couples' | 'solo' | 'business' | 'groups' | 'budget' | 'luxury';
+
 export interface HotelRec {
   name: string;
   stars: number;
@@ -62,6 +65,8 @@ export interface HotelRec {
   recommended?: boolean;
   why: string;
   booking_sites: string[];
+  amenities?: HotelAmenity[];
+  best_for?: HotelBestFor;
 }
 
 export interface DestinationHotels {
@@ -86,10 +91,13 @@ export interface BudgetItem {
   cost: string;
 }
 
+export type TipCategory = 'money' | 'safety' | 'etiquette' | 'food' | 'transport' | 'health' | 'general';
+
 export interface Tip {
   icon: string;
   title: string;
   text: string;
+  category?: TipCategory;
 }
 
 // New feature types
@@ -192,12 +200,16 @@ export interface DestinationActivities {
   activities: Activity[];
 }
 
+export type NearbyCategory = 'beach' | 'nature' | 'culture' | 'adventure' | 'food' | 'town' | 'landmark';
+
 export interface NearbyPlace {
   destination: string;
   name: string;
   travel_time: string;
   why_visit: string;
   highlight: string;
+  category?: NearbyCategory;
+  trip_length?: 'half-day' | 'full-day';
 }
 
 export interface TransportLeg {
