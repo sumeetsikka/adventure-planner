@@ -33,6 +33,8 @@ export default function AnimatedNumber({ value, duration = 900, format = default
     const from = fromRef.current;
     const to = value;
     if (from === to) {
+      // Nothing to animate — snap. This is the rAF-lifecycle pattern.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDisplay(to);
       return;
     }

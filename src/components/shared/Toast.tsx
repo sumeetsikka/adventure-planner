@@ -1,3 +1,6 @@
+/* eslint-disable react-refresh/only-export-components */
+// Provider + `useToast` hook are colocated because they share a private
+// ToastContext. Splitting them would only export the context — net negative.
 import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
