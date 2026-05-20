@@ -26,6 +26,18 @@ export interface Destination {
 
 export type VibeOption = 'adventure' | 'beach' | 'culture' | 'romance' | 'family' | 'backpacker' | 'luxury' | 'photography' | 'wellness' | 'nightlife' | 'foodie' | 'nature' | 'history';
 
+/** Rich on-demand synopsis for a destination — shown in the "Know more" panel. */
+export interface DestinationInfo {
+  name: string;
+  famous_for: string;            // 1-2 sentence summary of what the place is known for
+  things_to_do: string[];        // top 8-10 things to do/see
+  food_highlights: string[];     // 3-5 must-try dishes / food experiences
+  best_time: string;             // best months / season to visit
+  ideal_duration: string;        // e.g. "2-3 days"
+  good_to_know: string[];        // 3-5 practical tips / local etiquette / watch-outs
+  vibe: string;                  // 1 sentence on the atmosphere
+}
+
 export interface TravelConfig {
   country: Country;
   destinations: Destination[];

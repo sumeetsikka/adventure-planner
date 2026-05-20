@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import type { Country, Destination } from '../../types';
 import { countries } from '../../data/countries';
@@ -41,8 +41,23 @@ export default function DestinationPicker({ selected, onSelect, onNext, country,
   };
 
   const selectedIds = new Set(selected.map((d) => d.id));
-  const mustVisitDests = destinations.filter((d) => d.mustVisit);
-  const regions = Array.from(new Set(destinations.map((d) => d.region)));
+
+  // Deduplicate by id — guards against the same destination being appended
+  // twice (e.g. via onAddDestinations) so a place never renders more than once.
+  const uniqueDestinations = useMemo(() => {
+    const seen = new Set<string>();
+    return destinations.filter((d) => {
+      if (seen.has(d.id)) return false;
+      seen.add(d.id);
+      return true;
+    });
+  }, [destinations]);
+
+  const mustVisitDests = uniqueDestinations.filter((d) => d.mustVisit);
+  // Region grids exclude must-visit destinations — those already appear in the
+  // "Editor's Picks" section above, so this stops every pick rendering twice.
+  const regionDestinations = uniqueDestinations.filter((d) => !d.mustVisit);
+  const regions = Array.from(new Set(regionDestinations.map((d) => d.region)));
 
   const toggle = (id: string) => {
     if (selectedIds.has(id)) {
@@ -134,7 +149,8 @@ export default function DestinationPicker({ selected, onSelect, onNext, country,
 
         {/* Regions */}
         {regions.map((region, ri) => {
-          const regionDests = destinations.filter((d) => d.region === region);
+          const regionDests = regionDestinations.filter((d) => d.region === region);
+          if (regionDests.length === 0) return null;
           return (
             <motion.section
               key={region}
