@@ -72,9 +72,10 @@ function AppInner() {
     if (trip.config.origin) setOrigin(trip.config.origin);
     if (trip.config.homeCurrency) setHomeCurrency(trip.config.homeCurrency);
     setResults(trip.results);
-    // If results have any data, jump to results view
-    const hasResults = trip.results.itinerary.length > 0 || trip.results.flights.length > 0;
-    if (hasResults) setView('results');
+    // NOTE: we deliberately do NOT jump straight into the last trip's results.
+    // The landing view is the "My Trips" gallery (set in useState initialiser)
+    // so a returning visitor sees all their trips and chooses one — rather than
+    // being dumped back into whatever trip they last opened.
   }, []);
 
   // Check for shared trip URL on mount
