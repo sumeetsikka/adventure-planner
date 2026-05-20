@@ -6,9 +6,10 @@ interface Props {
   destination: Destination;
   selected: boolean;
   onToggle: (id: string) => void;
+  onKnowMore: (destination: Destination) => void;
 }
 
-export default function DestinationCard({ destination, selected, onToggle }: Props) {
+export default function DestinationCard({ destination, selected, onToggle, onKnowMore }: Props) {
   const d = destination;
   const daysLabel =
     d.recommendedDays[0] === d.recommendedDays[1]
@@ -19,9 +20,7 @@ export default function DestinationCard({ destination, selected, onToggle }: Pro
   const photo = useWikiImage(d.name);
 
   return (
-    <motion.button
-      type="button"
-      onClick={() => onToggle(d.id)}
+    <motion.div
       whileHover={{ y: -3 }}
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       className={`group relative w-full text-left rounded-2xl overflow-hidden h-[300px] border transition-colors ${
@@ -55,12 +54,21 @@ export default function DestinationCard({ destination, selected, onToggle }: Pro
       {/* Readability overlays */}
       <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(10,8,6,0.15) 0%, rgba(10,8,6,0.55) 50%, rgba(10,8,6,0.95) 100%)' }} />
       <div
-        className="absolute inset-0 opacity-0 group-hover:opacity-30 transition-opacity duration-500 mix-blend-multiply"
+        className="absolute inset-0 opacity-0 group-hover:opacity-30 transition-opacity duration-500 mix-blend-multiply pointer-events-none"
         style={{ background: d.colour }}
       />
 
+      {/* Tap-to-select layer — covers the card except the action buttons */}
+      <button
+        type="button"
+        onClick={() => onToggle(d.id)}
+        aria-label={selected ? `Remove ${d.name} from itinerary` : `Add ${d.name} to itinerary`}
+        aria-pressed={selected}
+        className="absolute inset-0 z-10 cursor-pointer"
+      />
+
       {/* Top row */}
-      <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-10">
+      <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-20 pointer-events-none">
         <div className="flex items-center gap-2">
           <span className="text-2xl drop-shadow-lg">{d.emoji}</span>
           {isMustVisit && (
@@ -81,7 +89,7 @@ export default function DestinationCard({ destination, selected, onToggle }: Pro
       </div>
 
       {/* Content */}
-      <div className="absolute inset-0 p-5 flex flex-col justify-end z-10">
+      <div className="absolute inset-0 p-5 flex flex-col justify-end z-20 pointer-events-none">
         <p className="eyebrow mb-2 drop-shadow-md" style={{ color: 'var(--gold-soft)' }}>
           {d.region}
         </p>
@@ -93,7 +101,7 @@ export default function DestinationCard({ destination, selected, onToggle }: Pro
         </p>
 
         {/* Tags */}
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5 mb-3">
           {d.tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
@@ -107,13 +115,30 @@ export default function DestinationCard({ destination, selected, onToggle }: Pro
               {tag}
             </span>
           ))}
-          {d.accessNote && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full font-light tracking-wide text-[var(--gold-soft)]">
-              · {d.accessNote}
-            </span>
-          )}
+        </div>
+
+        {/* Actions — pointer-events re-enabled so these sit above the select layer */}
+        <div className="flex gap-2 pointer-events-auto">
+          <button
+            type="button"
+            onClick={() => onToggle(d.id)}
+            className={`flex-1 text-[11px] tracking-wide rounded-full px-3 py-2 transition-colors ${
+              selected
+                ? 'bg-[var(--ink-3)]/90 text-[var(--cream)] border border-[var(--gold)]/40'
+                : 'bg-[var(--cream)] text-[var(--ink)] hover:bg-[var(--paper)] font-medium'
+            }`}
+          >
+            {selected ? '✓ Added' : 'Add to trip'}
+          </button>
+          <button
+            type="button"
+            onClick={() => onKnowMore(d)}
+            className="text-[11px] tracking-wide rounded-full px-3 py-2 border border-[var(--cream)]/30 text-[var(--cream)] bg-[var(--ink)]/40 backdrop-blur-sm hover:bg-[var(--ink)]/70 transition-colors"
+          >
+            Know more
+          </button>
         </div>
       </div>
-    </motion.button>
+    </motion.div>
   );
 }

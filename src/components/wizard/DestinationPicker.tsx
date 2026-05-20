@@ -6,6 +6,7 @@ import { getDestinationsForCountry } from '../../data/destinations';
 import { generateDestinations } from '../../lib/api';
 import { useWikiImage } from '../../lib/useWikiImage';
 import DestinationCard from './DestinationCard';
+import DestinationDetail from './DestinationDetail';
 
 interface Props {
   selected: Destination[];
@@ -20,6 +21,7 @@ interface Props {
 export default function DestinationPicker({ selected, onSelect, onNext, country, destinations, onBackToCountries, onAddDestinations }: Props) {
   const [showAddCountry, setShowAddCountry] = useState(false);
   const [addingCountry, setAddingCountry] = useState(false);
+  const [detailDestination, setDetailDestination] = useState<Destination | null>(null);
 
   const handleAddFromCountry = async (c: Country) => {
     if (!onAddDestinations) return;
@@ -141,7 +143,7 @@ export default function DestinationPicker({ selected, onSelect, onNext, country,
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
               {mustVisitDests.map((d) => (
-                <DestinationCard key={d.id} destination={d} selected={selectedIds.has(d.id)} onToggle={toggle} />
+                <DestinationCard key={d.id} destination={d} selected={selectedIds.has(d.id)} onToggle={toggle} onKnowMore={setDetailDestination} />
               ))}
             </div>
           </motion.section>
@@ -166,7 +168,7 @@ export default function DestinationPicker({ selected, onSelect, onNext, country,
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                 {regionDests.map((d) => (
-                  <DestinationCard key={`${region}-${d.id}`} destination={d} selected={selectedIds.has(d.id)} onToggle={toggle} />
+                  <DestinationCard key={`${region}-${d.id}`} destination={d} selected={selectedIds.has(d.id)} onToggle={toggle} onKnowMore={setDetailDestination} />
                 ))}
               </div>
             </motion.section>
@@ -242,6 +244,17 @@ export default function DestinationPicker({ selected, onSelect, onNext, country,
           </div>
         </div>
       </div>
+
+      {/* "Know more" detail panel */}
+      {detailDestination && (
+        <DestinationDetail
+          destination={detailDestination}
+          countryName={country.name}
+          selected={selectedIds.has(detailDestination.id)}
+          onToggleSelect={() => toggle(detailDestination.id)}
+          onClose={() => setDetailDestination(null)}
+        />
+      )}
     </div>
   );
 }
