@@ -29,6 +29,8 @@ export default function DestinationDetail({
 
   useEffect(() => {
     let cancelled = false;
+    // Reset to loading on each destination change — async-fetch lifecycle.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStatus('loading');
     getDestinationInfo(d.name, countryName)
       .then((res) => {
