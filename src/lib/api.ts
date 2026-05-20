@@ -1,4 +1,4 @@
-import type { Country, TravelConfig, Destination, FlightLeg, DestinationHotels, ItineraryDay, BudgetItem, Tip, PackingItem, WeatherInfo, VisaInfo, CurrencyInfo, NearbyPlace, TransportLeg, DestinationRestaurants, DestinationActivities } from '../types';
+import type { Country, TravelConfig, Destination, FlightLeg, DestinationHotels, ItineraryDay, BudgetItem, Tip, PackingItem, WeatherInfo, VisaInfo, CurrencyInfo, NearbyPlace, TransportLeg, DestinationRestaurants, DestinationActivities, DestinationInfo } from '../types';
 
 async function postApi<T>(endpoint: string, body: unknown): Promise<T> {
   const res = await fetch(endpoint, {
@@ -70,6 +70,10 @@ export async function generateRestaurants(config: TravelConfig): Promise<Destina
 
 export async function generateActivities(config: TravelConfig): Promise<DestinationActivities[]> {
   return postApi<DestinationActivities[]>('/api/activities', config);
+}
+
+export async function getDestinationInfo(name: string, country: string): Promise<DestinationInfo> {
+  return postApi<DestinationInfo>('/api/destinationInfo', { name, country });
 }
 
 export interface ParsedBookingFlight {

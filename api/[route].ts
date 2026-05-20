@@ -352,6 +352,40 @@ Use null for fields not found. Be conservative on confidence: "high" only when y
   };
 }
 
+async function handleDestinationInfo(body: any) {
+  const DEST_INFO_SYSTEM = `You are a knowledgeable travel writer. Given a destination, return a rich, accurate synopsis as a JSON object:
+{
+  "name": "destination name",
+  "famous_for": "1-2 sentences on what this place is best known for",
+  "things_to_do": ["8-10 specific, real things to do or see — named attractions, experiences, neighbourhoods"],
+  "food_highlights": ["3-5 must-try dishes or food experiences specific to this place"],
+  "best_time": "best months/season to visit and why, 1 sentence",
+  "ideal_duration": "recommended length of stay, e.g. '2-3 days'",
+  "good_to_know": ["3-5 practical tips — local etiquette, scams to avoid, transport, money, what surprises visitors"],
+  "vibe": "1 sentence capturing the atmosphere/character of the place"
+}
+Be SPECIFIC and accurate — use real attraction names, real dishes. No placeholder text. Return ONLY the JSON object, no markdown.`;
+
+  const name = (body?.name || '').toString().slice(0, 120);
+  const country = (body?.country || '').toString().slice(0, 80);
+  if (!name.trim()) {
+    return { name: '', famous_for: '', things_to_do: [], food_highlights: [], best_time: '', ideal_duration: '', good_to_know: [], vibe: '' };
+  }
+  const userMessage = `Destination: ${name}${country ? `, ${country}` : ''}. Write the traveller synopsis.`;
+  const result = await callLLM(DEST_INFO_SYSTEM, userMessage);
+  const parsed = Array.isArray(result) ? result[0] : result;
+  return {
+    name: parsed?.name || name,
+    famous_for: parsed?.famous_for || '',
+    things_to_do: Array.isArray(parsed?.things_to_do) ? parsed.things_to_do : [],
+    food_highlights: Array.isArray(parsed?.food_highlights) ? parsed.food_highlights : [],
+    best_time: parsed?.best_time || '',
+    ideal_duration: parsed?.ideal_duration || '',
+    good_to_know: Array.isArray(parsed?.good_to_know) ? parsed.good_to_know : [],
+    vibe: parsed?.vibe || '',
+  };
+}
+
 async function handleChat(config: any) {
   const CHAT_SYSTEM = `You are a friendly travel expert helping an Australian traveller. Answer concisely (2-4 sentences). Use Australian English. Return as JSON: {"answer": "your response"}`;
   const { question, country, destinations } = config;
