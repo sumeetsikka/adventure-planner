@@ -1,31 +1,37 @@
 // Adventure Planner service worker
-// Strategy:
-//   - Static assets (JS/CSS/images): cache-first with stale-while-revalidate
-//   - API calls (/api/*): network-only (fresh data)
-//   - HTML: network-first with offline fallback to last-known shell
 //
-// Cache name uses a date stamp so each deployment busts old caches.
+// Strategy (chosen to make "stale deploy" impossible):
+//   - Navigations / HTML  : NETWORK-ONLY. The document is never served from
+//                           cache, so a new deploy is always picked up on the
+//                           next load. (No offline app-shell — acceptable for
+//                           a travel planner that needs the network anyway.)
+//   - Hashed JS/CSS assets: cache-first. Vite fingerprints these (index-AbC1.js),
+//                           so a new build = a new filename = no staleness.
+//   - Cross-origin images : stale-while-revalidate (Wikipedia/Loremflickr/Picsum).
+//   - /api/*              : network-only.
+//
+// __BUILD_VERSION__ is replaced at build time so each deploy gets a fresh
+// cache bucket and the activate handler purges every older bucket.
 
-// Vite build replaces __BUILD_VERSION__ with the deploy timestamp on every
-// production build; that way each new deploy invalidates the previous cache.
 const CACHE = 'adventure-planner-__BUILD_VERSION__';
-const SHELL = ['/', '/index.html', '/favicon.svg', '/manifest.json'];
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(SHELL).catch(() => {}))
-  );
+self.addEventListener('install', () => {
+  // Take over as soon as possible — don't wait for old tabs to close.
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
-    )
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
+
+function isHashedAsset(url) {
+  // Vite output: /assets/index-A1b2C3d4.js , /assets/Foo-X9y8.css
+  return url.pathname.startsWith('/assets/') && /\-[A-Za-z0-9_]{8,}\.(js|css)$/.test(url.pathname);
+}
 
 self.addEventListener('fetch', (event) => {
   const req = event.request;
@@ -33,40 +39,65 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(req.url);
 
-  // API routes: always network, never cache (data is dynamic)
-  if (url.pathname.startsWith('/api/')) {
-    event.respondWith(fetch(req).catch(() => new Response('{"error":"offline"}', {
-      status: 503,
-      headers: { 'Content-Type': 'application/json' },
-    })));
+  // 1. Navigations / HTML documents — NETWORK ONLY. Never stale.
+  if (req.mode === 'navigate' || req.destination === 'document') {
+    event.respondWith(
+      fetch(req).catch(
+        () =>
+          new Response(
+            '<!doctype html><meta charset="utf-8"><title>Offline</title>' +
+            '<body style="background:#0A0806;color:#F5EDE0;font-family:Georgia,serif;' +
+            'display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center">' +
+            '<div><p style="font-size:1.5rem;font-style:italic">You\'re offline.</p>' +
+            '<p style="opacity:.6">Reconnect to plan your adventure.</p></div>',
+            { headers: { 'Content-Type': 'text/html' }, status: 503 }
+          )
+      )
+    );
     return;
   }
 
-  // Cross-origin imagery (Wikipedia, Loremflickr, Picsum): stale-while-revalidate
+  // 2. API — network only.
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith(
+      fetch(req).catch(
+        () => new Response('{"error":"offline"}', { status: 503, headers: { 'Content-Type': 'application/json' } })
+      )
+    );
+    return;
+  }
+
+  // 3. Hashed JS/CSS — cache-first (immutable; filename changes per build).
+  if (url.origin === self.location.origin && isHashedAsset(url)) {
+    event.respondWith(
+      caches.open(CACHE).then(async (cache) => {
+        const cached = await cache.match(req);
+        if (cached) return cached;
+        const res = await fetch(req);
+        if (res.ok) cache.put(req, res.clone()).catch(() => {});
+        return res;
+      })
+    );
+    return;
+  }
+
+  // 4. Cross-origin imagery — stale-while-revalidate.
   if (url.origin !== self.location.origin) {
     event.respondWith(
       caches.open(CACHE).then(async (cache) => {
         const cached = await cache.match(req);
-        const fetchPromise = fetch(req).then((res) => {
-          if (res.ok) cache.put(req, res.clone()).catch(() => {});
-          return res;
-        }).catch(() => cached);
+        const fetchPromise = fetch(req)
+          .then((res) => {
+            if (res.ok) cache.put(req, res.clone()).catch(() => {});
+            return res;
+          })
+          .catch(() => cached);
         return cached || fetchPromise;
       })
     );
     return;
   }
 
-  // App shell + assets: network-first, fall back to cache
-  event.respondWith(
-    fetch(req)
-      .then((res) => {
-        if (res.ok) {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
-        }
-        return res;
-      })
-      .catch(() => caches.match(req).then((cached) => cached || caches.match('/')))
-  );
+  // 5. Everything else same-origin (favicon, manifest) — network, cache fallback.
+  event.respondWith(fetch(req).catch(() => caches.match(req)));
 });
