@@ -42,7 +42,9 @@ export default function App() {
 
 function AppInner() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  const [view, setView] = useState<AppView>(() => (listTrips().length > 0 ? 'mytrips' : 'country'));
+  // Always land on the country picker — a fresh "start a new trip" entry.
+  // Saved trips are one tap away via the "My trips" button in the header.
+  const [view, setView] = useState<AppView>('country');
   const [step, setStep] = useState<WizardStep>(1);
   const [tripsVersion, setTripsVersion] = useState(0); // bump to force MyTrips re-render
 
