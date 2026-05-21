@@ -22,7 +22,9 @@ export default function MyTrips({ onLoad, onNew, onInspire, onWishlist, onBack }
   const refresh = () => setTrips(listTrips());
 
   const handleDelete = (id: string) => {
-    if (!window.confirm('Delete this trip permanently?')) return;
+    // No window.confirm() here — on touch devices dismissing a native dialog
+    // fires a "ghost click" that lands on the card behind the button and
+    // opens the trip. The TripCard does an in-app two-step confirm instead.
     deleteTrip(id);
     refresh();
   };
@@ -153,6 +155,7 @@ interface CardProps {
 function TripCard({
   trip, index, isRenaming, renameValue, onRenameChange, onStartRename, onCommitRename, onLoad, onDelete,
 }: CardProps) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const photo = useWikiImage(trip.config.country.name, 'country');
   const days = Math.max(
     1,
@@ -209,20 +212,41 @@ function TripCard({
           className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
           onClick={(e) => e.stopPropagation()}
         >
-          <button
-            onClick={onStartRename}
-            className="w-11 h-11 sm:w-7 sm:h-7 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center text-white text-base sm:text-[10px] hover:bg-black/80 border border-white/25"
-            aria-label="Rename trip"
-          >
-            ✎
-          </button>
-          <button
-            onClick={onDelete}
-            className="w-11 h-11 sm:w-7 sm:h-7 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center text-white text-base sm:text-[10px] hover:bg-[var(--terracotta)] border border-white/25"
-            aria-label="Delete trip"
-          >
-            ×
-          </button>
+          {confirmDelete ? (
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                className="px-3.5 h-11 sm:h-7 rounded-full bg-[var(--terracotta)] backdrop-blur-sm flex items-center justify-center text-white text-xs sm:text-[10px] font-semibold tracking-wide hover:bg-[var(--terracotta-soft)] border border-white/25"
+                aria-label="Confirm delete trip"
+              >
+                Delete
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setConfirmDelete(false); }}
+                className="w-11 h-11 sm:w-7 sm:h-7 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center text-white text-base sm:text-[10px] hover:bg-black/80 border border-white/25"
+                aria-label="Cancel delete"
+              >
+                ✕
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); onStartRename(); }}
+                className="w-11 h-11 sm:w-7 sm:h-7 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center text-white text-base sm:text-[10px] hover:bg-black/80 border border-white/25"
+                aria-label="Rename trip"
+              >
+                ✎
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setConfirmDelete(true); }}
+                className="w-11 h-11 sm:w-7 sm:h-7 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center text-white text-base sm:text-[10px] hover:bg-[var(--terracotta)] border border-white/25"
+                aria-label="Delete trip"
+              >
+                ×
+              </button>
+            </>
+          )}
         </div>
       </div>
 
