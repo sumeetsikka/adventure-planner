@@ -10,6 +10,17 @@ import {
   DEFAULT_HOME_CURRENCY,
 } from '../../lib/originAirports';
 
+export interface TravelDetailsData {
+  departureDate: string;
+  returnDate: string;
+  travellers: number;
+  ages: number[];
+  vibes: VibeOption[];
+  origin?: string;
+  homeCurrency?: string;
+  budgetPerPerson?: number;
+}
+
 interface Props {
   destinations: Destination[];
   departureDate: string;
@@ -19,25 +30,10 @@ interface Props {
   vibes: VibeOption[];
   origin?: string;
   homeCurrency?: string;
-  onUpdate: (data: {
-    departureDate: string;
-    returnDate: string;
-    travellers: number;
-    ages: number[];
-    vibes: VibeOption[];
-    origin?: string;
-    homeCurrency?: string;
-  }) => void;
+  budgetPerPerson?: number;
+  onUpdate: (data: TravelDetailsData) => void;
   onBack: () => void;
-  onGenerate: (data: {
-    departureDate: string;
-    returnDate: string;
-    travellers: number;
-    ages: number[];
-    vibes: VibeOption[];
-    origin?: string;
-    homeCurrency?: string;
-  }) => void;
+  onGenerate: (data: TravelDetailsData) => void;
 }
 
 const VIBES: { value: VibeOption; label: string; icon: string; desc: string }[] = [
@@ -63,6 +59,7 @@ export default function TravelDetails({
   vibes,
   origin,
   homeCurrency,
+  budgetPerPerson,
   onUpdate,
   onBack,
   onGenerate,
@@ -84,6 +81,11 @@ export default function TravelDetails({
   const [localOrigin, setLocalOrigin] = useState<string>(origin || DEFAULT_ORIGIN);
   const [localHomeCurrency, setLocalHomeCurrency] = useState<string>(homeCurrency || DEFAULT_HOME_CURRENCY);
   const [originSearch, setOriginSearch] = useState('');
+  // Empty string = "no budget target". Stored as a string so the input can be
+  // cleared; coerced to a number only when handing off to generation.
+  const [budgetInput, setBudgetInput] = useState<string>(
+    budgetPerPerson ? String(budgetPerPerson) : ''
+  );
 
   const filteredOrigins = useMemo(() => {
     const q = originSearch.trim().toLowerCase();
@@ -113,8 +115,10 @@ export default function TravelDetails({
     );
   };
 
+  const parsedBudget = Math.round(Number(budgetInput)) || 0;
+
   const handleGenerate = () => {
-    const data = {
+    const data: TravelDetailsData = {
       departureDate: startDate,
       returnDate: endDate,
       travellers: localTravellers,
@@ -122,6 +126,7 @@ export default function TravelDetails({
       vibes: localVibes.length > 0 ? localVibes : (['adventure', 'foodie'] as VibeOption[]),
       origin: localOrigin,
       homeCurrency: localHomeCurrency,
+      budgetPerPerson: parsedBudget > 0 ? parsedBudget : undefined,
     };
     // Persist to app state for saving / ResultsView…
     onUpdate(data);
@@ -368,6 +373,51 @@ export default function TravelDetails({
                 </div>
               ))}
             </div>
+          </motion.div>
+
+          {/* Budget */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.28 }}
+            className="surface-soft p-6"
+          >
+            <div className="flex items-baseline justify-between mb-3">
+              <span className="eyebrow">Your budget</span>
+              <span className="text-[10px] text-[var(--text-dim)] font-light">Optional</span>
+            </div>
+            <p className="text-[var(--text-muted)] text-sm mb-4 font-light">
+              Set a target per person and we'll aim flights, hotels and the whole
+              plan to land within ±20%.
+            </p>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">$</span>
+              <input
+                type="number"
+                min={0}
+                inputMode="numeric"
+                value={budgetInput}
+                onChange={(e) => setBudgetInput(e.target.value)}
+                placeholder="Budget per person (AUD)"
+                className="w-full bg-[var(--ink-3)] border border-[var(--line)] rounded-xl pl-8 pr-4 py-3.5 text-[var(--cream)] focus:outline-none focus:border-[var(--gold)]/40 transition-colors font-light placeholder:text-[var(--text-dim)]"
+              />
+            </div>
+            {parsedBudget > 0 && (
+              <div
+                className="flex items-center gap-3 mt-3 p-3 rounded-xl"
+                style={{ background: 'rgba(31, 138, 112, 0.06)', border: '1px solid rgba(31, 138, 112, 0.15)' }}
+              >
+                <span className="text-lg">🎯</span>
+                <div>
+                  <p className="text-[var(--cream)] text-sm font-light">
+                    ${parsedBudget.toLocaleString()} pp × {localTravellers}{' '}
+                    {localTravellers > 1 ? 'travellers' : 'traveller'} ={' '}
+                    <span className="font-medium">${(parsedBudget * localTravellers).toLocaleString()}</span> total
+                  </p>
+                  <p className="text-[var(--sage)] text-[11px] tracking-wide">Target for the whole trip</p>
+                </div>
+              </div>
+            )}
           </motion.div>
 
           {/* Vibes */}

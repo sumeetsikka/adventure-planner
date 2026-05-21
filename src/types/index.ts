@@ -48,6 +48,10 @@ export interface TravelConfig {
   vibes: VibeOption[];
   origin?: string;
   homeCurrency?: string;
+  /** Optional target budget per person for the WHOLE trip, in AUD.
+   *  When set, generation aims to keep the trip total within ±20% of
+   *  (budgetPerPerson × travellers). Undefined/0 = no budget target. */
+  budgetPerPerson?: number;
 }
 
 export interface FlightLeg {
