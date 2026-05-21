@@ -205,6 +205,83 @@ export default function BudgetTab({ budget, config, onUpdate, flights = [], tran
         </motion.div>
       </div>
 
+      {/* Budget target status — only when the traveller set a target */}
+      {config.budgetPerPerson != null && config.budgetPerPerson > 0 && perPersonTotal > 0 && (() => {
+        const targetPP = config.budgetPerPerson;
+        const targetTotal = targetPP * config.travellers;
+        const diffPct = Math.round(((perPersonTotal - targetPP) / targetPP) * 100);
+        const within = Math.abs(diffPct) <= 20;
+        const over = diffPct > 20;
+        const accent = over ? 'var(--terracotta)' : 'var(--sage)';
+        const headline = within
+          ? 'On budget — within ±20% of your target.'
+          : over
+            ? `Over your target by ${diffPct}%.`
+            : `${Math.abs(diffPct)}% under your target — money to spare.`;
+        const badge = within ? '✓ Within budget' : over ? '⚠ Over budget' : '✓ Under budget';
+        // Track spans 0 → 1.5× the target. Target sits at 66.67%; the ±20%
+        // tolerance band runs 53.33%–80%. Estimate fill is capped at the edge.
+        const estFill = Math.min(1.5, perPersonTotal / targetPP) / 1.5 * 100;
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: EASE }}
+            className="surface-card rounded-3xl p-8 mb-10"
+            style={{ border: `1px solid ${accent}40` }}
+          >
+            <div className="flex items-baseline justify-between mb-1.5">
+              <p className="eyebrow" style={{ color: accent }}>Your budget</p>
+              <span
+                className="text-[11px] font-semibold tracking-wide uppercase px-2.5 py-1 rounded-full"
+                style={{ color: accent, background: `${accent}1A` }}
+              >
+                {badge}
+              </span>
+            </div>
+            <h3 className="font-display text-2xl text-[var(--cream)] leading-tight mb-6">
+              {headline}
+            </h3>
+
+            <div className="grid grid-cols-2 gap-6 mb-6">
+              <div>
+                <p className="eyebrow mb-1.5">Target · per person</p>
+                <p className="font-display text-3xl text-[var(--cream)] leading-none">{formatMoney(targetPP)}</p>
+                <p className="text-[var(--text-dim)] text-[11px] mt-1.5">{formatMoney(targetTotal)} for the trip</p>
+              </div>
+              <div>
+                <p className="eyebrow mb-1.5">Estimated · per person</p>
+                <p className="font-display text-3xl leading-none" style={{ color: accent }}>{formatMoney(perPersonTotal)}</p>
+                <p className="text-[var(--text-dim)] text-[11px] mt-1.5">{formatMoney(groupTotal)} for the trip</p>
+              </div>
+            </div>
+
+            {/* Estimate vs target bar */}
+            <div className="relative h-3 rounded-full bg-[var(--ink-4)] overflow-hidden">
+              {/* ±20% tolerance band */}
+              <div
+                className="absolute inset-y-0"
+                style={{ left: '53.33%', width: '26.67%', background: 'var(--sage)', opacity: 0.2 }}
+              />
+              {/* estimate fill */}
+              <motion.div
+                className="absolute inset-y-0 left-0 rounded-full"
+                style={{ background: accent }}
+                initial={{ width: 0 }}
+                animate={{ width: `${estFill}%` }}
+                transition={{ duration: 0.8, ease: EASE }}
+              />
+              {/* target marker */}
+              <div className="absolute inset-y-0 w-[2px] bg-[var(--cream)]" style={{ left: '66.67%' }} />
+            </div>
+            <div className="flex items-center justify-between mt-2 text-[10px] uppercase tracking-wider text-[var(--text-dim)]">
+              <span>Estimated</span>
+              <span>Target ±20%</span>
+            </div>
+          </motion.div>
+        );
+      })()}
+
       {/* Category list */}
       <div className="surface-card rounded-3xl overflow-hidden mb-10">
         <div className="px-7 py-5 border-b border-[var(--line)]">
