@@ -51,11 +51,13 @@
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+/* NOTE: no custom `* { margin:0; padding:0 }` reset here.
+   Tailwind v4's Preflight already does `box-sizing: border-box;
+   margin: 0; padding: 0; border: 0 solid` on `*` inside `@layer base`,
+   where it is correctly overridden by spacing utilities. An UNLAYERED
+   `* {}` reset would beat every layered `.p-*` / `.m-*` utility
+   (unlayered styles outrank layered ones regardless of specificity)
+   and silently wipe out the design system's spacing. */
 
 html {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
