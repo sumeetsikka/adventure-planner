@@ -220,12 +220,30 @@ function AppInner() {
     origin, homeCurrency,
   });
 
-  const handleGenerate = useCallback(async () => {
+  const handleGenerate = useCallback(async (data?: {
+    departureDate: string;
+    returnDate: string;
+    travellers: number;
+    ages: number[];
+    vibes: VibeOption[];
+    origin?: string;
+    homeCurrency?: string;
+  }) => {
+    // IMPORTANT: build the config from `data` (the fresh values handed over
+    // by TravelDetails) when present — NOT from component state. TravelDetails
+    // calls onUpdate() then onGenerate() in the same click; the setState from
+    // onUpdate has not flushed yet, so reading state here would use the stale
+    // (often empty) previous dates. `data` carries the user's actual choices.
     const config: TravelConfig = {
       country: selectedCountry!,
       destinations: selectedDests,
-      departureDate, returnDate, travellers, ages, vibes,
-      origin, homeCurrency,
+      departureDate: data?.departureDate ?? departureDate,
+      returnDate: data?.returnDate ?? returnDate,
+      travellers: data?.travellers ?? travellers,
+      ages: data?.ages ?? ages,
+      vibes: data?.vibes ?? vibes,
+      origin: data?.origin ?? origin,
+      homeCurrency: data?.homeCurrency ?? homeCurrency,
     };
     setView('loading');
     setProgress({ route: false, flights: false, hotels: false, itinerary: false, budget: false, tips: false, packing: false, weather: false, visa: false, currency: false, nearby: false, transport: false, restaurants: false, activities: false });

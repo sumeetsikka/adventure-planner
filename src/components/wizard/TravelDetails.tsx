@@ -29,7 +29,15 @@ interface Props {
     homeCurrency?: string;
   }) => void;
   onBack: () => void;
-  onGenerate: () => void;
+  onGenerate: (data: {
+    departureDate: string;
+    returnDate: string;
+    travellers: number;
+    ages: number[];
+    vibes: VibeOption[];
+    origin?: string;
+    homeCurrency?: string;
+  }) => void;
 }
 
 const VIBES: { value: VibeOption; label: string; icon: string; desc: string }[] = [
@@ -106,16 +114,20 @@ export default function TravelDetails({
   };
 
   const handleGenerate = () => {
-    onUpdate({
+    const data = {
       departureDate: startDate,
       returnDate: endDate,
       travellers: localTravellers,
       ages: localAges,
-      vibes: localVibes.length > 0 ? localVibes : ['adventure', 'foodie'],
+      vibes: localVibes.length > 0 ? localVibes : (['adventure', 'foodie'] as VibeOption[]),
       origin: localOrigin,
       homeCurrency: localHomeCurrency,
-    });
-    onGenerate();
+    };
+    // Persist to app state for saving / ResultsView…
+    onUpdate(data);
+    // …and hand the SAME fresh values straight to generation, so it can't
+    // race the (async) setState above and generate with stale dates.
+    onGenerate(data);
   };
 
   return (
