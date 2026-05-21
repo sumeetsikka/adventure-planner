@@ -212,7 +212,8 @@ export default function BudgetTab({ budget, config, onUpdate, flights = [], tran
         const diffPct = Math.round(((perPersonTotal - targetPP) / targetPP) * 100);
         const within = Math.abs(diffPct) <= 20;
         const over = diffPct > 20;
-        const accent = over ? 'var(--terracotta)' : 'var(--sage)';
+        // Hex (not var()) so we can append an alpha channel — `var(--x)40` is invalid CSS.
+        const accent = over ? '#F15B4B' : '#1F8A70';
         const headline = within
           ? 'On budget — within ±20% of your target.'
           : over
