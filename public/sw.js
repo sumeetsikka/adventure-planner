@@ -46,10 +46,11 @@ self.addEventListener('fetch', (event) => {
         () =>
           new Response(
             '<!doctype html><meta charset="utf-8"><title>Offline</title>' +
-            '<body style="background:#0A0806;color:#F5EDE0;font-family:Georgia,serif;' +
+            '<body style="background:#FFFFFF;color:#1B1B1B;' +
+            'font-family:Inter,system-ui,-apple-system,sans-serif;' +
             'display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center">' +
-            '<div><p style="font-size:1.5rem;font-style:italic">You\'re offline.</p>' +
-            '<p style="opacity:.6">Reconnect to plan your adventure.</p></div>',
+            '<div><p style="font-size:1.5rem;font-weight:700">You\'re offline.</p>' +
+            '<p style="opacity:.55">Reconnect to plan your adventure.</p></div>',
             { headers: { 'Content-Type': 'text/html' }, status: 503 }
           )
       )

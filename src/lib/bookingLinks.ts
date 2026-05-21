@@ -6,7 +6,9 @@
 function formatDateSky(dateStr: string): string {
   // Skyscanner uses YYMMDD format
   if (!dateStr) return '';
-  const [y, m, d] = dateStr.split('-');
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return ''; // not YYYY-MM-DD — skip the date param
+  const [y, m, d] = parts;
   return `${y.slice(2)}${m}${d}`;
 }
 
