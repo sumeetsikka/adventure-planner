@@ -9,11 +9,12 @@ interface Props {
   onNew: () => void;
   onInspire?: () => void;
   onWishlist?: () => void;
+  onBack?: () => void;
 }
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
-export default function MyTrips({ onLoad, onNew, onInspire, onWishlist }: Props) {
+export default function MyTrips({ onLoad, onNew, onInspire, onWishlist, onBack }: Props) {
   const [trips, setTrips] = useState<SavedTrip[]>(() => listTrips());
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
@@ -47,6 +48,14 @@ export default function MyTrips({ onLoad, onNew, onInspire, onWishlist }: Props)
           transition={{ duration: 0.8, ease: EASE }}
           className="mb-12 sm:mb-16"
         >
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="eyebrow text-[var(--text-muted)] hover:text-[var(--cream)] transition-colors mb-6"
+            >
+              ← Plan a new trip
+            </button>
+          )}
           <div className="flex items-center gap-3 mb-4">
             <span className="w-2 h-2 rounded-full bg-[var(--gold)] animate-gentle-pulse" />
             <span className="eyebrow">Your library</span>

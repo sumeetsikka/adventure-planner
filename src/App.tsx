@@ -352,6 +352,7 @@ function AppInner() {
           onNew={newTrip}
           onInspire={() => setView('inspire')}
           onWishlist={() => setView('wishlist')}
+          onBack={() => setView('country')}
         />
       </div>
     );
@@ -362,7 +363,7 @@ function AppInner() {
       <div className={`min-h-screen ${bg}`}>{themeToggle}
         <Inspiration
           onSelectCountry={(c) => { newTripId(); handleCountrySelect(c); }}
-          onClose={() => setView(listTrips().length > 0 ? 'mytrips' : 'country')}
+          onClose={() => setView('country')}
         />
       </div>
     );
@@ -373,7 +374,7 @@ function AppInner() {
       <div className={`min-h-screen ${bg}`}>{themeToggle}
         <Wishlist
           onPlanTrip={(c) => { newTripId(); handleCountrySelect(c); }}
-          onBack={() => setView(listTrips().length > 0 ? 'mytrips' : 'country')}
+          onBack={() => setView('country')}
         />
       </div>
     );
@@ -386,6 +387,8 @@ function AppInner() {
           onSelect={handleCountrySelect}
           onInspire={() => setView('inspire')}
           onWishlist={() => setView('wishlist')}
+          onMyTrips={() => setView('mytrips')}
+          savedTripCount={listTrips().length}
         />
       </div>
     );

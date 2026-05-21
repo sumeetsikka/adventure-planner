@@ -10,6 +10,8 @@ interface Props {
   onSelect: (country: Country) => void;
   onInspire?: () => void;
   onWishlist?: () => void;
+  onMyTrips?: () => void;
+  savedTripCount?: number;
 }
 
 const REGIONS: Record<string, string[]> = {
@@ -21,7 +23,7 @@ const REGIONS: Record<string, string[]> = {
   'Indian Ocean': ['maldives'],
 };
 
-export default function CountryPicker({ onSelect, onInspire, onWishlist }: Props) {
+export default function CountryPicker({ onSelect, onInspire, onWishlist, onMyTrips, savedTripCount = 0 }: Props) {
   const [search, setSearch] = useState('');
   const [customCountry, setCustomCountry] = useState('');
   const [hovered, setHovered] = useState<Country | null>(null);
@@ -100,9 +102,18 @@ export default function CountryPicker({ onSelect, onInspire, onWishlist }: Props
             <div className="w-2 h-2 rounded-full bg-[var(--gold)] animate-gentle-pulse" />
             <span className="eyebrow">The Adventure Planner</span>
           </div>
-          <div className="text-[10px] text-[var(--text-dim)] tracking-widest uppercase hidden sm:block">
-            ISSUE № 01
-          </div>
+          {onMyTrips && savedTripCount > 0 ? (
+            <button
+              onClick={onMyTrips}
+              className="text-[10px] tracking-widest uppercase text-[var(--text-muted)] hover:text-[var(--cream)] border border-[var(--line)] hover:border-[var(--line-strong)] rounded-full px-3.5 py-1.5 transition-all"
+            >
+              My trips · {savedTripCount}
+            </button>
+          ) : (
+            <div className="text-[10px] text-[var(--text-dim)] tracking-widest uppercase hidden sm:block">
+              ISSUE № 01
+            </div>
+          )}
         </motion.div>
 
         {/* Editorial headline */}
