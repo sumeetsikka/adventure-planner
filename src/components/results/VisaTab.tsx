@@ -218,7 +218,7 @@ export default function VisaTab({ visa, travellers = 1, departureDate }: Props) 
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-[var(--gold)] text-sm hover:underline"
               >
-                <span aria-hidden>◉</span>
+                <span aria-hidden>•</span>
                 View on map
               </a>
             </div>

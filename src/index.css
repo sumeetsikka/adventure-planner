@@ -1,40 +1,50 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..900,0..100;1,9..144,300..900,0..100&family=Inter:opsz,wght@14..32,300..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..900&display=swap');
 @import 'leaflet/dist/leaflet.css';
 
 @import 'tailwindcss';
 
 /* ═══════════════════════════════════════
    DESIGN TOKENS
-   Editorial travel magazine aesthetic
+   Bright, modern travel-app aesthetic
+   (clean light surfaces, soft shadows, coral accent)
    ═══════════════════════════════════════ */
 :root {
-  /* Surfaces (warm ink tones, not cool navy) */
-  --ink: #0A0806;
-  --ink-2: #12100D;
-  --ink-3: #1A1713;
-  --ink-4: #232018;
+  /* Surfaces — light. Variable names kept for component compatibility:
+     --ink* = backgrounds/surfaces, --cream* = primary foreground text. */
+  --ink: #FFFFFF;        /* page background */
+  --ink-2: #F6F6F7;      /* subtle section background */
+  --ink-3: #FFFFFF;      /* card surface */
+  --ink-4: #EFEFF1;      /* hover / pressed surface */
 
-  /* Cream & paper */
-  --cream: #F5EDE0;
-  --cream-2: #E8DDCB;
-  --paper: #FDF9F2;
+  /* Foreground text shades */
+  --cream: #1B1B1B;      /* primary text */
+  --cream-2: #2E2E2E;
+  --paper: #FFFFFF;
 
   /* Accents */
-  --terracotta: #C65D3B;
-  --terracotta-soft: #E88867;
-  --gold: #D4A574;
-  --gold-soft: #E8C59A;
-  --sage: #7A9082;
-  --burgundy: #5C2A2A;
+  --terracotta: #F15B4B;        /* primary accent — friendly travel coral */
+  --terracotta-soft: #FF7C6E;
+  --gold: #B57C1C;              /* darkened so it reads on white */
+  --gold-soft: #CE9B45;
+  --sage: #1F8A70;              /* secondary accent — fresh teal-green */
+  --burgundy: #8E3B3B;
 
   /* Text */
   --text: var(--cream);
-  --text-muted: rgba(245, 237, 224, 0.62);
-  --text-dim: rgba(245, 237, 224, 0.38);
+  --text-muted: #6A6A6E;
+  --text-dim: #9B9B9F;
 
-  /* Borders */
-  --line: rgba(245, 237, 224, 0.08);
-  --line-strong: rgba(245, 237, 224, 0.16);
+  /* Borders / hairlines */
+  --line: rgba(20, 20, 22, 0.09);
+  --line-strong: rgba(20, 20, 22, 0.16);
+
+  /* Elevation — the light theme leans on shadows for depth */
+  --shadow-sm: 0 1px 2px rgba(17, 17, 26, 0.04), 0 2px 8px rgba(17, 17, 26, 0.06);
+  --shadow-md: 0 4px 12px rgba(17, 17, 26, 0.07), 0 10px 28px rgba(17, 17, 26, 0.09);
+  --shadow-lg: 0 12px 32px rgba(17, 17, 26, 0.12), 0 24px 56px rgba(17, 17, 26, 0.10);
+
+  /* Text/elements that sit on top of photography stay light */
+  --on-photo: #FFFFFF;
 
   /* Motion */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -48,7 +58,7 @@
 }
 
 html {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: var(--ink);
@@ -58,55 +68,56 @@ body {
   background: var(--ink);
   color: var(--text);
   min-height: 100vh;
-  font-feature-settings: 'ss01', 'ss02', 'cv11';
+  font-feature-settings: 'cv11', 'ss01';
   font-optical-sizing: auto;
 }
 
-/* Editorial serif display */
+/* Modern display headings — bold sans, tight tracking */
 .font-display {
-  font-family: 'Fraunces', Georgia, serif;
-  font-optical-sizing: auto;
-  font-variation-settings: "SOFT" 50;
-  letter-spacing: -0.02em;
-  line-height: 0.95;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.04;
 }
 
 .font-display-soft {
-  font-family: 'Fraunces', Georgia, serif;
-  font-optical-sizing: auto;
-  font-variation-settings: "SOFT" 100;
-  letter-spacing: -0.015em;
-  line-height: 1.05;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+/* `em` inside display headings used to be italic-serif emphasis;
+   keep it as a colour/weight emphasis now that we're sans-serif. */
+.font-display em,
+.font-display-soft em {
+  font-style: normal;
+  font-weight: 800;
 }
 
 /* Small caps tracking label */
 .eyebrow {
   font-family: 'Inter', sans-serif;
   text-transform: uppercase;
-  letter-spacing: 0.22em;
-  font-size: 10px;
-  font-weight: 500;
+  letter-spacing: 0.16em;
+  font-size: 11px;
+  font-weight: 600;
   color: var(--gold);
 }
 
-/* Scrollbar (warm) */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+/* Scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(245, 237, 224, 0.08); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(245, 237, 224, 0.16); }
+::-webkit-scrollbar-thumb { background: rgba(20, 20, 22, 0.18); border-radius: 5px; border: 2px solid var(--ink); }
+::-webkit-scrollbar-thumb:hover { background: rgba(20, 20, 22, 0.30); }
 
 /* Form inputs */
-input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(0.9) sepia(0.3) saturate(0.5);
-  opacity: 0.6;
-  cursor: pointer;
-}
-select option { background: var(--ink-2); color: var(--text); }
+select option { background: #FFFFFF; color: var(--text); }
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button { opacity: 1; }
 
 /* Selection */
-::selection { background: var(--terracotta); color: var(--paper); }
+::selection { background: var(--terracotta); color: #FFFFFF; }
 
 /* ═══════════════════════════════════════
    ANIMATIONS
@@ -115,7 +126,7 @@ input[type="number"]::-webkit-outer-spin-button { opacity: 1; }
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.animate-fade-up { animation: fadeUp 0.7s var(--ease-out) both; }
+.animate-fade-up { animation: fadeUp 0.6s var(--ease-out) both; }
 
 @keyframes kenBurns {
   0% { transform: scale(1) translate(0, 0); }
@@ -128,7 +139,7 @@ input[type="number"]::-webkit-outer-spin-button { opacity: 1; }
   100% { background-position: 200% center; }
 }
 .text-shimmer {
-  background: linear-gradient(90deg, var(--gold), var(--terracotta-soft), var(--gold));
+  background: linear-gradient(90deg, var(--terracotta), var(--gold-soft), var(--terracotta));
   background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
@@ -138,12 +149,12 @@ input[type="number"]::-webkit-outer-spin-button { opacity: 1; }
 
 @keyframes gentlePulse {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+  50% { opacity: 0.5; }
 }
 .animate-gentle-pulse { animation: gentlePulse 2.5s ease-in-out infinite; }
 
 /* Stagger */
-.stagger-children > * { animation: fadeUp 0.6s var(--ease-out) both; }
+.stagger-children > * { animation: fadeUp 0.55s var(--ease-out) both; }
 .stagger-children > *:nth-child(1) { animation-delay: 0s; }
 .stagger-children > *:nth-child(2) { animation-delay: 0.06s; }
 .stagger-children > *:nth-child(3) { animation-delay: 0.12s; }
@@ -163,13 +174,13 @@ input[type="number"]::-webkit-outer-spin-button { opacity: 1; }
 .surface-card {
   background: var(--ink-3);
   border: 1px solid var(--line);
-  border-radius: 20px;
-  transition: border-color 0.4s var(--ease-out), transform 0.4s var(--ease-out), box-shadow 0.4s var(--ease-out);
+  border-radius: 18px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
 }
 .surface-card:hover {
-  border-color: var(--line-strong);
-  transform: translateY(-2px);
-  box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.5);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
 }
 
 .surface-soft {
@@ -180,7 +191,7 @@ input[type="number"]::-webkit-outer-spin-button { opacity: 1; }
 
 .divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
+  background: var(--line);
 }
 
 .gold-underline {
@@ -194,20 +205,20 @@ input[type="number"]::-webkit-outer-spin-button { opacity: 1; }
   left: 0;
   right: 0;
   height: 2px;
-  background: var(--gold);
+  background: var(--terracotta);
   transform: scaleX(0);
   transform-origin: left;
   transition: transform 0.5s var(--ease-out);
 }
 .gold-underline:hover::after { transform: scaleX(1); }
 
-/* Image overlay gradient (cinematic) */
+/* Image overlay gradient — stays dark for text legibility on photos */
 .img-overlay {
   background: linear-gradient(
     180deg,
     rgba(10, 8, 6, 0) 0%,
-    rgba(10, 8, 6, 0.2) 50%,
-    rgba(10, 8, 6, 0.95) 100%
+    rgba(10, 8, 6, 0.15) 50%,
+    rgba(10, 8, 6, 0.78) 100%
   );
 }
 
@@ -215,23 +226,13 @@ input[type="number"]::-webkit-outer-spin-button { opacity: 1; }
   background: radial-gradient(
     ellipse at center,
     rgba(10, 8, 6, 0) 0%,
-    rgba(10, 8, 6, 0.7) 100%
+    rgba(10, 8, 6, 0.55) 100%
   );
 }
 
-/* Film grain (subtle texture) */
-.grain {
-  position: relative;
-}
-.grain::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.08;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
-}
+/* Grain texture removed for the clean modern look — kept as a no-op
+   so existing `grain` class names don't break. */
+.grain { position: relative; }
 
 /* Smooth scroll */
 html { scroll-behavior: smooth; }
@@ -244,8 +245,6 @@ html { scroll-behavior: smooth; }
   html { overscroll-behavior: none; }
   .chat-input-fixed {
     position: sticky;
-    /* Lift above the MobileBottomNav (~64px tall) on small screens.
-       safe-area-inset-bottom covers iPhone home-indicator padding. */
     bottom: calc(64px + env(safe-area-inset-bottom, 8px));
     background: var(--ink);
     padding-bottom: 8px;
@@ -258,17 +257,23 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* Light theme (preserved) */
-[data-theme="light"] {
-  --ink: #FDF9F2;
-  --ink-2: #F5EDE0;
-  --ink-3: #FFFFFF;
-  --ink-4: #F0E6D6;
-  --text: #1A1713;
-  --text-muted: rgba(26, 23, 19, 0.7);
-  --text-dim: rgba(26, 23, 19, 0.45);
-  --line: rgba(26, 23, 19, 0.1);
-  --line-strong: rgba(26, 23, 19, 0.18);
+/* Optional dark variant (toggled via data-theme="dark") */
+[data-theme="dark"] {
+  --ink: #0F0F11;
+  --ink-2: #18181B;
+  --ink-3: #1E1E22;
+  --ink-4: #2A2A2F;
+  --cream: #F4F4F5;
+  --cream-2: #E4E4E7;
+  --paper: #1E1E22;
+  --text-muted: rgba(244, 244, 245, 0.62);
+  --text-dim: rgba(244, 244, 245, 0.40);
+  --line: rgba(244, 244, 245, 0.10);
+  --line-strong: rgba(244, 244, 245, 0.20);
+  --gold: #D9AE63;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.6);
 }
 
 /* Print */
@@ -278,11 +283,12 @@ body {
   * { color-adjust: exact; -webkit-print-color-adjust: exact; }
 }
 
-/* Leaflet popup (warm theme) */
+/* Leaflet popup */
 .leaflet-popup-content-wrapper {
-  background: var(--ink-2) !important;
+  background: #FFFFFF !important;
   color: var(--text) !important;
   border-radius: 12px !important;
   border: 1px solid var(--line-strong) !important;
+  box-shadow: var(--shadow-md) !important;
 }
-.leaflet-popup-tip { background: var(--ink-2) !important; }
+.leaflet-popup-tip { background: #FFFFFF !important; }

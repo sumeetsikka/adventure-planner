@@ -245,7 +245,7 @@ function RestaurantCard({ restaurant: r, place }: { restaurant: Restaurant; plac
           rel="noopener noreferrer"
           className="text-[10px] tracking-[0.2em] uppercase text-[var(--text-muted)] hover:text-[var(--cream)] border border-[var(--line)] hover:border-[var(--line-strong)] rounded-full px-3 py-1.5 transition-colors"
         >
-          ◎ Map
+          📍 Map
         </a>
         <a
           href={directionsUrl(place)}
@@ -253,7 +253,7 @@ function RestaurantCard({ restaurant: r, place }: { restaurant: Restaurant; plac
           rel="noopener noreferrer"
           className="text-[10px] tracking-[0.2em] uppercase text-[var(--text-muted)] hover:text-[var(--cream)] border border-[var(--line)] hover:border-[var(--line-strong)] rounded-full px-3 py-1.5 transition-colors"
         >
-          ➞ Directions
+          🧭 Directions
         </a>
       </div>
     </motion.article>

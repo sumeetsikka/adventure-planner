@@ -20,7 +20,7 @@ export function PlaceActions({ place, compact = false }: { place: string; compac
         className={cls}
         title={`Open ${place} in Maps`}
       >
-        ◎ Map
+        📍 Map
       </a>
       <a
         href={directionsUrl(place)}
@@ -29,7 +29,7 @@ export function PlaceActions({ place, compact = false }: { place: string; compac
         className={cls}
         title={`Directions to ${place}`}
       >
-        ➞ Directions
+        🧭 Directions
       </a>
       <a
         href={rideUrl(place)}
@@ -38,7 +38,7 @@ export function PlaceActions({ place, compact = false }: { place: string; compac
         className={cls}
         title={`Get a ride to ${place}`}
       >
-        ✦ Ride
+        🚕 Ride
       </a>
     </div>
   );
@@ -56,7 +56,7 @@ export function MapsLink({ place, label, className }: { place: string; label?: s
       className={className ?? 'text-[var(--gold)] hover:text-[var(--gold-soft)] transition-colors'}
       title={`Open ${place} in Maps`}
     >
-      {label ?? '◎ Open in Maps'}
+      {label ?? '📍 Open in Maps'}
     </a>
   );
 }

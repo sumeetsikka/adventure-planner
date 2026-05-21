@@ -243,7 +243,7 @@ export default function ItineraryTab({ itinerary, config, hotels, onUpdate, flig
                     className="font-display text-xl leading-none mt-0.5"
                     style={{ color: n.severity === 'caution' ? 'var(--terracotta)' : 'var(--gold)' }}
                   >
-                    {n.severity === 'caution' ? '⚠' : '◉'}
+                    {n.severity === 'caution' ? '⚠️' : '💡'}
                   </span>
                   <div className="flex-1">
                     <p className="text-[var(--cream)] text-sm leading-snug">

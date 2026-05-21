@@ -17,25 +17,25 @@ const STEPS = [
     eyebrow: 'Welcome aboard',
     title: 'Plan your story.',
     body: 'Adventure Planner crafts a magazine-quality trip — itinerary, flights, hotels, restaurants, things to do — in one shot.',
-    accent: '✦',
+    accent: '🧭',
   },
   {
     eyebrow: 'Step one',
     title: 'Pick your where.',
     body: 'Choose from 29 hand-curated countries with 400+ destinations, or get inspired by mood, season, and budget.',
-    accent: '◎',
+    accent: '🌍',
   },
   {
     eyebrow: 'Step two',
     title: 'Tell us when.',
     body: 'Dates, travellers, vibes. We map an optimal route, fly from your origin, generate a full plan in under a minute.',
-    accent: '❦',
+    accent: '📅',
   },
   {
     eyebrow: 'Step three',
     title: 'Travel, live.',
     body: 'Once your trip starts, the app switches to a live mode — today\'s plan, distance to your hotel, weather, and tap-to-navigate everywhere.',
-    accent: '◉',
+    accent: '📊',
   },
 ];
 

@@ -117,7 +117,7 @@ export default function MobileBottomNav({ active, onChange }: Props) {
               }`}
               aria-label="More"
             >
-              <span className="text-lg leading-none">≡</span>
+              <span className="text-lg leading-none">☰</span>
               <span className="text-[10px] tracking-wider uppercase">More</span>
             </button>
           </div>

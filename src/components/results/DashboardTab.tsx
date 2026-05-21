@@ -186,7 +186,7 @@ export default function DashboardTab({ config, results, onTabChange }: Props) {
                     rel="noopener noreferrer"
                     className="inline-block mt-2 text-[10px] tracking-[0.2em] uppercase text-[var(--gold)] hover:text-[var(--gold-soft)] transition-colors"
                   >
-                    ➞ Get me there
+                    → Get me there
                   </a>
                 </>
               )}

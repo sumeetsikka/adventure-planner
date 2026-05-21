@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/sumeet/sumeet/Projects/Holiday-Planner/.claude/scripts/auto-commit.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
