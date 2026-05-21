@@ -102,7 +102,10 @@ export default function CurrencyTab({ currency, country }: Props) {
   }
 
   const fallbackRate = currency.rate_to_aud;
-  const rate = liveRate ?? fallbackRate;
+  const rawRate = liveRate ?? fallbackRate;
+  // Guard against a missing/zero/NaN rate (bad LLM data) — without this the
+  // converter's controlled <input> would receive value={NaN} and break.
+  const rate = typeof rawRate === 'number' && Number.isFinite(rawRate) && rawRate > 0 ? rawRate : 1;
   const isLive = liveRate !== null;
 
   const displayLocal =
@@ -352,7 +355,7 @@ export default function CurrencyTab({ currency, country }: Props) {
 
           <div className="flex flex-col gap-3">
             {phraseSections.map((section) => {
-              const phrases = phrasePack[section.key] as Phrase[];
+              const phrases = (phrasePack[section.key] as Phrase[] | undefined) ?? [];
               const isOpen = openSection === section.key;
               return (
                 <div key={section.key} className="border-b border-[var(--line)] pb-3 last:border-b-0">
