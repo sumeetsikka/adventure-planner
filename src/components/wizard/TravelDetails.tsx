@@ -54,6 +54,8 @@ const VIBES: { value: VibeOption; label: string; icon: string; desc: string }[] 
 
 export default function TravelDetails({
   destinations,
+  departureDate,
+  returnDate,
   travellers,
   ages,
   vibes,
@@ -70,9 +72,17 @@ export default function TravelDetails({
   const minDays = destinations.reduce((s, d) => s + d.recommendedDays[0], 0);
   const maxDays = destinations.reduce((s, d) => s + d.recommendedDays[1], 0);
 
-  const [tripDays, setTripDays] = useState(recommendedDays);
-  const [useRecommended, setUseRecommended] = useState(true);
-  const [startDate, setStartDate] = useState(addDaysISO(todayISO(), 30));
+  // Honour incoming dates (a saved trip re-opened in the wizard, or a shared
+  // link). Fall back to "today + 30 days" / the recommended length only when
+  // no valid dates were passed in.
+  const propDays = (() => {
+    if (!departureDate || !returnDate) return null;
+    const d = Math.round((new Date(returnDate).getTime() - new Date(departureDate).getTime()) / 86_400_000);
+    return Number.isFinite(d) && d > 0 ? d : null;
+  })();
+  const [tripDays, setTripDays] = useState(propDays ?? recommendedDays);
+  const [useRecommended, setUseRecommended] = useState(propDays == null || propDays === recommendedDays);
+  const [startDate, setStartDate] = useState(departureDate || addDaysISO(todayISO(), 30));
   const [localTravellers, setLocalTravellers] = useState(travellers);
   const [localAges, setLocalAges] = useState<number[]>(
     ages.length === travellers ? ages : Array(travellers).fill(30)

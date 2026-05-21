@@ -101,7 +101,7 @@ function AppInner() {
     const selectedDests = trip.d.map(id => dests.find(d => d.id === id)).filter(Boolean) as typeof dests;
     if (selectedDests.length === 0) return;
 
-    // Populate state and trigger generation
+    // Populate state from the shared link
     setSelectedCountry(country);
     setCountryDestinations(dests);
     setSelectedDests(selectedDests);
@@ -114,7 +114,10 @@ function AppInner() {
     // Clear the URL param without reload
     window.history.replaceState({}, '', window.location.pathname);
 
-    // Auto-generate after a tick
+    // Land on the details step with the shared trip pre-filled — the recipient
+    // reviews the dates/travellers and taps generate (results aren't encoded in
+    // the URL, so they must be regenerated). TravelDetails reads the dates from
+    // its props, so the shared dates carry through.
     setTimeout(() => {
       setView('wizard');
       setStep(2);
@@ -197,6 +200,15 @@ function AppInner() {
   };
 
   const handleCountrySelect = async (country: Country) => {
+    // Starting a country selection always begins a FRESH trip. Without this
+    // reset, picking a country after "Start Over" would carry the previous
+    // trip's destinations/results into the auto-save effect, which (with no
+    // active trip id) mints a corrupt new trip mixing old data with the new
+    // country. Clear the working state and claim a fresh trip id.
+    newTripId();
+    setSelectedDests([]);
+    setResults({ ...EMPTY_RESULTS });
+    setStep(1);
     setSelectedCountry(country);
     const prebuilt = getDestinationsForCountry(country.id);
     if (prebuilt) {

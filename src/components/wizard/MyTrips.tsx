@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { listTrips, deleteTrip, renameTrip, type SavedTrip } from '../../lib/tripStore';
 import { useWikiImage } from '../../lib/useWikiImage';
@@ -38,6 +38,10 @@ export default function MyTrips({ onLoad, onNew, onInspire, onWishlist, onBack }
     if (renameValue.trim()) renameTrip(id, renameValue.trim());
     setRenamingId(null);
     refresh();
+  };
+
+  const cancelRename = () => {
+    setRenamingId(null);
   };
 
   return (
@@ -129,6 +133,7 @@ export default function MyTrips({ onLoad, onNew, onInspire, onWishlist, onBack }
                 onRenameChange={setRenameValue}
                 onStartRename={() => startRename(trip)}
                 onCommitRename={() => commitRename(trip.id)}
+                onCancelRename={cancelRename}
                 onLoad={() => onLoad(trip)}
                 onDelete={() => handleDelete(trip.id)}
               />
@@ -148,14 +153,18 @@ interface CardProps {
   onRenameChange: (v: string) => void;
   onStartRename: () => void;
   onCommitRename: () => void;
+  onCancelRename: () => void;
   onLoad: () => void;
   onDelete: () => void;
 }
 
 function TripCard({
-  trip, index, isRenaming, renameValue, onRenameChange, onStartRename, onCommitRename, onLoad, onDelete,
+  trip, index, isRenaming, renameValue, onRenameChange, onStartRename, onCommitRename, onCancelRename, onLoad, onDelete,
 }: CardProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // When Escape cancels a rename the input unmounts, which can fire onBlur and
+  // re-commit the discarded text. This flag tells onBlur to skip that commit.
+  const skipBlurCommit = useRef(false);
   const photo = useWikiImage(trip.config.country.name, 'country');
   const days = Math.max(
     1,
@@ -260,11 +269,14 @@ function TripCard({
             autoFocus
             value={renameValue}
             onChange={(e) => onRenameChange(e.target.value)}
-            onBlur={onCommitRename}
+            onBlur={() => {
+              if (skipBlurCommit.current) { skipBlurCommit.current = false; return; }
+              onCommitRename();
+            }}
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => {
               if (e.key === 'Enter') onCommitRename();
-              if (e.key === 'Escape') onCommitRename();
+              if (e.key === 'Escape') { skipBlurCommit.current = true; onCancelRename(); }
             }}
             className="font-display text-2xl text-white bg-transparent border-b border-[var(--gold-soft)] focus:outline-none mb-3 w-full"
           />

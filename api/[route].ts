@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { callLLM, ITINERARY_SYSTEM, FLIGHTS_SYSTEM, HOTELS_SYSTEM, BUDGET_SYSTEM, TIPS_SYSTEM, PACKING_SYSTEM, CURRENCY_SYSTEM, NEARBY_SYSTEM, determineEntryCity, getEntryCityName, orderDestinations, computeSchedule, formatScheduleForPrompt, fixFlightDates, fixHotelDates } from './_shared.js';
+import { callLLM, ITINERARY_SYSTEM, FLIGHTS_SYSTEM, HOTELS_SYSTEM, BUDGET_SYSTEM, TIPS_SYSTEM, PACKING_SYSTEM, VISA_SYSTEM, CURRENCY_SYSTEM, NEARBY_SYSTEM, determineEntryCity, getEntryCityName, orderDestinations, computeSchedule, formatScheduleForPrompt, fixFlightDates, fixHotelDates } from './_shared.js';
 
 // ═══════════════════════════════════════
 // Catch-all API handler (single function, routes by path)
