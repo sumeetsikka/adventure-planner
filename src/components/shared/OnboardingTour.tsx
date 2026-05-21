@@ -86,8 +86,8 @@ export default function OnboardingTour({ onClose }: Props = {}) {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.5, ease: EASE }}
-        className="fixed inset-0 z-[200] grain print:hidden"
-        style={{ background: 'radial-gradient(ellipse at center, rgba(10,8,6,0.92) 0%, rgba(10,8,6,0.98) 70%)' }}
+        className="fixed inset-0 z-[200] print:hidden"
+        style={{ background: 'radial-gradient(ellipse at top, #FFFFFF 0%, #F2F2F4 70%)' }}
         role="dialog"
         aria-label="Welcome tour"
       >
@@ -103,9 +103,9 @@ export default function OnboardingTour({ onClose }: Props = {}) {
               <span className="w-1.5 h-1.5 rounded-full bg-[var(--gold)] animate-gentle-pulse" />
               <span className="eyebrow">{current.eyebrow}</span>
             </div>
-            <div className="text-7xl mb-8 text-[var(--gold)] leading-none">{current.accent}</div>
+            <div className="text-7xl mb-8 leading-none">{current.accent}</div>
             <h2 className="font-display text-5xl sm:text-6xl text-[var(--cream)] leading-[0.95] mb-6">
-              <em className="italic text-shimmer">{current.title}</em>
+              <em className="text-shimmer">{current.title}</em>
             </h2>
             <p className="text-[var(--text-muted)] text-base sm:text-lg font-light leading-relaxed mb-10">
               {current.body}
@@ -132,7 +132,7 @@ export default function OnboardingTour({ onClose }: Props = {}) {
               </button>
               <button
                 onClick={next}
-                className="px-8 py-3 rounded-full bg-[var(--cream)] text-[var(--ink)] hover:bg-[var(--paper)] transition-colors text-sm font-medium tracking-wide"
+                className="px-8 py-3 rounded-full bg-[var(--terracotta)] text-white hover:bg-[var(--terracotta-soft)] transition-colors text-sm font-medium tracking-wide shadow-[var(--shadow-sm)]"
               >
                 {step === STEPS.length - 1 ? 'Begin' : 'Next →'}
               </button>

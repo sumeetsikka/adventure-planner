@@ -41,7 +41,7 @@ export default function App() {
 }
 
 function AppInner() {
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [theme, setTheme] = useState<'dark' | 'light'>('light');
   // Always land on the country picker — a fresh "start a new trip" entry.
   // Saved trips are one tap away via the "My trips" button in the header.
   const [view, setView] = useState<AppView>('country');
