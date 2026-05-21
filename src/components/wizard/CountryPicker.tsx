@@ -216,11 +216,17 @@ function CountryTile({ country, onSelect }: { country: Country; onSelect: (c: Co
   };
 
   return (
-    <motion.button
+    <motion.div
       onClick={() => onSelect(country)}
+      role="button"
+      tabIndex={0}
+      aria-label={`Plan a trip to ${country.name}`}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(country); }
+      }}
       whileHover={{ y: -4 }}
       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className="group surface-card overflow-hidden text-left p-0 flex flex-col"
+      className="group surface-card overflow-hidden text-left p-0 flex flex-col cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--terracotta)]"
     >
       {/* Photo */}
       <div className="relative aspect-[5/4] overflow-hidden bg-[var(--ink-4)]">
@@ -277,6 +283,6 @@ function CountryTile({ country, onSelect }: { country: Country; onSelect: (c: Co
           <span className="text-[var(--terracotta)] text-base group-hover:translate-x-1 transition-transform">→</span>
         </div>
       </div>
-    </motion.button>
+    </motion.div>
   );
 }
