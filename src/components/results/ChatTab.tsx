@@ -212,7 +212,7 @@ export default function ChatTab({ config }: Props) {
           onKeyDown={(e) => e.key === 'Enter' && sendMessage(input)}
           placeholder={`Ask about ${countryName}…`}
           disabled={loading}
-          className="flex-1 bg-[var(--ink-3)] border border-[var(--line)] rounded-full px-6 py-3.5 text-[var(--cream)] placeholder-[var(--text-dim)] text-[14px] font-display-soft italic focus:outline-none focus:border-[var(--gold)]/50 transition-colors disabled:opacity-50"
+          className="flex-1 bg-[var(--ink-4)] border border-[var(--line)] rounded-full px-6 py-3.5 text-[var(--cream)] placeholder-[var(--text-dim)] text-[14px] font-display-soft italic focus:outline-none focus:border-[var(--gold)]/50 transition-colors disabled:opacity-50"
         />
         <button
           onClick={() => sendMessage(input)}

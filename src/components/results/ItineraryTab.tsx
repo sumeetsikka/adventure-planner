@@ -113,7 +113,7 @@ export default function ItineraryTab({ itinerary, config, hotels, onUpdate, flig
         <button
           onClick={regenerate}
           disabled={regenerating}
-          className="px-7 py-3 rounded-full font-medium text-[var(--ink)] bg-[var(--cream)] hover:opacity-90 transition-all disabled:opacity-50"
+          className="px-7 py-3 rounded-full font-medium text-white bg-[var(--terracotta)] hover:opacity-90 transition-all disabled:opacity-50"
         >
           {regenerating ? 'Composing…' : 'Generate itinerary'}
         </button>
@@ -302,15 +302,15 @@ export default function ItineraryTab({ itinerary, config, hotels, onUpdate, flig
               />
               <button
                 onClick={() => setSelectedDay(null)}
-                className="absolute top-4 right-4 w-9 h-9 rounded-full bg-[var(--ink)]/60 backdrop-blur-sm text-[var(--cream)] hover:bg-[var(--ink)]/80 transition-all flex items-center justify-center"
+                className="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm text-white hover:bg-black/60 transition-all flex items-center justify-center"
                 aria-label="Close"
               >
                 ×
               </button>
               <div className="absolute bottom-6 left-8 right-8">
-                <p className="eyebrow mb-2">Day {selectedDayData.day} · {VIBE_LABELS[selectedDayData.vibe] || selectedDayData.vibe}</p>
-                <h3 className="font-display text-3xl sm:text-4xl text-[var(--cream)] leading-tight">{selectedDayData.title}</h3>
-                <p className="text-[var(--text-muted)] text-sm mt-2">{selectedDayData.location} · {formatDateAU(dayDate)}</p>
+                <p className="eyebrow text-white/80 mb-2">Day {selectedDayData.day} · {VIBE_LABELS[selectedDayData.vibe] || selectedDayData.vibe}</p>
+                <h3 className="font-display text-3xl sm:text-4xl text-white leading-tight">{selectedDayData.title}</h3>
+                <p className="text-white/70 text-sm mt-2">{selectedDayData.location} · {formatDateAU(dayDate)}</p>
                 <div className="mt-3">
                   <PlaceActions place={selectedDayData.location} compact />
                 </div>
@@ -440,13 +440,13 @@ export default function ItineraryTab({ itinerary, config, hotels, onUpdate, flig
                           style={{ background: 'linear-gradient(180deg, transparent 30%, rgba(10,8,6,0.9) 100%)' }}
                         />
                         <div className="absolute top-4 left-4">
-                          <span className="font-display text-3xl text-[var(--cream)] leading-none">
+                          <span className="font-display text-3xl text-white leading-none">
                             {String(day.day).padStart(2, '0')}
                           </span>
                         </div>
                         <div className="absolute bottom-3 left-4 right-4 flex items-baseline justify-between">
-                          <p className="eyebrow text-[var(--gold)]">{vibeLabel}</p>
-                          <p className="text-[var(--text-dim)] text-[10px] tracking-wider uppercase">{formatDateAU(dayDate)}</p>
+                          <p className="eyebrow text-[var(--gold-soft)]">{vibeLabel}</p>
+                          <p className="text-white/70 text-[10px] tracking-wider uppercase">{formatDateAU(dayDate)}</p>
                         </div>
                       </div>
 

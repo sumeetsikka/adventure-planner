@@ -118,7 +118,7 @@ export default function TransportTab({ transport }: Props) {
                   href={url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-5 py-2.5 rounded-full text-sm font-medium bg-[var(--cream)] text-[var(--ink)] hover:opacity-90 transition-all"
+                  className="px-5 py-2.5 rounded-full text-sm font-medium bg-[var(--terracotta)] text-white hover:opacity-90 transition-all"
                 >
                   {site} ↗
                 </a>

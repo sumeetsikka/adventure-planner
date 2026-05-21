@@ -88,7 +88,6 @@ export default function InstallPrompt() {
           className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 sm:max-w-sm z-[100] surface-card rounded-2xl p-4 sm:p-5 border border-[var(--gold)]/30 backdrop-blur-md"
           style={{
             paddingBottom: `calc(1rem + env(safe-area-inset-bottom, 0px))`,
-            background: 'linear-gradient(135deg, rgba(26, 23, 19, 0.95), rgba(18, 16, 13, 0.95))',
           }}
         >
           <div className="flex items-start gap-3">
@@ -103,14 +102,14 @@ export default function InstallPrompt() {
                 </p>
               ) : (
                 <p className="text-[var(--text-muted)] text-xs font-light leading-relaxed">
-                  Tap <span className="inline-block px-1.5 py-0.5 rounded bg-[var(--ink-3)] text-[var(--cream)]">Share <span aria-hidden>↑</span></span> then "Add to Home Screen" to install.
+                  Tap <span className="inline-block px-1.5 py-0.5 rounded bg-[var(--ink-4)] text-[var(--cream)]">Share <span aria-hidden>↑</span></span> then "Add to Home Screen" to install.
                 </p>
               )}
               <div className="flex items-center gap-2 mt-3">
                 {deferredPrompt && (
                   <button
                     onClick={install}
-                    className="px-4 py-1.5 rounded-full bg-[var(--cream)] text-[var(--ink)] text-xs font-medium hover:bg-[var(--paper)] transition-colors"
+                    className="px-4 py-1.5 rounded-full bg-[var(--terracotta)] text-white text-xs font-medium hover:opacity-90 transition-opacity"
                   >
                     Install
                   </button>

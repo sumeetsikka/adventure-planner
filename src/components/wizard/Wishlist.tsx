@@ -120,7 +120,7 @@ function SavedTile({
         <span className="text-2xl drop-shadow-lg">{country.emoji}</span>
         <button
           onClick={(e) => { e.stopPropagation(); onRemove(); }}
-          className="w-11 h-11 sm:w-7 sm:h-7 rounded-full bg-[var(--ink)]/70 backdrop-blur-sm flex items-center justify-center text-[var(--cream)] text-base sm:text-[10px] hover:bg-[var(--terracotta)]/80 border border-[var(--line-strong)] transition-colors"
+          className="w-11 h-11 sm:w-7 sm:h-7 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center text-white text-base sm:text-[10px] hover:bg-[var(--terracotta)] border border-white/25 transition-colors"
           aria-label="Remove from wishlist"
         >
           ×
@@ -132,15 +132,15 @@ function SavedTile({
         <p className="eyebrow mb-2 drop-shadow-md" style={{ color: 'var(--gold-soft)' }}>
           ★ Saved
         </p>
-        <h3 className="font-display text-2xl sm:text-[26px] text-[var(--cream)] leading-tight mb-2 drop-shadow-md">
+        <h3 className="font-display text-2xl sm:text-[26px] text-white leading-tight mb-2 drop-shadow-md">
           {country.name}
         </h3>
-        <p className="text-[12px] text-[var(--cream)]/80 italic font-display-soft line-clamp-2 mb-3">
+        <p className="text-[12px] text-white/80 italic font-display-soft line-clamp-2 mb-3">
           {country.tagline}.
         </p>
-        <div className="pt-3 border-t border-[var(--cream)]/15 flex items-center justify-between">
+        <div className="pt-3 border-t border-white/15 flex items-center justify-between">
           <span className="text-[10px] tracking-[0.25em] uppercase text-[var(--gold-soft)]">Plan this trip</span>
-          <span className="text-[var(--cream)] text-sm group-hover:translate-x-1 transition-transform">→</span>
+          <span className="text-white text-sm group-hover:translate-x-1 transition-transform">→</span>
         </div>
       </div>
     </motion.div>

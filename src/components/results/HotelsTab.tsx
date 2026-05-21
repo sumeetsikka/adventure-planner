@@ -135,7 +135,7 @@ export default function HotelsTab({ hotels, config }: Props) {
                   href={url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-5 py-2.5 rounded-full text-sm font-medium bg-[var(--cream)] text-[var(--ink)] hover:opacity-90 transition-all"
+                  className="px-5 py-2.5 rounded-full text-sm font-medium bg-[var(--terracotta)] text-white hover:opacity-90 transition-all"
                 >
                   {name} ↗
                 </a>
@@ -172,15 +172,15 @@ export default function HotelsTab({ hotels, config }: Props) {
                 />
                 <div className="absolute bottom-5 left-6 right-6 flex items-end justify-between gap-4">
                   <div>
-                    <p className="eyebrow mb-2">{dest.nights} night{dest.nights > 1 ? 's' : ''} · {formatDateAU(dest.check_in)}</p>
-                    <h3 className="font-display text-2xl sm:text-3xl text-[var(--cream)] leading-tight">{dest.destination}</h3>
+                    <p className="eyebrow text-white/80 mb-2">{dest.nights} night{dest.nights > 1 ? 's' : ''} · {formatDateAU(dest.check_in)}</p>
+                    <h3 className="font-display text-2xl sm:text-3xl text-white leading-tight">{dest.destination}</h3>
                     <div className="mt-2.5" onClick={(e) => e.stopPropagation()}>
                       <PlaceActions place={dest.destination} compact />
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-[var(--text-muted)] text-[11px] uppercase tracking-wider">{dest.hotels.length} hotels</p>
-                    <span className={`inline-block text-[var(--cream)] text-lg mt-1 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>▾</span>
+                    <p className="text-white/70 text-[11px] uppercase tracking-wider">{dest.hotels.length} hotels</p>
+                    <span className={`inline-block text-white text-lg mt-1 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>▾</span>
                   </div>
                 </div>
               </button>

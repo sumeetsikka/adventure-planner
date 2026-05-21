@@ -73,14 +73,14 @@ export default function Lightbox({ images, index, onIndexChange, onClose }: Prop
         <button
           onClick={(e) => { e.stopPropagation(); onClose(); }}
           aria-label="Close"
-          className="absolute top-4 right-4 sm:top-6 sm:right-6 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[var(--ink-2)]/80 backdrop-blur border border-[var(--line-strong)] text-[var(--cream)] text-2xl leading-none flex items-center justify-center hover:bg-[var(--ink-2)] transition-colors z-10"
+          className="absolute top-4 right-4 sm:top-6 sm:right-6 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/10 backdrop-blur border border-white/20 text-white text-2xl leading-none flex items-center justify-center hover:bg-white/20 transition-colors z-10"
         >
           ×
         </button>
 
         {/* Counter */}
         <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-10">
-          <span className="eyebrow text-[var(--text-muted)] bg-[var(--ink-2)]/60 backdrop-blur px-3 py-1.5 rounded-full">
+          <span className="eyebrow text-white/70 bg-white/10 backdrop-blur px-3 py-1.5 rounded-full">
             {index + 1} / {images.length}
           </span>
         </div>
@@ -112,7 +112,7 @@ export default function Lightbox({ images, index, onIndexChange, onClose }: Prop
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.15, ease: EASE }}
-            className="mt-6 max-w-2xl text-center font-display-soft italic text-[var(--cream)] text-base sm:text-lg px-4"
+            className="mt-6 max-w-2xl text-center font-display-soft italic text-white text-base sm:text-lg px-4"
             onClick={(e) => e.stopPropagation()}
           >
             {current.caption}
@@ -125,14 +125,14 @@ export default function Lightbox({ images, index, onIndexChange, onClose }: Prop
             <button
               onClick={(e) => { e.stopPropagation(); prev(); }}
               aria-label="Previous image"
-              className="hidden sm:flex absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-[var(--ink-2)]/80 backdrop-blur border border-[var(--line-strong)] text-[var(--cream)] text-xl items-center justify-center hover:bg-[var(--ink-2)] transition-colors"
+              className="hidden sm:flex absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 backdrop-blur border border-white/20 text-white text-xl items-center justify-center hover:bg-white/20 transition-colors"
             >
               ←
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); next(); }}
               aria-label="Next image"
-              className="hidden sm:flex absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-[var(--ink-2)]/80 backdrop-blur border border-[var(--line-strong)] text-[var(--cream)] text-xl items-center justify-center hover:bg-[var(--ink-2)] transition-colors"
+              className="hidden sm:flex absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 backdrop-blur border border-white/20 text-white text-xl items-center justify-center hover:bg-white/20 transition-colors"
             >
               →
             </button>
@@ -142,7 +142,7 @@ export default function Lightbox({ images, index, onIndexChange, onClose }: Prop
               initial={{ opacity: 0.8 }}
               animate={{ opacity: 0 }}
               transition={{ duration: 1.2, delay: 2 }}
-              className="sm:hidden absolute bottom-4 text-[var(--text-dim)] text-[11px] tracking-wider uppercase"
+              className="sm:hidden absolute bottom-4 text-white/50 text-[11px] tracking-wider uppercase"
               onClick={(e) => e.stopPropagation()}
             >
               swipe ↔

@@ -100,7 +100,7 @@ export default function DestinationPicker({ selected, onSelect, onNext, country,
 
         <div className="relative z-10 max-w-7xl mx-auto px-6 pt-8">
           <button onClick={onBackToCountries}
-            className="eyebrow text-[var(--text-muted)] hover:text-[var(--cream)] transition-colors">
+            className="eyebrow text-white/70 hover:text-white transition-colors">
             ← All Countries
           </button>
         </div>
@@ -112,12 +112,12 @@ export default function DestinationPicker({ selected, onSelect, onNext, country,
           className="absolute bottom-16 left-0 right-0 px-6"
         >
           <div className="max-w-7xl mx-auto">
-            <p className="eyebrow mb-4">Chapter Two · Design your route</p>
-            <h1 className="font-display text-6xl sm:text-8xl text-[var(--cream)] mb-4 flex items-baseline gap-4">
+            <p className="eyebrow mb-4 text-[var(--gold-soft)]">Chapter Two · Design your route</p>
+            <h1 className="font-display text-6xl sm:text-8xl text-white mb-4 flex items-baseline gap-4">
               <span className="text-5xl sm:text-6xl">{country.emoji}</span>
               <span>{country.name}</span>
             </h1>
-            <p className="text-lg text-[var(--text-muted)] max-w-2xl font-light italic font-display-soft">
+            <p className="text-lg text-white/80 max-w-2xl font-light italic font-display-soft">
               {country.tagline}.
             </p>
           </div>
@@ -216,10 +216,10 @@ export default function DestinationPicker({ selected, onSelect, onNext, country,
       <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none">
         <div className="pt-10 px-4" style={{
           paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))',
-          background: 'linear-gradient(180deg, transparent 0%, rgba(10,8,6,0.85) 40%, var(--ink) 100%)'
+          background: 'linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.85) 40%, var(--ink) 100%)'
         }}>
           <div className="max-w-2xl mx-auto pointer-events-auto">
-            <div className="rounded-full bg-[var(--ink-2)]/90 backdrop-blur-xl border border-[var(--line-strong)] px-6 py-3 flex items-center justify-between shadow-2xl">
+            <div className="rounded-full bg-[var(--ink-3)] backdrop-blur-xl border border-[var(--line)] px-6 py-3 flex items-center justify-between shadow-[var(--shadow-lg)]">
               <div>
                 <p className="text-[var(--cream)] text-sm font-light">
                   {selected.length === 0 ? (
@@ -235,7 +235,7 @@ export default function DestinationPicker({ selected, onSelect, onNext, country,
               <button onClick={onNext} disabled={selected.length === 0}
                 className={`px-6 py-2.5 rounded-full font-medium text-sm transition-all ${
                   selected.length > 0
-                    ? 'bg-[var(--cream)] text-[var(--ink)] hover:bg-[var(--paper)]'
+                    ? 'bg-[var(--terracotta)] text-white hover:bg-[var(--terracotta-soft)]'
                     : 'bg-[var(--ink-4)] text-[var(--text-dim)] cursor-not-allowed'
                 }`}>
                 Continue →

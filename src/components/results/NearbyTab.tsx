@@ -145,24 +145,24 @@ export default function NearbyTab({ nearby }: Props) {
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                         onError={(e) => { const img = e.currentTarget; if (img.dataset.fell) return; img.dataset.fell = '1'; img.src = `https://picsum.photos/seed/${encodeURIComponent(place.name)}/600/400`; }}
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[var(--ink)] via-[var(--ink)]/30 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
                       {(place.category || place.trip_length) && (
                         <div className="absolute top-3 left-3 flex gap-1.5">
                           {place.category && (
-                            <span className="text-[9px] tracking-[0.18em] uppercase px-2.5 py-1 rounded-full bg-[var(--ink)]/70 backdrop-blur text-[var(--cream)] border border-[var(--line-strong)]">
+                            <span className="text-[9px] tracking-[0.18em] uppercase px-2.5 py-1 rounded-full bg-black/55 backdrop-blur text-white border border-white/20">
                               {CATEGORY_META[place.category].icon} {CATEGORY_META[place.category].label}
                             </span>
                           )}
                           {place.trip_length && (
-                            <span className="text-[9px] tracking-[0.18em] uppercase px-2.5 py-1 rounded-full bg-[var(--gold)]/85 text-[var(--ink)] font-medium">
+                            <span className="text-[9px] tracking-[0.18em] uppercase px-2.5 py-1 rounded-full bg-[var(--gold)]/95 text-white font-medium">
                               {place.trip_length}
                             </span>
                           )}
                         </div>
                       )}
                       <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-between">
-                        <h4 className="font-display text-lg text-[var(--cream)] leading-tight pr-2">{place.name}</h4>
-                        <span className="shrink-0 text-[10px] font-medium tracking-[0.18em] uppercase px-3 py-1 rounded-full border border-[var(--cream)]/30 text-[var(--cream)] bg-[var(--ink)]/40 backdrop-blur">
+                        <h4 className="font-display text-lg text-white leading-tight pr-2">{place.name}</h4>
+                        <span className="shrink-0 text-[10px] font-medium tracking-[0.18em] uppercase px-3 py-1 rounded-full border border-white/30 text-white bg-black/40 backdrop-blur">
                           {place.travel_time}
                         </span>
                       </div>

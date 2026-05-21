@@ -64,7 +64,7 @@ export default function VisaTab({ visa, travellers = 1, departureDate }: Props) 
   const status = getStatusLabel(visa);
   const statusToneClass = visa.visa_required
     ? 'border-[var(--gold)]/40 text-[var(--gold)]'
-    : 'border-[#7ea58a]/50 text-[#a8c9b2]';
+    : 'border-[var(--sage)]/40 text-[var(--sage)]';
 
   const perPersonCost = parseCostAud(visa.cost_aud);
   const groupCost = perPersonCost != null && travellers > 1 ? perPersonCost * travellers : null;
@@ -165,7 +165,7 @@ export default function VisaTab({ visa, travellers = 1, departureDate }: Props) 
             <div className="flex items-start gap-3">
               <span className="text-[var(--gold)] mt-1 shrink-0">◇</span>
               <p className="text-[var(--cream)] text-[15px] leading-relaxed">
-                Onward ticket {visa.onward_ticket_required ? <span className="italic text-[var(--gold)]">required</span> : <span className="italic text-[#a8c9b2]">not required</span>} at the border.
+                Onward ticket {visa.onward_ticket_required ? <span className="italic text-[var(--gold)]">required</span> : <span className="italic text-[var(--sage)]">not required</span>} at the border.
               </p>
             </div>
           )}

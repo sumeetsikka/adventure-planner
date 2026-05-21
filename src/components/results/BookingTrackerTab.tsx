@@ -170,7 +170,7 @@ export default function BookingTrackerTab({ config, results }: Props) {
             value={emailText}
             onChange={(e) => setEmailText(e.target.value)}
             placeholder="Paste your flight, hotel or activity confirmation here…"
-            className="w-full min-h-[140px] mt-4 px-4 py-3 rounded-xl bg-[var(--ink)]/40 border border-[var(--line)] focus:border-[var(--gold)]/50 outline-none text-[var(--cream)] text-sm leading-relaxed placeholder:text-[var(--text-dim)] transition-colors"
+            className="w-full min-h-[140px] mt-4 px-4 py-3 rounded-xl bg-[var(--ink-2)] border border-[var(--line)] focus:border-[var(--gold)]/50 outline-none text-[var(--cream)] text-sm leading-relaxed placeholder:text-[var(--text-dim)] transition-colors"
           />
           <div className="mt-3 flex items-center justify-between gap-3 flex-wrap">
             <p className="text-[var(--text-dim)] text-[11px] uppercase tracking-wider">
@@ -180,7 +180,7 @@ export default function BookingTrackerTab({ config, results }: Props) {
               type="button"
               onClick={handleParse}
               disabled={!emailText.trim() || parsing}
-              className="px-5 py-2 rounded-full text-xs font-medium text-[var(--ink)] bg-[var(--cream)] hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-5 py-2 rounded-full text-xs font-medium text-white bg-[var(--terracotta)] hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {parsing ? 'Parsing…' : 'Parse & add'}
             </button>

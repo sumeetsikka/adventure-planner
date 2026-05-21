@@ -122,7 +122,7 @@ export default function Inspiration({ onSelectCountry, onClose }: Props) {
                   onClick={() => setVibe(vibe === v.key ? null : v.key)}
                   className={`px-4 py-2.5 rounded-full text-sm border transition-all ${
                     vibe === v.key
-                      ? 'bg-[var(--cream)] text-[var(--ink)] border-[var(--cream)]'
+                      ? 'bg-[var(--terracotta)] text-white border-[var(--terracotta)]'
                       : 'bg-[var(--ink-3)] text-[var(--text-muted)] border-[var(--line)] hover:border-[var(--line-strong)] hover:text-[var(--cream)]'
                   }`}
                 >
@@ -142,7 +142,7 @@ export default function Inspiration({ onSelectCountry, onClose }: Props) {
                   onClick={() => setMonth(i)}
                   className={`py-2 rounded-full text-xs font-medium tracking-wide transition-all ${
                     month === i
-                      ? 'bg-[var(--gold)] text-[var(--ink)]'
+                      ? 'bg-[var(--gold)] text-white'
                       : 'bg-[var(--ink-3)] text-[var(--text-muted)] hover:text-[var(--cream)]'
                   }`}
                 >
@@ -162,12 +162,12 @@ export default function Inspiration({ onSelectCountry, onClose }: Props) {
                   onClick={() => setBudget(budget === b.key ? null : b.key)}
                   className={`px-4 py-3 rounded-2xl text-left border transition-all ${
                     budget === b.key
-                      ? 'bg-[var(--cream)] text-[var(--ink)] border-[var(--cream)]'
+                      ? 'bg-[var(--terracotta)] text-white border-[var(--terracotta)]'
                       : 'bg-[var(--ink-3)] text-[var(--cream)] border-[var(--line)] hover:border-[var(--line-strong)]'
                   }`}
                 >
                   <span className="font-display text-base block leading-tight">{b.label}</span>
-                  <span className={`text-[11px] ${budget === b.key ? 'text-[var(--ink)]/70' : 'text-[var(--text-dim)]'}`}>
+                  <span className={`text-[11px] ${budget === b.key ? 'text-white/75' : 'text-[var(--text-dim)]'}`}>
                     {b.sub}
                   </span>
                 </button>
@@ -259,11 +259,11 @@ function SuggestionCard({ country, blurb, index, onSelect }: { country: Country;
       <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(10,8,6,0.15) 0%, rgba(10,8,6,0.6) 50%, rgba(10,8,6,0.95) 100%)' }} />
       <div className="absolute inset-0 p-5 flex flex-col justify-end">
         <span className="text-2xl drop-shadow-lg mb-2">{country.emoji}</span>
-        <h3 className="font-display text-2xl text-[var(--cream)] leading-tight mb-1.5 drop-shadow-md">{country.name}</h3>
-        <p className="text-[12px] text-[var(--cream)]/80 italic font-display-soft mb-3">{blurb}</p>
-        <div className="pt-3 border-t border-[var(--cream)]/15 flex items-center justify-between">
+        <h3 className="font-display text-2xl text-white leading-tight mb-1.5 drop-shadow-md">{country.name}</h3>
+        <p className="text-[12px] text-white/80 italic font-display-soft mb-3">{blurb}</p>
+        <div className="pt-3 border-t border-white/15 flex items-center justify-between">
           <span className="text-[10px] tracking-[0.2em] uppercase text-[var(--gold-soft)]">Plan this</span>
-          <span className="text-[var(--cream)] text-sm group-hover:translate-x-1 transition-transform">→</span>
+          <span className="text-white text-sm group-hover:translate-x-1 transition-transform">→</span>
         </div>
       </div>
     </motion.button>

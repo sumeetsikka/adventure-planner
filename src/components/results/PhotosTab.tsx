@@ -148,7 +148,7 @@ function DestinationStrip({
                     img.src = `https://picsum.photos/seed/${encodeURIComponent(d.id)}-${i}/1200/800`;
                   }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[var(--ink)]/40 to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
               </motion.button>
             );
           })}

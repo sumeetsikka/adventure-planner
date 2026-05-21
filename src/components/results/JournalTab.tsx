@@ -221,9 +221,9 @@ export default function JournalTab({ config, results }: Props) {
               backgroundPosition: 'center',
             }}
           >
-            <div className="absolute inset-0 bg-gradient-to-t from-[var(--ink)] via-[var(--ink)]/50 to-transparent" />
+            <div className="img-overlay" />
             <div className="absolute bottom-0 left-0 right-0 p-8">
-              <p className="font-display italic text-3xl sm:text-4xl text-[var(--cream)] leading-snug max-w-2xl">
+              <p className="font-display italic text-3xl sm:text-4xl text-white leading-snug max-w-2xl">
                 When you return, this page will hold every photo, every note, every quiet
                 moment from your trip.
               </p>
@@ -265,7 +265,7 @@ export default function JournalTab({ config, results }: Props) {
           )}
         </h2>
         <div className="divider my-5 max-w-[120px]" />
-        <p className="text-[var(--text-muted)] text-sm max-w-xl print:text-[var(--ink-3)]">
+        <p className="text-[var(--text-muted)] text-sm max-w-xl print:text-[var(--text-muted)]">
           Upload a few photos and jot a memory for each day. Your journal saves automatically
           to this device.
         </p>
@@ -320,8 +320,8 @@ export default function JournalTab({ config, results }: Props) {
                     backgroundPosition: 'center',
                   }}
                 >
-                  <div className="absolute inset-0 bg-[var(--ink)]/65 flex items-center justify-center">
-                    <p className="font-display italic text-xl text-[var(--cream)]/80 text-center px-6">
+                  <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
+                    <p className="font-display italic text-xl text-white/85 text-center px-6">
                       No photos yet — your memories from this day will live here.
                     </p>
                   </div>
@@ -341,7 +341,7 @@ export default function JournalTab({ config, results }: Props) {
                       <button
                         type="button"
                         onClick={() => handleRemovePhoto(d.day, idx)}
-                        className="absolute top-2 right-2 w-11 h-11 sm:w-7 sm:h-7 rounded-full bg-[var(--ink)]/70 text-[var(--cream)] text-base sm:text-xs opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity print:hidden"
+                        className="absolute top-2 right-2 w-11 h-11 sm:w-7 sm:h-7 rounded-full bg-black/65 text-white text-base sm:text-xs opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity print:hidden"
                         aria-label="Remove photo"
                       >
                         ×
@@ -369,7 +369,7 @@ export default function JournalTab({ config, results }: Props) {
         <button
           type="button"
           onClick={() => window.print()}
-          className="px-6 py-3 rounded-full bg-[var(--cream)] text-[var(--ink)] text-[11px] tracking-widest uppercase font-medium hover:opacity-90 transition-opacity"
+          className="px-6 py-3 rounded-full bg-[var(--terracotta)] text-white text-[11px] tracking-widest uppercase font-medium hover:opacity-90 transition-opacity"
         >
           Export journal
         </button>

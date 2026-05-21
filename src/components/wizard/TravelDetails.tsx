@@ -408,7 +408,7 @@ export default function TravelDetails({
             ← Back
           </button>
           <button type="button" onClick={handleGenerate}
-            className="px-8 py-3.5 rounded-full font-medium text-[var(--ink)] bg-[var(--cream)] hover:bg-[var(--paper)] transition-colors text-sm tracking-wide">
+            className="px-8 py-3.5 rounded-full font-medium text-white bg-[var(--terracotta)] hover:bg-[var(--terracotta-soft)] transition-colors text-sm tracking-wide">
             Craft my journey →
           </button>
         </motion.div>

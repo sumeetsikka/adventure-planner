@@ -94,17 +94,17 @@ export default function DestinationDetail({
                 }}
               />
             )}
-            <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(10,8,6,0.4) 0%, rgba(10,8,6,0.5) 50%, var(--ink) 100%)' }} />
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(10,8,6,0.25) 0%, rgba(10,8,6,0.45) 55%, rgba(10,8,6,0.85) 100%)' }} />
             <button
               onClick={onClose}
               aria-label="Close"
-              className="absolute top-4 right-4 w-11 h-11 rounded-full bg-[var(--ink)]/70 backdrop-blur border border-[var(--line-strong)] text-[var(--cream)] text-2xl leading-none flex items-center justify-center hover:bg-[var(--ink)] transition-colors"
+              className="absolute top-4 right-4 w-11 h-11 rounded-full bg-black/50 backdrop-blur border border-white/20 text-white text-2xl leading-none flex items-center justify-center hover:bg-black/70 transition-colors"
             >
               ×
             </button>
             <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
               <p className="eyebrow mb-2" style={{ color: 'var(--gold-soft)' }}>{d.region}</p>
-              <h2 className="font-display text-4xl sm:text-5xl text-[var(--cream)] leading-[1.05]">
+              <h2 className="font-display text-4xl sm:text-5xl text-white leading-[1.05]">
                 {d.emoji} {d.name}
               </h2>
             </div>
@@ -231,8 +231,8 @@ export default function DestinationDetail({
                   onClick={() => { onToggleSelect(); onClose(); }}
                   className={`flex-1 px-6 py-3.5 rounded-full font-medium text-sm transition-colors ${
                     selected
-                      ? 'bg-[var(--ink-3)] text-[var(--cream)] border border-[var(--gold)]/40'
-                      : 'bg-[var(--cream)] text-[var(--ink)] hover:bg-[var(--paper)]'
+                      ? 'bg-[var(--ink-2)] text-[var(--cream)] border border-[var(--gold)]/40'
+                      : 'bg-[var(--terracotta)] text-white hover:bg-[var(--terracotta-soft)]'
                   }`}
                 >
                   {selected ? '✓ In your itinerary — remove' : 'Add to my itinerary →'}

@@ -99,12 +99,12 @@ export default function LoadingScreen({ destinations, progress }: Props) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1 }}
         >
-          <p className="eyebrow mb-5">Now writing</p>
-          <h1 className="font-display text-5xl sm:text-7xl text-[var(--cream)] mb-3 leading-tight min-h-[5rem]">
+          <p className="eyebrow mb-5 text-[var(--gold-soft)]">Now writing</p>
+          <h1 className="font-display text-5xl sm:text-7xl text-white mb-3 leading-tight min-h-[5rem]">
             <em className="italic text-shimmer">{displayText}</em>
-            <span className="animate-gentle-pulse text-[var(--gold)] font-thin">|</span>
+            <span className="animate-gentle-pulse text-[var(--gold-soft)] font-thin">|</span>
           </h1>
-          <p className="text-[var(--text-muted)] text-base font-light mb-10 italic font-display-soft">
+          <p className="text-white/80 text-base font-light mb-10 italic font-display-soft">
             Crafting every chapter of your story.
           </p>
         </motion.div>
@@ -112,10 +112,10 @@ export default function LoadingScreen({ destinations, progress }: Props) {
         {/* Progress */}
         <div className="max-w-sm mx-auto mb-10">
           <div className="flex items-baseline justify-between mb-2">
-            <span className="eyebrow text-[var(--text-muted)]">{doneCount} of {totalCount}</span>
-            <span className="font-display text-xl text-[var(--gold)]">{Math.round(pct)}%</span>
+            <span className="eyebrow text-white/70">{doneCount} of {totalCount}</span>
+            <span className="font-display text-xl text-[var(--gold-soft)]">{Math.round(pct)}%</span>
           </div>
-          <div className="w-full h-px bg-[var(--line)] overflow-hidden">
+          <div className="w-full h-px bg-white/15 overflow-hidden">
             <motion.div
               className="h-full"
               style={{ background: 'linear-gradient(90deg, var(--gold), var(--terracotta-soft))' }}
@@ -139,12 +139,12 @@ export default function LoadingScreen({ destinations, progress }: Props) {
               >
                 <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
                   {done ? (
-                    <span className="text-[var(--gold)] text-sm">✓</span>
+                    <span className="text-[var(--gold-soft)] text-sm">✓</span>
                   ) : (
-                    <div className="w-3 h-3 border border-[var(--text-dim)] border-t-[var(--gold)] rounded-full animate-spin" />
+                    <div className="w-3 h-3 border border-white/30 border-t-[var(--gold-soft)] rounded-full animate-spin" />
                   )}
                 </div>
-                <span className={`text-xs font-light tracking-wide ${done ? 'text-[var(--cream)]' : 'text-[var(--text-dim)]'}`}>
+                <span className={`text-xs font-light tracking-wide ${done ? 'text-white' : 'text-white/50'}`}>
                   {step.label}
                 </span>
               </motion.div>

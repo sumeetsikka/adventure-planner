@@ -99,18 +99,18 @@ export default function CountryPicker({ onSelect, onInspire, onWishlist, onMyTri
           className="flex items-center justify-between mb-20 sm:mb-32"
         >
           <div className="flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full bg-[var(--gold)] animate-gentle-pulse" />
-            <span className="eyebrow">The Adventure Planner</span>
+            <div className="w-2 h-2 rounded-full bg-[var(--gold-soft)] animate-gentle-pulse" />
+            <span className="eyebrow text-[var(--gold-soft)]">The Adventure Planner</span>
           </div>
           {onMyTrips && savedTripCount > 0 ? (
             <button
               onClick={onMyTrips}
-              className="text-[10px] tracking-widest uppercase text-[var(--text-muted)] hover:text-[var(--cream)] border border-[var(--line)] hover:border-[var(--line-strong)] rounded-full px-3.5 py-1.5 transition-all"
+              className="text-[10px] tracking-widest uppercase text-white/70 hover:text-white border border-white/20 hover:border-white/40 rounded-full px-3.5 py-1.5 transition-all"
             >
               My trips · {savedTripCount}
             </button>
           ) : (
-            <div className="text-[10px] text-[var(--text-dim)] tracking-widest uppercase hidden sm:block">
+            <div className="text-[10px] text-white/60 tracking-widest uppercase hidden sm:block">
               ISSUE № 01
             </div>
           )}
@@ -123,12 +123,12 @@ export default function CountryPicker({ onSelect, onInspire, onWishlist, onMyTri
           transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="mb-16 sm:mb-20 max-w-3xl"
         >
-          <p className="eyebrow mb-4 text-[var(--text-muted)]">Chapter One · Choose your destination</p>
-          <h1 className="font-display text-5xl sm:text-7xl md:text-8xl text-[var(--cream)] mb-6">
+          <p className="eyebrow mb-4 text-white/70">Chapter One · Choose your destination</p>
+          <h1 className="font-display text-5xl sm:text-7xl md:text-8xl text-white mb-6">
             Where the story<br />
             <em className="italic text-shimmer">begins.</em>
           </h1>
-          <p className="text-lg sm:text-xl text-[var(--text-muted)] max-w-xl leading-relaxed font-light">
+          <p className="text-lg sm:text-xl text-white/80 max-w-xl leading-relaxed font-light">
             Twenty-nine countries. Four hundred destinations. One perfectly crafted journey, built just for you.
           </p>
         </motion.div>
@@ -141,7 +141,7 @@ export default function CountryPicker({ onSelect, onInspire, onWishlist, onMyTri
           className="max-w-2xl mb-16 flex flex-col sm:flex-row gap-3"
         >
           <div className="relative group flex-1 max-w-lg">
-            <span className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--text-dim)]">
+            <span className="absolute left-5 top-1/2 -translate-y-1/2 text-white/60">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
             </span>
             <input
@@ -149,13 +149,13 @@ export default function CountryPicker({ onSelect, onInspire, onWishlist, onMyTri
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search a country…"
-              className="w-full bg-[var(--ink-2)]/80 backdrop-blur-md border border-[var(--line)] rounded-full pl-14 pr-6 py-4 text-[var(--cream)] placeholder-[var(--text-dim)] focus:outline-none focus:border-[var(--gold)]/40 transition-all font-light"
+              className="w-full bg-black/30 backdrop-blur-md border border-white/20 rounded-full pl-14 pr-6 py-4 text-white placeholder-white/50 focus:outline-none focus:border-white/50 transition-all font-light"
             />
           </div>
           {onWishlist && (
             <button
               onClick={onWishlist}
-              className="px-5 py-4 rounded-full text-sm border border-[var(--line-strong)] text-[var(--cream)] hover:bg-[var(--ink-3)] transition-colors tracking-wide whitespace-nowrap"
+              className="px-5 py-4 rounded-full text-sm border border-white/25 text-white hover:bg-white/10 transition-colors tracking-wide whitespace-nowrap"
             >
               ★ Wishlist
             </button>
@@ -163,7 +163,7 @@ export default function CountryPicker({ onSelect, onInspire, onWishlist, onMyTri
           {onInspire && (
             <button
               onClick={onInspire}
-              className="px-6 py-4 rounded-full text-sm border border-[var(--gold)]/40 text-[var(--gold)] hover:bg-[var(--gold)]/10 transition-colors tracking-wide whitespace-nowrap"
+              className="px-6 py-4 rounded-full text-sm bg-[var(--terracotta)] text-white hover:bg-[var(--terracotta-soft)] transition-colors tracking-wide whitespace-nowrap"
             >
               ✦ Inspire me
             </button>
@@ -180,9 +180,9 @@ export default function CountryPicker({ onSelect, onInspire, onWishlist, onMyTri
               transition={{ duration: 0.8, delay: 0.6 + ri * 0.1 }}
             >
               <div className="flex items-baseline gap-6 mb-6">
-                <h2 className="font-display text-2xl sm:text-3xl text-[var(--cream)]">{region.name}</h2>
-                <div className="flex-1 h-px bg-[var(--line)]" />
-                <span className="eyebrow text-[var(--text-dim)]">{region.countries.length} destinations</span>
+                <h2 className="font-display text-2xl sm:text-3xl text-white">{region.name}</h2>
+                <div className="flex-1 h-px bg-white/15" />
+                <span className="eyebrow text-white/60">{region.countries.length} destinations</span>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -200,8 +200,8 @@ export default function CountryPicker({ onSelect, onInspire, onWishlist, onMyTri
 
           {grouped.length === 0 && search && (
             <div className="text-center py-12">
-              <p className="font-display text-3xl text-[var(--cream)] italic mb-2">No match</p>
-              <p className="text-[var(--text-muted)]">Try the custom destination below.</p>
+              <p className="font-display text-3xl text-white italic mb-2">No match</p>
+              <p className="text-white/70">Try the custom destination below.</p>
             </div>
           )}
         </div>
@@ -213,13 +213,13 @@ export default function CountryPicker({ onSelect, onInspire, onWishlist, onMyTri
           transition={{ duration: 0.8, delay: 1 }}
           className="mt-20 mb-8"
         >
-          <div className="divider mb-10" />
+          <div className="h-px bg-white/15 mb-10" />
           <div className="max-w-lg mx-auto text-center">
-            <span className="eyebrow block mb-3">Somewhere else?</span>
-            <h3 className="font-display text-3xl text-[var(--cream)] mb-3">
+            <span className="eyebrow block mb-3 text-white/70">Somewhere else?</span>
+            <h3 className="font-display text-3xl text-white mb-3">
               Anywhere in the world.
             </h3>
-            <p className="text-[var(--text-muted)] text-sm mb-6 font-light">
+            <p className="text-white/70 text-sm mb-6 font-light">
               Type any country and we'll build your trip from scratch.
             </p>
             <div className="flex gap-2">
@@ -229,12 +229,12 @@ export default function CountryPicker({ onSelect, onInspire, onWishlist, onMyTri
                 onChange={(e) => setCustomCountry(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleCustom()}
                 placeholder="e.g. Sri Lanka, South Korea, Argentina…"
-                className="flex-1 bg-[var(--ink-2)]/80 backdrop-blur-md border border-[var(--line)] rounded-full px-5 py-3.5 text-[var(--cream)] placeholder-[var(--text-dim)] text-sm focus:outline-none focus:border-[var(--gold)]/40 transition-all font-light"
+                className="flex-1 bg-black/30 backdrop-blur-md border border-white/20 rounded-full px-5 py-3.5 text-white placeholder-white/50 text-sm focus:outline-none focus:border-white/50 transition-all font-light"
               />
               <button
                 onClick={handleCustom}
                 disabled={!customCountry.trim()}
-                className="px-6 py-3.5 rounded-full font-medium text-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-[var(--cream)] text-[var(--ink)] hover:bg-[var(--paper)]"
+                className="px-6 py-3.5 rounded-full font-medium text-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-[var(--terracotta)] text-white hover:bg-[var(--terracotta-soft)]"
               >
                 Begin →
               </button>
@@ -294,7 +294,7 @@ function CountryTile({ country, onSelect, onHover }: { country: Country; onSelec
         <span className="text-3xl drop-shadow-lg">{country.emoji}</span>
         <div className="flex items-center gap-1.5">
           {destCount > 0 && (
-            <span className="text-[9px] tracking-[0.2em] uppercase text-[var(--cream)] bg-[var(--ink)]/60 backdrop-blur-sm rounded-full px-2.5 py-1 border border-[var(--line-strong)]">
+            <span className="text-[9px] tracking-[0.2em] uppercase text-white bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/20">
               {destCount} stops
             </span>
           )}
@@ -303,8 +303,8 @@ function CountryTile({ country, onSelect, onHover }: { country: Country; onSelec
             aria-label={saved ? `Remove ${country.name} from wishlist` : `Save ${country.name} to wishlist`}
             className={`w-8 h-8 rounded-full backdrop-blur-sm flex items-center justify-center text-base transition-all border ${
               saved
-                ? 'bg-[var(--gold)]/90 text-[var(--ink)] border-[var(--gold)]'
-                : 'bg-[var(--ink)]/60 text-[var(--cream)] border-[var(--line-strong)] hover:bg-[var(--ink)]/80'
+                ? 'bg-[var(--gold)] text-white border-[var(--gold)]'
+                : 'bg-black/50 text-white border-white/20 hover:bg-black/70'
             }`}
           >
             ★
@@ -314,17 +314,17 @@ function CountryTile({ country, onSelect, onHover }: { country: Country; onSelec
 
       {/* Content */}
       <div className="absolute inset-0 p-5 flex flex-col justify-end z-10">
-        <h3 className="font-display text-[28px] sm:text-3xl text-[var(--cream)] leading-[1.05] mb-1.5 drop-shadow-md">
+        <h3 className="font-display text-[28px] sm:text-3xl text-white leading-[1.05] mb-1.5 drop-shadow-md">
           {country.name}
         </h3>
-        <p className="text-[11.5px] text-[var(--cream)]/80 leading-snug font-light italic line-clamp-2 font-display-soft">
+        <p className="text-[11.5px] text-white/80 leading-snug font-light italic line-clamp-2 font-display-soft">
           {country.tagline}.
         </p>
-        <div className="mt-3 pt-3 border-t border-[var(--cream)]/15 flex items-center justify-between">
+        <div className="mt-3 pt-3 border-t border-white/15 flex items-center justify-between">
           <span className="text-[9px] tracking-[0.25em] uppercase text-[var(--gold-soft)]">
             Begin here
           </span>
-          <span className="text-[var(--cream)] text-sm group-hover:translate-x-1 transition-transform">→</span>
+          <span className="text-white text-sm group-hover:translate-x-1 transition-transform">→</span>
         </div>
       </div>
     </motion.button>

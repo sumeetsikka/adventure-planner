@@ -224,14 +224,14 @@ export default function DashboardTab({ config, results, onTabChange }: Props) {
         <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(10,8,6,0.35) 0%, rgba(10,8,6,0.55) 50%, rgba(10,8,6,0.95) 100%)' }} />
         <div className="absolute inset-0 p-8 flex flex-col justify-between">
           <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--gold)] animate-gentle-pulse" />
-            <span className="eyebrow">Trip overview</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--gold-soft)] animate-gentle-pulse" />
+            <span className="eyebrow text-white/80">Trip overview</span>
           </div>
           <div>
-            <h2 className="font-display text-5xl sm:text-6xl text-[var(--cream)] mb-3">
+            <h2 className="font-display text-5xl sm:text-6xl text-white mb-3">
               {config.country?.emoji} {config.country?.name || 'Adventure'}
             </h2>
-            <p className="text-[var(--text-muted)] text-sm font-light">
+            <p className="text-white/70 text-sm font-light">
               {formatDateAU(config.departureDate)} → {formatDateAU(config.returnDate)} · {totalDays} days · {config.travellers} traveller{config.travellers > 1 ? 's' : ''}
             </p>
           </div>
@@ -301,7 +301,7 @@ export default function DashboardTab({ config, results, onTabChange }: Props) {
               <div className="absolute inset-0" style={{ background: `linear-gradient(180deg, transparent 30%, ${d.colour}40 60%, rgba(10,8,6,0.95) 100%)` }} />
               <div className="absolute inset-0 p-4 flex flex-col justify-end">
                 <span className="text-[9px] tracking-widest uppercase text-[var(--gold-soft)]">Stop {i + 1}</span>
-                <p className="font-display text-lg text-[var(--cream)] leading-tight">{d.emoji} {d.name.split('(')[0].split('/')[0].trim()}</p>
+                <p className="font-display text-lg text-white leading-tight">{d.emoji} {d.name.split('(')[0].split('/')[0].trim()}</p>
               </div>
             </motion.div>
           ))}

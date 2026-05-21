@@ -83,7 +83,7 @@ export default function MyTrips({ onLoad, onNew, onInspire, onWishlist, onBack }
               )}
               <button
                 onClick={onNew}
-                className="px-6 py-3 rounded-full bg-[var(--cream)] text-[var(--ink)] hover:bg-[var(--paper)] transition-colors text-sm font-medium tracking-wide"
+                className="px-6 py-3 rounded-full bg-[var(--terracotta)] text-white hover:bg-[var(--terracotta-soft)] transition-colors text-sm font-medium tracking-wide"
               >
                 + New trip
               </button>
@@ -110,7 +110,7 @@ export default function MyTrips({ onLoad, onNew, onInspire, onWishlist, onBack }
             </p>
             <button
               onClick={onNew}
-              className="px-8 py-3.5 rounded-full bg-[var(--cream)] text-[var(--ink)] hover:bg-[var(--paper)] transition-colors text-sm font-medium tracking-wide"
+              className="px-8 py-3.5 rounded-full bg-[var(--terracotta)] text-white hover:bg-[var(--terracotta-soft)] transition-colors text-sm font-medium tracking-wide"
             >
               Plan your first trip →
             </button>
@@ -199,8 +199,8 @@ function TripCard({
         <span
           className={`text-[9px] tracking-[0.2em] uppercase px-2.5 py-1 rounded-full backdrop-blur-sm ${
             hasResults
-              ? 'bg-[var(--gold)]/85 text-[var(--ink)]'
-              : 'bg-[var(--ink)]/60 text-[var(--cream)] border border-[var(--line-strong)]'
+              ? 'bg-[var(--gold)] text-white'
+              : 'bg-black/45 text-white border border-white/25'
           }`}
         >
           {hasResults ? 'Ready' : 'Drafting'}
@@ -211,14 +211,14 @@ function TripCard({
         >
           <button
             onClick={onStartRename}
-            className="w-11 h-11 sm:w-7 sm:h-7 rounded-full bg-[var(--ink)]/70 backdrop-blur-sm flex items-center justify-center text-[var(--cream)] text-base sm:text-[10px] hover:bg-[var(--ink)]/90 border border-[var(--line-strong)]"
+            className="w-11 h-11 sm:w-7 sm:h-7 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center text-white text-base sm:text-[10px] hover:bg-black/80 border border-white/25"
             aria-label="Rename trip"
           >
             ✎
           </button>
           <button
             onClick={onDelete}
-            className="w-11 h-11 sm:w-7 sm:h-7 rounded-full bg-[var(--ink)]/70 backdrop-blur-sm flex items-center justify-center text-[var(--cream)] text-base sm:text-[10px] hover:bg-[var(--terracotta)]/80 border border-[var(--line-strong)]"
+            className="w-11 h-11 sm:w-7 sm:h-7 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center text-white text-base sm:text-[10px] hover:bg-[var(--terracotta)] border border-white/25"
             aria-label="Delete trip"
           >
             ×
@@ -242,27 +242,27 @@ function TripCard({
               if (e.key === 'Enter') onCommitRename();
               if (e.key === 'Escape') onCommitRename();
             }}
-            className="font-display text-2xl text-[var(--cream)] bg-transparent border-b border-[var(--gold)] focus:outline-none mb-3 w-full"
+            className="font-display text-2xl text-white bg-transparent border-b border-[var(--gold-soft)] focus:outline-none mb-3 w-full"
           />
         ) : (
-          <h3 className="font-display text-2xl sm:text-[26px] text-[var(--cream)] leading-tight mb-3 drop-shadow-md">
+          <h3 className="font-display text-2xl sm:text-[26px] text-white leading-tight mb-3 drop-shadow-md">
             {trip.name}
           </h3>
         )}
-        <div className="flex items-center gap-3 text-[11px] text-[var(--cream)]/80 mb-4 font-light">
+        <div className="flex items-center gap-3 text-[11px] text-white/80 mb-4 font-light">
           {trip.config.departureDate && (
             <>
               <span>{formatDateAU(trip.config.departureDate)}</span>
-              <span className="text-[var(--text-dim)]">·</span>
+              <span className="text-white/50">·</span>
             </>
           )}
           <span>{days} {days === 1 ? 'day' : 'days'}</span>
-          <span className="text-[var(--text-dim)]">·</span>
+          <span className="text-white/50">·</span>
           <span>{stops} {stops === 1 ? 'stop' : 'stops'}</span>
         </div>
-        <div className="pt-3 border-t border-[var(--cream)]/15 flex items-center justify-between">
-          <span className="text-[10px] tracking-wider text-[var(--text-dim)]">Updated {updatedLabel}</span>
-          <span className="text-[var(--cream)] text-sm group-hover:translate-x-1 transition-transform">→</span>
+        <div className="pt-3 border-t border-white/15 flex items-center justify-between">
+          <span className="text-[10px] tracking-wider text-white/60">Updated {updatedLabel}</span>
+          <span className="text-white text-sm group-hover:translate-x-1 transition-transform">→</span>
         </div>
       </div>
     </motion.div>

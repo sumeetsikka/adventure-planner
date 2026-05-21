@@ -35,7 +35,7 @@ const EASE = [0.16, 1, 0.3, 1] as const;
 function createColourIcon(colour: string) {
   return L.divIcon({
     className: '',
-    html: `<div style="width:26px;height:26px;border-radius:50%;background:${colour};border:3px solid #F5EDE0;box-shadow:0 2px 10px rgba(0,0,0,0.5);"></div>`,
+    html: `<div style="width:26px;height:26px;border-radius:50%;background:${colour};border:3px solid #FFFFFF;box-shadow:0 2px 8px rgba(0,0,0,0.25);"></div>`,
     iconSize: [26, 26],
     iconAnchor: [13, 13],
     popupAnchor: [0, -14],
@@ -130,13 +130,13 @@ export default function RouteMapTab({ config, results }: Props) {
           <MapContainer center={center} zoom={5} style={{ height: '100%', width: '100%' }} scrollWheelZoom={true}>
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
             />
             <FitBounds points={points} />
 
             <Polyline
               positions={points.map(p => [p.lat, p.lon] as [number, number])}
-              pathOptions={{ color: '#D4A574', weight: 2.5, opacity: 0.8, dashArray: '6, 10' }}
+              pathOptions={{ color: '#F15B4B', weight: 2.5, opacity: 0.9, dashArray: '6, 10' }}
             />
 
             {points.map((p, i) => {

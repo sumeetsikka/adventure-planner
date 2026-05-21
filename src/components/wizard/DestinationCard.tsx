@@ -79,10 +79,10 @@ export default function DestinationCard({ destination, selected, onToggle, onKno
           )}
         </div>
         {selected ? (
-          <div className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--ink)] text-sm font-bold shadow-lg"
-            style={{ background: 'var(--cream)' }}>✓</div>
+          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg"
+            style={{ background: 'var(--terracotta)' }}>✓</div>
         ) : (
-          <span className="text-[10px] tracking-[0.2em] uppercase text-[var(--cream)]/80 bg-[var(--ink)]/50 backdrop-blur-sm rounded-full px-2.5 py-1 border border-[var(--line-strong)]">
+          <span className="text-[10px] tracking-[0.2em] uppercase text-white/85 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/20">
             {daysLabel}
           </span>
         )}
@@ -93,10 +93,10 @@ export default function DestinationCard({ destination, selected, onToggle, onKno
         <p className="eyebrow mb-2 drop-shadow-md" style={{ color: 'var(--gold-soft)' }}>
           {d.region}
         </p>
-        <h3 className="font-display text-[26px] sm:text-[28px] text-[var(--cream)] leading-[1.05] mb-2 drop-shadow-md">
+        <h3 className="font-display text-[26px] sm:text-[28px] text-white leading-[1.05] mb-2 drop-shadow-md">
           {d.name}
         </h3>
-        <p className="text-[12px] text-[var(--cream)]/80 leading-snug font-light italic font-display-soft line-clamp-2 mb-3">
+        <p className="text-[12px] text-white/80 leading-snug font-light italic font-display-soft line-clamp-2 mb-3">
           {d.brief}
         </p>
 
@@ -107,9 +107,9 @@ export default function DestinationCard({ destination, selected, onToggle, onKno
               key={tag}
               className="text-[10px] px-2 py-0.5 rounded-full font-light tracking-wide"
               style={{
-                background: 'rgba(245, 237, 224, 0.12)',
-                color: 'var(--cream)',
-                border: '1px solid rgba(245, 237, 224, 0.18)',
+                background: 'rgba(255, 255, 255, 0.15)',
+                color: '#FFFFFF',
+                border: '1px solid rgba(255, 255, 255, 0.25)',
               }}
             >
               {tag}
@@ -124,8 +124,8 @@ export default function DestinationCard({ destination, selected, onToggle, onKno
             onClick={() => onToggle(d.id)}
             className={`flex-1 text-[11px] tracking-wide rounded-full px-3 py-2 transition-colors ${
               selected
-                ? 'bg-[var(--ink-3)]/90 text-[var(--cream)] border border-[var(--gold)]/40'
-                : 'bg-[var(--cream)] text-[var(--ink)] hover:bg-[var(--paper)] font-medium'
+                ? 'bg-white/90 text-[var(--cream)] border border-[var(--gold)]/40'
+                : 'bg-[var(--terracotta)] text-white hover:bg-[var(--terracotta-soft)] font-medium'
             }`}
           >
             {selected ? '✓ Added' : 'Add to trip'}
@@ -133,7 +133,7 @@ export default function DestinationCard({ destination, selected, onToggle, onKno
           <button
             type="button"
             onClick={() => onKnowMore(d)}
-            className="text-[11px] tracking-wide rounded-full px-3 py-2 border border-[var(--cream)]/30 text-[var(--cream)] bg-[var(--ink)]/40 backdrop-blur-sm hover:bg-[var(--ink)]/70 transition-colors"
+            className="text-[11px] tracking-wide rounded-full px-3 py-2 border border-white/30 text-white bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-colors"
           >
             Know more
           </button>

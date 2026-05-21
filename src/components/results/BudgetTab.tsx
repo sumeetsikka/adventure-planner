@@ -121,7 +121,7 @@ export default function BudgetTab({ budget, config, onUpdate, flights = [], tran
           <button
             onClick={handleRetry}
             disabled={retrying}
-            className="px-7 py-3 rounded-full font-medium text-[var(--ink)] bg-[var(--cream)] hover:opacity-90 transition-all disabled:opacity-50"
+            className="px-7 py-3 rounded-full font-medium text-white bg-[var(--terracotta)] hover:opacity-90 transition-all disabled:opacity-50"
           >
             {retrying ? 'Calculating…' : 'Generate budget'}
           </button>

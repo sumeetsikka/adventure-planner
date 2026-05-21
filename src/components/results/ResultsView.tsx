@@ -85,7 +85,7 @@ function RetryButton({ label, onRetry }: { label: string; onRetry: () => Promise
       <p className="text-[var(--cream)] font-medium mb-2">Data not available yet</p>
       <p className="text-[var(--text-muted)] text-sm mb-6">The AI service may have been busy. Click to try again.</p>
       <button onClick={handleClick} disabled={retrying}
-        className="px-6 py-3 rounded-xl font-semibold text-[var(--cream)] bg-gradient-to-r from-[#C65D3B] to-[#B04E2E] hover:shadow-lg transition-all disabled:opacity-50">
+        className="px-6 py-3 rounded-xl font-semibold text-white bg-[var(--terracotta)] hover:shadow-lg transition-all disabled:opacity-50">
         {retrying ? 'Generating...' : 'Retry'}
       </button>
     </div>
