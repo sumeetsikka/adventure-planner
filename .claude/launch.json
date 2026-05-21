@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "dev",
+      "name": "holiday-dev",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["vite", "--port", "5173"],
-      "port": 5173
+      "runtimeArgs": ["vite", "--port", "5199", "--strictPort"],
+      "port": 5199
     }
   ]
 }
