@@ -51,6 +51,18 @@ function parseResult(result: any): any[] {
   return [];
 }
 
+/**
+ * Build a budget-target instruction for the LLM prompt.
+ * Returns '' when the traveller set no budget — the prompt is unchanged then.
+ */
+function budgetHint(config: any): string {
+  const pp = Math.round(Number(config?.budgetPerPerson) || 0);
+  if (pp <= 0) return '';
+  const travellers = Math.max(1, Number(config?.travellers) || 1);
+  const total = pp * travellers;
+  return `\n\nBUDGET TARGET (important): The traveller's target is about A$${pp.toLocaleString('en-AU')} per person for the WHOLE trip — roughly A$${total.toLocaleString('en-AU')} total for ${travellers} traveller${travellers > 1 ? 's' : ''}. Recommend good-value options that keep the full trip total within ±20% of this target. Do not suggest premium choices that would clearly blow the budget; if the destination genuinely cannot be done for this amount, choose the most affordable realistic options.`;
+}
+
 async function handleItinerary(config: any) {
   const countryName = config.country?.name || 'the destination';
   const entryCity = determineEntryCity(config.destinations);
@@ -60,7 +72,7 @@ async function handleItinerary(config: any) {
   const schedule = computeSchedule(ordered, config.departureDate, config.returnDate);
   const scheduleText = formatScheduleForPrompt(schedule);
 
-  const userMessage = `Country: ${countryName}.\nCRITICAL: Generate EXACTLY ${totalDays} days (Day 1 through Day ${totalDays}).\nDay 1 (${config.departureDate}): Fly Melbourne to ${countryName}.\nDays 2 to ${totalDays - 1}:\n${scheduleText}\nDay ${totalDays} (${config.returnDate}): Fly home.\nTravellers: ${config.travellers}, ages: ${config.ages.join(', ')}. Vibes: ${vibeList}.`;
+  const userMessage = `Country: ${countryName}.\nCRITICAL: Generate EXACTLY ${totalDays} days (Day 1 through Day ${totalDays}).\nDay 1 (${config.departureDate}): Fly Melbourne to ${countryName}.\nDays 2 to ${totalDays - 1}:\n${scheduleText}\nDay ${totalDays} (${config.returnDate}): Fly home.\nTravellers: ${config.travellers}, ages: ${config.ages.join(', ')}. Vibes: ${vibeList}.${budgetHint(config)}`;
 
   let itinerary = await callLLM(ITINERARY_SYSTEM, userMessage);
   if (!Array.isArray(itinerary)) itinerary = [];
@@ -85,7 +97,7 @@ async function handleFlights(config: any) {
   const lastDest = schedule[schedule.length - 1];
   flightLegs.push(`Flight ${flightLegs.length + 1}: ${lastDest?.destination} (${lastDest?.airport}) to Melbourne (MEL) on ${config.returnDate}`);
 
-  const userMessage = `Country: ${countryName}. Travellers: ${config.travellers}.\n\nGenerate flight recommendations for these EXACT flights with these EXACT dates:\n${flightLegs.join('\n')}`;
+  const userMessage = `Country: ${countryName}. Travellers: ${config.travellers}.\n\nGenerate flight recommendations for these EXACT flights with these EXACT dates:\n${flightLegs.join('\n')}${budgetHint(config)}`;
   let flights = parseResult(await callLLM(FLIGHTS_SYSTEM, userMessage));
   flights = fixFlightDates(flights, schedule, config.departureDate, config.returnDate);
   return flights;
@@ -100,7 +112,7 @@ async function handleHotels(config: any) {
   const limitedSchedule = schedule.slice(0, 5);
   const hotelSchedule = limitedSchedule.map((s, i) => `${i + 1}. ${s.destination}: check-in ${s.arrival}, check-out ${s.departure}, ${s.nights} nights`).join('\n');
 
-  const userMessage = `Country: ${countryName}. Vibes: ${vibeList}. Travellers: ${config.travellers}, ages: ${config.ages.join(', ')}.\n\nRecommend 3 hotels per destination for these EXACT dates:\n${hotelSchedule}`;
+  const userMessage = `Country: ${countryName}. Vibes: ${vibeList}. Travellers: ${config.travellers}, ages: ${config.ages.join(', ')}.\n\nRecommend 3 hotels per destination for these EXACT dates:\n${hotelSchedule}${budgetHint(config)}`;
   let hotels = parseResult(await callLLM(HOTELS_SYSTEM, userMessage));
   hotels = fixHotelDates(hotels, limitedSchedule);
   return hotels;
@@ -115,7 +127,7 @@ async function handleBudget(config: any) {
   const schedule = computeSchedule(ordered, config.departureDate, config.returnDate);
   const scheduleText = formatScheduleForPrompt(schedule);
 
-  const userMessage = `Country: ${countryName}. Trip: ${config.departureDate} to ${config.returnDate} (${totalDays} days). Travellers: ${config.travellers}, ages: ${config.ages.join(', ')}. Vibes: ${vibeList}.\n\nSchedule:\n${scheduleText}\n\nInclude flight costs for Melbourne to ${schedule[0]?.destination || countryName} and back.`;
+  const userMessage = `Country: ${countryName}. Trip: ${config.departureDate} to ${config.returnDate} (${totalDays} days). Travellers: ${config.travellers}, ages: ${config.ages.join(', ')}. Vibes: ${vibeList}.\n\nSchedule:\n${scheduleText}\n\nInclude flight costs for Melbourne to ${schedule[0]?.destination || countryName} and back.${budgetHint(config)}`;
   return parseResult(await callLLM(BUDGET_SYSTEM, userMessage));
 }
 
