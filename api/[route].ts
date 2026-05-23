@@ -5,11 +5,26 @@ import { callLLM, ITINERARY_SYSTEM, FLIGHTS_SYSTEM, HOTELS_SYSTEM, BUDGET_SYSTEM
 // Catch-all API handler (single function, routes by path)
 // ═══════════════════════════════════════
 
+/** Defensive coercion — the handlers happily assume `destinations`/`ages` are
+ *  arrays. If the client ever sends a malformed payload these would throw a
+ *  500. Coerce to safe defaults so the worst case is a degraded result, not a
+ *  crash. */
+function safeConfig(c: any) {
+  if (!c || typeof c !== 'object') return c;
+  return {
+    ...c,
+    destinations: Array.isArray(c.destinations) ? c.destinations : [],
+    ages: Array.isArray(c.ages) ? c.ages : [],
+    travellers: Number(c.travellers) > 0 ? Number(c.travellers) : 1,
+    vibes: Array.isArray(c.vibes) ? c.vibes : [],
+  };
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const route = req.query.route as string;
-  const config = req.body;
+  const config = safeConfig(req.body);
 
   try {
     switch (route) {
@@ -33,8 +48,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       default: return res.status(404).json({ error: `Unknown route: ${route}` });
     }
   } catch (err: any) {
-    console.error(`API ${route} error:`, err.message);
-    res.status(500).json({ error: err.message || `${route} failed` });
+    // Log full error server-side, but don't leak provider/internal details to
+    // the client (API keys, stack traces, upstream response bodies).
+    console.error(`API ${route} error:`, err?.message || err, err?.stack || '');
+    res.status(500).json({ error: `Sorry, ${route} failed. Please try again.` });
   }
 }
 
@@ -86,6 +103,10 @@ async function handleFlights(config: any) {
   const entryCity = determineEntryCity(config.destinations);
   const ordered = orderDestinations(config.destinations, entryCity);
   const schedule = computeSchedule(ordered, config.departureDate, config.returnDate);
+
+  // No destinations → nothing to fly to. Return empty rather than emitting a
+  // malformed prompt that says "Melbourne to undefined (undefined) on ...".
+  if (schedule.length === 0) return [];
 
   const flightLegs: string[] = [];
   flightLegs.push(`Flight 1: Melbourne (MEL) to ${schedule[0]?.destination || getEntryCityName(entryCity)} (${schedule[0]?.airport || entryCity}) on ${config.departureDate}`);

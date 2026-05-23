@@ -112,6 +112,10 @@ export function findConflicts(
   for (const t of transport) {
     if (!t.date) continue;
     const drift = config.departureDate ? dateDiffDays(config.departureDate, t.date) : -1;
+    // Skip transports that fall outside the trip window — comparing them to
+    // itinerary[-1] / itinerary[outOfRange] yields undefined and produces a
+    // misleading "Day 1" conflict message.
+    if (drift < 0 || drift >= itinerary.length) continue;
     const itinDay = itinerary[drift];
     const matches = itinDay && (
       ciIncludes(itinDay.location, locKey(t.from)) ||
@@ -122,7 +126,7 @@ export function findConflicts(
     if (!matches) {
       conflicts.push({
         severity: 'info',
-        day: Math.max(1, drift + 1),
+        day: drift + 1,
         message: `Transport ${t.from} → ${t.to} on ${t.date} has no matching itinerary day.`,
         hint: 'Add a travel day or adjust the transport date.',
       });
@@ -133,8 +137,8 @@ export function findConflicts(
     if (hours != null && hours > 6 && itinDay && itinDay.activities.length > 2) {
       conflicts.push({
         severity: 'warning',
-        day: Math.max(1, drift + 1),
-        message: `${Math.round(hours)}h transit on day ${Math.max(1, drift + 1)} leaves little room for the planned activities.`,
+        day: drift + 1,
+        message: `${Math.round(hours)}h transit on day ${drift + 1} leaves little room for the planned activities.`,
         hint: 'Consider lightening the schedule on transit days.',
       });
     }
