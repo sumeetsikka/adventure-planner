@@ -6,12 +6,13 @@ interface Props {
   weather: WeatherInfo[];
 }
 
-function getWeatherEmoji(description: string, rainfall_mm?: number): string {
+function getWeatherEmoji(description: string | undefined, rainfall_mm?: number): string {
   if (rainfall_mm != null) {
     if (rainfall_mm >= 10) return '☔';
     if (rainfall_mm >= 2) return '⛅';
   }
-  const lower = description.toLowerCase();
+  // Guard: weather entries from the LLM occasionally omit the description field.
+  const lower = (description || '').toLowerCase();
   if (lower.includes('rain') || lower.includes('shower') || lower.includes('wet')) return '☔';
   if (lower.includes('sun') && !lower.includes('clou')) return '☀';
   if (lower.includes('cloud') || lower.includes('overcast') || lower.includes('mild')) return '⛅';
