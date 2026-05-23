@@ -277,7 +277,7 @@ export default function VisaTab({ visa, travellers = 1, departureDate }: Props) 
 
       {/* Documents needed + how to apply + important notes */}
       <div className="surface-card rounded-3xl p-8">
-        {visa.documents_needed.length > 0 && (
+        {visa.documents_needed && visa.documents_needed.length > 0 && (
           <div className="mb-10">
             <p className="eyebrow mb-4">Documents needed</p>
             <ul className="space-y-3">
@@ -298,7 +298,7 @@ export default function VisaTab({ visa, travellers = 1, departureDate }: Props) 
           </div>
         )}
 
-        {visa.important_notes.length > 0 && (
+        {visa.important_notes && visa.important_notes.length > 0 && (
           <div>
             <p className="eyebrow mb-4">Important notes</p>
             <div className="space-y-3">

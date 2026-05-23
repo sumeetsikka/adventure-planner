@@ -435,7 +435,7 @@ export default function CurrencyTab({ currency, country }: Props) {
       </div>
 
       {/* Common costs */}
-      {currency.common_costs.length > 0 && (
+      {currency.common_costs && currency.common_costs.length > 0 && (
         <div>
           <p className="eyebrow mb-4">Common Costs</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
