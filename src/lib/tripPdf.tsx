@@ -680,7 +680,7 @@ function ItineraryPages({
   if (!results.itinerary || results.itinerary.length === 0) return null;
 
   const hotelByDest = new Map(
-    (results.hotels || []).map((h) => [h.destination.toLowerCase(), h])
+    (results.hotels || []).map((h) => [(h.destination || '').toLowerCase(), h])
   );
 
   return (
@@ -761,7 +761,7 @@ function HotelsPage({
             </Text>
             <Text style={styles.hotelName}>{pick.name}</Text>
             <Text style={styles.hotelArea}>
-              {pick.area} · {pick.style} · {'★'.repeat(Math.max(0, Math.round(pick.stars)))}
+              {pick.area} · {pick.style} · {'★'.repeat(Math.max(0, Math.min(5, Math.round(Number(pick.stars) || 0))))}
             </Text>
             <Text style={styles.hotelWhy}>{pick.why}</Text>
             <Text style={styles.hotelPrice}>{pick.price_per_night_aud} / night</Text>

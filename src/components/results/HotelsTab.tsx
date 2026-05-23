@@ -159,10 +159,21 @@ export default function HotelsTab({ hotels, config }: Props) {
               transition={{ duration: 0.7, delay: di * 0.06, ease: EASE }}
               className="surface-card rounded-3xl overflow-hidden"
             >
-              {/* Photo banner header */}
-              <button
+              {/* Photo banner header — NOT a <button> because PlaceActions
+                  below contains <a> tags, and anchors-inside-button is invalid
+                  HTML (hydration warnings + unreliable taps on mobile). */}
+              <div
+                role="button"
+                tabIndex={0}
+                aria-expanded={isExpanded}
                 onClick={() => setExpandedDest(isExpanded ? null : di)}
-                className="relative w-full h-40 sm:h-48 overflow-hidden text-left block group"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setExpandedDest(isExpanded ? null : di);
+                  }
+                }}
+                className="relative w-full h-40 sm:h-48 overflow-hidden text-left block group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--terracotta)]"
               >
                 <img src={banner} alt={dest.destination} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   onError={(e) => { const i = e.currentTarget; if (i.dataset.fell) return; i.dataset.fell = '1'; i.src = `https://picsum.photos/seed/${encodeURIComponent(dest.destination)}/1400/400`; }} />
@@ -183,7 +194,7 @@ export default function HotelsTab({ hotels, config }: Props) {
                     <span className={`inline-block text-white text-lg mt-1 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>▾</span>
                   </div>
                 </div>
-              </button>
+              </div>
 
               {/* Hotel cards */}
               <div className={`transition-all duration-500 ${isExpanded ? 'max-h-[3000px] opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>

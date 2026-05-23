@@ -21,7 +21,7 @@ export function encodeTripToUrl(config: TravelConfig): string {
     v: config.vibes,
   };
   const json = JSON.stringify(minimal);
-  const encoded = btoa(json);
+  const encoded = utf8ToBase64(json);
   const url = `${window.location.origin}${window.location.pathname}?trip=${encoded}`;
   return url;
 }
@@ -31,13 +31,30 @@ export function decodeTripFromUrl(): MinimalTripConfig | null {
     const params = new URLSearchParams(window.location.search);
     const tripParam = params.get('trip');
     if (!tripParam) return null;
-    const json = atob(tripParam);
+    const json = base64ToUtf8(tripParam);
     const parsed = JSON.parse(json) as MinimalTripConfig;
     if (!parsed.c || !parsed.d || !parsed.dd || !parsed.rd) return null;
     return parsed;
   } catch {
     return null;
   }
+}
+
+/** btoa-safe encoder: raw `btoa` throws InvalidCharacterError on any code
+ *  point > 0xFF (anything non-Latin1 — e.g. an emoji or "Côte"). We round-trip
+ *  through UTF-8 bytes so the shared link survives Unicode inputs. */
+function utf8ToBase64(s: string): string {
+  const bytes = new TextEncoder().encode(s);
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin);
+}
+
+function base64ToUtf8(s: string): string {
+  const bin = atob(s);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
 }
 
 export async function copyToClipboard(text: string): Promise<boolean> {

@@ -245,7 +245,7 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
             : <RetryButton label="weather" onRetry={async () => { const d = await generateWeather(config); onUpdateResults({ weather: d }); }} />
           )}
           {activeTab === 'visa' && (results.visa
-            ? <VisaTab visa={results.visa} />
+            ? <VisaTab visa={results.visa} travellers={config.travellers} departureDate={config.departureDate} />
             : <RetryButton label="visa" onRetry={async () => { const d = await generateVisa(config); onUpdateResults({ visa: d }); }} />
           )}
           {activeTab === 'currency' && (results.currency

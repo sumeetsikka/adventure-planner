@@ -486,7 +486,9 @@ function FxSparkline({ series, currentRate, symbol, quote }: { series: Array<{ d
 
   const first = series[0].rate;
   const last = series[series.length - 1].rate;
-  const deltaPct = ((last - first) / first) * 100;
+  // Guard against a zero/NaN starting rate (bad upstream data) — division
+  // would otherwise yield Infinity/NaN and render "NaN%" in the trend.
+  const deltaPct = first > 0 && Number.isFinite(first) ? ((last - first) / first) * 100 : 0;
   const trend: 'up' | 'down' | 'flat' = Math.abs(deltaPct) < 0.05 ? 'flat' : deltaPct > 0 ? 'up' : 'down';
   const colour = trend === 'up' ? 'var(--sage)' : trend === 'down' ? 'var(--terracotta)' : 'var(--gold)';
 

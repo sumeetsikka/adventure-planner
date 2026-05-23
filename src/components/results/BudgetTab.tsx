@@ -343,6 +343,9 @@ export default function BudgetTab({ budget, config, onUpdate, flights = [], tran
           (new Date(config.returnDate).getTime() - new Date(config.departureDate).getTime()) / (1000 * 60 * 60 * 24)
         );
         const avgTotal = avgDaily * totalDays;
+        // Guard against zero/NaN trip length — would otherwise divide by zero
+        // and render Infinity/NaN percentages in the comparison.
+        if (!Number.isFinite(avgTotal) || avgTotal <= 0) return null;
         const diff = perPersonTotal - avgTotal;
         const diffPct = Math.round((diff / avgTotal) * 100);
         const isBelow = diff < 0;
