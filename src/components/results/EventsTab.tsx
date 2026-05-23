@@ -56,7 +56,7 @@ export default function EventsTab({ config }: Props) {
       // Dedupe by date+name
       const seen = new Set<string>();
       const merged = [...holidays, ...festivals].filter((e) => {
-        const k = `${e.date}|${e.name.toLowerCase()}`;
+        const k = `${e.date}|${(e.name || '').toLowerCase()}`;
         if (seen.has(k)) return false;
         seen.add(k);
         return true;

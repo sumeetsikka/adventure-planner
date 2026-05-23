@@ -102,10 +102,13 @@ export default function RouteMapTab({ config, results }: Props) {
   ];
 
   const getHotel = (destName: string) => {
-    const match = results.hotels.find(h =>
-      destName.toLowerCase().includes(h.destination.toLowerCase().split('(')[0].trim()) ||
-      h.destination.toLowerCase().includes(destName.toLowerCase().split('(')[0].trim())
-    );
+    const dn = (destName || '').toLowerCase();
+    if (!dn) return null;
+    const match = results.hotels.find(h => {
+      const hd = (h.destination || '').toLowerCase();
+      if (!hd) return false;
+      return dn.includes(hd.split('(')[0].trim()) || hd.includes(dn.split('(')[0].trim());
+    });
     if (!match) return null;
     return match.hotels.find(h => h.recommended) || match.hotels[0];
   };

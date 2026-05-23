@@ -92,7 +92,7 @@ export default function DashboardTab({ config, results, onTabChange }: Props) {
     );
 
     const todayCity = todayEntry?.location?.split('(')[0].split('/')[0].trim() || config.country?.name || '';
-    const todayWeather = (results.weather || []).find((w) => todayCity && w.destination.toLowerCase().includes(todayCity.toLowerCase()));
+    const todayWeather = (results.weather || []).find((w) => todayCity && (w.destination || '').toLowerCase().includes(todayCity.toLowerCase()));
 
     todayPanel = (
       <motion.div

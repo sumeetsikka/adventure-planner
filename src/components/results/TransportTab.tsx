@@ -15,8 +15,8 @@ const MODE_ICONS: Record<string, string> = {
   cable: '🚡', tram: '🚊',
 };
 
-function getModeIcon(mode: string): string {
-  const lower = mode.toLowerCase();
+function getModeIcon(mode: string | undefined): string {
+  const lower = (mode || '').toLowerCase();
   for (const [key, icon] of Object.entries(MODE_ICONS)) {
     if (lower.includes(key)) return icon;
   }

@@ -12,7 +12,8 @@ const EASE = [0.16, 1, 0.3, 1] as const;
 
 function getStatusLabel(visa: VisaInfo): string {
   if (!visa.visa_required) return 'Visa Free';
-  if (visa.visa_type.toLowerCase().includes('e-visa') || visa.visa_type.toLowerCase().includes('evisa')) return 'E-Visa';
+  const visaType = (visa.visa_type || '').toLowerCase();
+  if (visaType.includes('e-visa') || visaType.includes('evisa')) return 'E-Visa';
   return 'Visa Required';
 }
 

@@ -23,11 +23,12 @@ function getTopPick(dest: DestinationHotels) {
   return dest.hotels.find((h) => h.recommended) || dest.hotels[0];
 }
 
-function findHotelForLocation(location: string, hotels: DestinationHotels[]): DestinationHotels | null {
-  if (!hotels.length) return null;
+function findHotelForLocation(location: string | undefined, hotels: DestinationHotels[]): DestinationHotels | null {
+  if (!hotels.length || !location) return null;
   const loc = location.toLowerCase();
   return hotels.find((h) => {
-    const dest = h.destination.toLowerCase();
+    const dest = (h.destination || '').toLowerCase();
+    if (!dest) return false;
     return loc.includes(dest.split('(')[0].split('/')[0].trim()) ||
            dest.includes(loc.split('(')[0].split('/')[0].trim());
   }) || null;

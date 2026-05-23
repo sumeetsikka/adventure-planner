@@ -10,8 +10,8 @@ interface Props {
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
-function classifyCategory(name: string): 'clothing' | 'shoes' | 'toiletries' | 'electronics' | 'documents' | 'other' {
-  const n = name.toLowerCase();
+function classifyCategory(name: string | undefined): 'clothing' | 'shoes' | 'toiletries' | 'electronics' | 'documents' | 'other' {
+  const n = (name || '').toLowerCase();
   if (n.includes('shoe') || n.includes('footwear')) return 'shoes';
   if (n.includes('toiletr') || n.includes('hygiene') || n.includes('grooming')) return 'toiletries';
   if (n.includes('electron') || n.includes('tech') || n.includes('gadget')) return 'electronics';
@@ -20,8 +20,8 @@ function classifyCategory(name: string): 'clothing' | 'shoes' | 'toiletries' | '
   return 'other';
 }
 
-function classifyItem(item: string): 'shoes' | 'clothing' | 'electronics' | 'documents' | 'other' {
-  const n = item.toLowerCase();
+function classifyItem(item: string | undefined): 'shoes' | 'clothing' | 'electronics' | 'documents' | 'other' {
+  const n = (item || '').toLowerCase();
   if (/(shoes|sneakers|boots|sandals|trainers|flats|heels|slippers|footwear)/.test(n)) return 'shoes';
   if (/(passport|visa|insurance|ticket|booking|copies|licence|license|card)/.test(n)) return 'documents';
   if (/(charger|adapter|laptop|camera|phone|earbuds|headphone|kindle|cable|battery|power)/.test(n)) return 'electronics';
