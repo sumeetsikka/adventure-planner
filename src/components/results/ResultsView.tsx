@@ -32,6 +32,7 @@ const EventsTab = lazy(() => import('./EventsTab'));
 const JournalTab = lazy(() => import('./JournalTab'));
 const TasteTab = lazy(() => import('./TasteTab'));
 const DoTab = lazy(() => import('./DoTab'));
+const PrepareTab = lazy(() => import('./PrepareTab'));
 
 function TabFallback() {
   return (
@@ -200,6 +201,9 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
 
         {/* Tab Content */}
         <div className="animate-fade-up">
+          {activeTab === 'prepare' && (
+            <PrepareTab config={config} visa={results.visa} />
+          )}
           {activeTab === 'dashboard' && (
             <DashboardTab config={config} results={results} onTabChange={setActiveTab} />
           )}

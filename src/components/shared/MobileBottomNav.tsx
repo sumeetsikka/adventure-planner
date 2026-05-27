@@ -52,6 +52,7 @@ const SHEET_GROUPS: Array<{ label: string; tabs: NavItem[] }> = [
   {
     label: 'Prepare',
     tabs: [
+      { key: 'prepare', label: 'Ready', icon: '🎯' },
       { key: 'budget', label: 'Budget', icon: '💰' },
       { key: 'packing', label: 'Packing', icon: '🧳' },
       { key: 'weather', label: 'Weather', icon: '🌤️' },
