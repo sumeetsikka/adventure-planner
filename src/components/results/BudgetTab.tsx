@@ -283,6 +283,49 @@ export default function BudgetTab({ budget, config, onUpdate, flights = [], tran
         );
       })()}
 
+      {/* Spend visualisation — stacked bar showing where the money lives */}
+      {perPersonTotal > 0 && (() => {
+        const palette = ['#F15B4B', '#B57C1C', '#1F8A70', '#8E3B3B', '#CE9B45', '#6A6A6E', '#1B1B1B'];
+        const segments = budget
+          .map((item, i) => ({ category: item.category, mid: parseCostMid(item.cost), colour: palette[i % palette.length] }))
+          .filter(s => s.mid > 0)
+          .sort((a, b) => b.mid - a.mid);
+        const total = segments.reduce((s, x) => s + x.mid, 0);
+        if (total === 0) return null;
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: EASE }}
+            className="surface-card rounded-3xl p-7 mb-10"
+          >
+            <p className="eyebrow mb-4">Where it goes</p>
+            <div className="flex h-3 w-full rounded-full overflow-hidden bg-[var(--ink-4)] mb-5">
+              {segments.map((s, i) => (
+                <motion.div
+                  key={s.category}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(s.mid / total) * 100}%` }}
+                  transition={{ duration: 0.8, delay: i * 0.06, ease: EASE }}
+                  style={{ background: s.colour }}
+                  title={`${s.category}: ${Math.round((s.mid / total) * 100)}%`}
+                />
+              ))}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              {segments.map((s) => {
+                const pct = Math.round((s.mid / total) * 100);
+                return (
+                  <div key={s.category} className="flex items-center gap-2.5 text-sm">
+                    <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ background: s.colour }} aria-hidden />
+                    <span className="text-[var(--text-muted)] flex-1 truncate">{s.category}</span>
+                    <span className="text-[var(--cream)] font-medium tabular-nums">{pct}%</span>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        );
+      })()}
+
       {/* Category list */}
       <div className="surface-card rounded-3xl overflow-hidden mb-10">
         <div className="px-7 py-5 border-b border-[var(--line)]">
