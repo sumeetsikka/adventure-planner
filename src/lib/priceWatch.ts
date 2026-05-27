@@ -78,10 +78,12 @@ export function removeWatch(id: string): void {
   safeWrite(safeRead().filter(i => i.id !== id));
 }
 
-/** Stable id builder for flights and hotels. */
+/** Stable id builder for flights and hotels. Normalises case so the same
+ *  route doesn't appear twice when the LLM returns `hkg` vs `HKG` between
+ *  generations. */
 export function flightWatchId(fromCode: string, toCode: string, date: string): string {
-  return `flight:${fromCode}-${toCode}-${date}`;
+  return `flight:${(fromCode || '').toUpperCase()}-${(toCode || '').toUpperCase()}-${date}`;
 }
 export function hotelWatchId(name: string, destination: string): string {
-  return `hotel:${(destination || '').toLowerCase()}-${(name || '').toLowerCase().replace(/\s+/g, '-')}`;
+  return `hotel:${(destination || '').toLowerCase().trim()}-${(name || '').toLowerCase().replace(/\s+/g, '-')}`;
 }

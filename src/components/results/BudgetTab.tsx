@@ -80,10 +80,11 @@ export default function BudgetTab({ budget, config, onUpdate, flights = [], tran
   const symbol = CURRENCY_SYMBOLS[effectiveCurrency] || '';
 
   const formatMoney = (audAmount: number): string => {
+    // All supported display currencies are rendered as integers for a clean
+    // editorial look (JPY/INR have no fractional units; AUD/USD/EUR/etc.
+    // round to whole units to keep the layout tidy in the totals cards).
     const v = audAmount * effectiveRate;
-    // JPY has no decimals; INR/most others render as integers for clean editorial look.
-    const rounded = effectiveCurrency === 'JPY' ? Math.round(v) : Math.round(v);
-    return `${symbol}${rounded.toLocaleString()}`;
+    return `${symbol}${Math.round(v).toLocaleString()}`;
   };
 
   const convertCostString = (cost: string): string => {

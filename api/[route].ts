@@ -5,6 +5,25 @@ import { callLLM, ITINERARY_SYSTEM, FLIGHTS_SYSTEM, HOTELS_SYSTEM, BUDGET_SYSTEM
 // Catch-all API handler (single function, routes by path)
 // ═══════════════════════════════════════
 
+/** IATA → city resolution for Australian origin airports. Lets the prompts
+ *  say "Fly from Sydney" rather than always "Fly from Melbourne". */
+const ORIGIN_CITY_BY_IATA: Record<string, string> = {
+  MEL: 'Melbourne', SYD: 'Sydney', BNE: 'Brisbane', PER: 'Perth',
+  ADL: 'Adelaide', OOL: 'Gold Coast', CBR: 'Canberra', HBA: 'Hobart',
+  CNS: 'Cairns', DRW: 'Darwin', AKL: 'Auckland', SIN: 'Singapore',
+  HKG: 'Hong Kong', NRT: 'Tokyo', LHR: 'London', LAX: 'Los Angeles',
+};
+
+function originCode(config: any): string {
+  const code = (config?.origin || 'MEL').toString().toUpperCase();
+  return code;
+}
+
+function originCity(config: any): string {
+  const code = originCode(config);
+  return ORIGIN_CITY_BY_IATA[code] || code; // fall back to the IATA code if unknown
+}
+
 /** Defensive coercion — the handlers happily assume `destinations`/`ages` are
  *  arrays. If the client ever sends a malformed payload these would throw a
  *  500. Coerce to safe defaults so the worst case is a degraded result, not a
@@ -146,7 +165,7 @@ async function handleItinerary(config: any) {
   const schedule = computeSchedule(ordered, config.departureDate, config.returnDate);
   const scheduleText = formatScheduleForPrompt(schedule);
 
-  const userMessage = `Country: ${countryName}.\nCRITICAL: Generate EXACTLY ${totalDays} days (Day 1 through Day ${totalDays}).\nDay 1 (${config.departureDate}): Fly Melbourne to ${countryName}.\nDays 2 to ${totalDays - 1}:\n${scheduleText}\nDay ${totalDays} (${config.returnDate}): Fly home.\nTravellers: ${config.travellers}, ages: ${config.ages.join(', ')}. Vibes: ${vibeList}.${budgetHint(config)}${personalisationHint(config)}`;
+  const userMessage = `Country: ${countryName}.\nCRITICAL: Generate EXACTLY ${totalDays} days (Day 1 through Day ${totalDays}).\nDay 1 (${config.departureDate}): Fly from ${originCity(config)} (${originCode(config)}) to ${countryName}.\nDays 2 to ${totalDays - 1}:\n${scheduleText}\nDay ${totalDays} (${config.returnDate}): Fly home to ${originCity(config)}.\nTravellers: ${config.travellers}, ages: ${config.ages.join(', ')}. Vibes: ${vibeList}.${budgetHint(config)}${personalisationHint(config)}`;
 
   let itinerary = await callLLM(ITINERARY_SYSTEM, userMessage);
   if (!Array.isArray(itinerary)) itinerary = [];
@@ -166,14 +185,14 @@ async function handleFlights(config: any) {
   if (schedule.length === 0) return [];
 
   const flightLegs: string[] = [];
-  flightLegs.push(`Flight 1: Melbourne (MEL) to ${schedule[0]?.destination || getEntryCityName(entryCity)} (${schedule[0]?.airport || entryCity}) on ${config.departureDate}`);
+  flightLegs.push(`Flight 1: ${originCity(config)} (${originCode(config)}) to ${schedule[0]?.destination || getEntryCityName(entryCity)} (${schedule[0]?.airport || entryCity}) on ${config.departureDate}`);
   for (let i = 1; i < schedule.length; i++) {
     if (schedule[i].airport !== schedule[i - 1].airport) {
       flightLegs.push(`Flight ${flightLegs.length + 1}: ${schedule[i - 1].destination} (${schedule[i - 1].airport}) to ${schedule[i].destination} (${schedule[i].airport}) on ${schedule[i].arrival}`);
     }
   }
   const lastDest = schedule[schedule.length - 1];
-  flightLegs.push(`Flight ${flightLegs.length + 1}: ${lastDest?.destination} (${lastDest?.airport}) to Melbourne (MEL) on ${config.returnDate}`);
+  flightLegs.push(`Flight ${flightLegs.length + 1}: ${lastDest?.destination} (${lastDest?.airport}) to ${originCity(config)} (${originCode(config)}) on ${config.returnDate}`);
 
   const userMessage = `Country: ${countryName}. Travellers: ${config.travellers}.\n\nGenerate flight recommendations for these EXACT flights with these EXACT dates:\n${flightLegs.join('\n')}${budgetHint(config)}${personalisationHint(config)}`;
   let flights = parseResult(await callLLM(FLIGHTS_SYSTEM, userMessage));
@@ -205,7 +224,7 @@ async function handleBudget(config: any) {
   const schedule = computeSchedule(ordered, config.departureDate, config.returnDate);
   const scheduleText = formatScheduleForPrompt(schedule);
 
-  const userMessage = `Country: ${countryName}. Trip: ${config.departureDate} to ${config.returnDate} (${totalDays} days). Travellers: ${config.travellers}, ages: ${config.ages.join(', ')}. Vibes: ${vibeList}.\n\nSchedule:\n${scheduleText}\n\nInclude flight costs for Melbourne to ${schedule[0]?.destination || countryName} and back.${budgetHint(config)}${personalisationHint(config)}`;
+  const userMessage = `Country: ${countryName}. Trip: ${config.departureDate} to ${config.returnDate} (${totalDays} days). Travellers: ${config.travellers}, ages: ${config.ages.join(', ')}. Vibes: ${vibeList}.\n\nSchedule:\n${scheduleText}\n\nInclude flight costs for ${originCity(config)} to ${schedule[0]?.destination || countryName} and back.${budgetHint(config)}${personalisationHint(config)}`;
   return parseResult(await callLLM(BUDGET_SYSTEM, userMessage));
 }
 

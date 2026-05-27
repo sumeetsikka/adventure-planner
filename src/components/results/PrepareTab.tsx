@@ -11,6 +11,13 @@ import {
 } from '../../lib/readiness';
 import { getActiveTripId } from '../../lib/tripStore';
 
+/** Days the trip lasts — used to align "trip is over" boundary with Dashboard. */
+function tripLengthDays(config: TravelConfig): number {
+  if (!config.departureDate || !config.returnDate) return 0;
+  const ms = new Date(config.returnDate).getTime() - new Date(config.departureDate).getTime();
+  return Number.isFinite(ms) ? Math.round(ms / (1000 * 60 * 60 * 24)) : 0;
+}
+
 /**
  * Pre-trip readiness countdown.
  *
@@ -62,8 +69,12 @@ export default function PrepareTab({ config, visa }: Props) {
     return g;
   }, [items]);
 
-  // After-trip state — celebrate, don't nag.
-  if (Number.isFinite(daysToGo) && daysToGo < -1) {
+  // After-trip state — celebrate, don't nag. Boundary mirrors DashboardTab:
+  // PrepareTab disappears once daysSinceDeparture >= trip length (i.e. you've
+  // landed home), not just because the trip started.
+  const tripLen = tripLengthDays(config);
+  const isPastTrip = Number.isFinite(daysToGo) && tripLen > 0 && -daysToGo >= tripLen;
+  if (isPastTrip) {
     return (
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }} className="text-center py-20">
         <p className="text-6xl mb-6">🎉</p>
@@ -161,11 +172,18 @@ export default function PrepareTab({ config, visa }: Props) {
                   const isUrgent = !isDone && Number.isFinite(daysToGo) && daysToGo <= item.daysBefore;
                   const isOverdue = !isDone && Number.isFinite(daysToGo) && urgency < 0;
                   return (
-                    <button
+                    // NOT a <button>: this row contains an <a> for the deep-link
+                    // and anchors-inside-buttons is invalid HTML. Use div+role.
+                    <div
                       key={item.id}
-                      type="button"
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={isDone}
                       onClick={() => toggle(item.id)}
-                      className={`w-full text-left surface-card rounded-2xl p-5 flex items-start gap-4 transition-all ${
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(item.id); }
+                      }}
+                      className={`w-full text-left surface-card rounded-2xl p-5 flex items-start gap-4 transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--terracotta)] ${
                         isDone ? 'opacity-55' : ''
                       }`}
                       style={isOverdue ? { borderColor: 'color-mix(in srgb, var(--terracotta) 35%, transparent)' } : undefined}
@@ -216,7 +234,7 @@ export default function PrepareTab({ config, visa }: Props) {
                           </a>
                         )}
                       </div>
-                    </button>
+                    </div>
                   );
                 })}
               </div>

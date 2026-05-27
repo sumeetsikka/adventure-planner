@@ -25,9 +25,17 @@ function parseCostMid(cost: string): number {
 }
 
 export default function DashboardTab({ config, results, onTabChange }: Props) {
-  const totalDays = Math.round(
-    (new Date(config.returnDate).getTime() - new Date(config.departureDate).getTime()) / (1000 * 60 * 60 * 24)
-  );
+  // Guard against missing/invalid trip dates — the rest of this component
+  // does date math everywhere and rendering "Invalid Date → Invalid Date · NaN days"
+  // would be worse than a graceful prompt.
+  const hasValidDates =
+    !!config.departureDate && !!config.returnDate &&
+    Number.isFinite(new Date(config.departureDate).getTime()) &&
+    Number.isFinite(new Date(config.returnDate).getTime());
+
+  const totalDays = hasValidDates
+    ? Math.round((new Date(config.returnDate).getTime() - new Date(config.departureDate).getTime()) / (1000 * 60 * 60 * 24))
+    : 0;
 
   const perPersonBudget = results.budget.reduce((sum, b) => sum + parseCostMid(b.cost), 0);
   const groupBudget = perPersonBudget * config.travellers;
@@ -211,11 +219,11 @@ export default function DashboardTab({ config, results, onTabChange }: Props) {
 
   // Pre-trip state banner: readiness countdown + jump to Prepare tab.
   // Surfaces ONLY when the trip is in the future (not underway, not past).
-  const daysToGo = Math.ceil(
-    (new Date(config.departureDate).getTime() - new Date(today).getTime()) / (1000 * 60 * 60 * 24)
-  );
-  const preTrip = Number.isFinite(daysToGo) && daysToGo > 0 && !tripUnderway;
-  const postTrip = Number.isFinite(daysToGo) && daysSinceDeparture >= totalDays;
+  const daysToGo = hasValidDates
+    ? Math.ceil((new Date(config.departureDate).getTime() - new Date(today).getTime()) / (1000 * 60 * 60 * 24))
+    : NaN;
+  const preTrip = hasValidDates && Number.isFinite(daysToGo) && daysToGo > 0 && !tripUnderway;
+  const postTrip = hasValidDates && Number.isFinite(daysToGo) && daysSinceDeparture >= totalDays;
 
   let stateBanner: React.ReactNode = null;
   if (preTrip) {
@@ -294,7 +302,10 @@ export default function DashboardTab({ config, results, onTabChange }: Props) {
               {config.country?.emoji} {config.country?.name || 'Adventure'}
             </h2>
             <p className="text-white/70 text-sm font-light">
-              {formatDateAU(config.departureDate)} → {formatDateAU(config.returnDate)} · {totalDays} days · {config.travellers} traveller{config.travellers > 1 ? 's' : ''}
+              {hasValidDates
+                ? `${formatDateAU(config.departureDate)} → ${formatDateAU(config.returnDate)} · ${totalDays} days · `
+                : 'Dates pending · '}
+              {config.travellers} traveller{config.travellers > 1 ? 's' : ''}
             </p>
           </div>
         </div>

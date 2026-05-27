@@ -622,7 +622,12 @@ function computeEndTime(start: string, durationMin: number): string | null {
   const min = parseInt(m[2], 10);
   if (!Number.isFinite(h) || !Number.isFinite(min)) return null;
   const total = h * 60 + min + (durationMin || 0);
-  const eh = Math.floor((total % (24 * 60)) / 60);
+  const dayMin = 24 * 60;
+  const eh = Math.floor((total % dayMin) / 60);
   const em = total % 60;
-  return `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
+  const formatted = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
+  // Make day-rollover visible — a 23:00 + 120 min event ends "01:00 +1d", not
+  // a misleadingly-implied same-day "01:00".
+  if (total >= dayMin) return `${formatted} +1d`;
+  return formatted;
 }
