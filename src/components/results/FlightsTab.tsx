@@ -4,6 +4,8 @@ import type { FlightLeg, TravelConfig } from '../../types';
 import { formatDateAU } from '../../lib/dateUtils';
 import { getFlightLinks } from '../../lib/bookingLinks';
 import { flightCO2kg, estimateLegDistance } from '../../lib/carbon';
+import { isWatched, toggleWatch, flightWatchId } from '../../lib/priceWatch';
+import { getActiveTripId } from '../../lib/tripStore';
 
 interface Props {
   flights: FlightLeg[];
@@ -196,11 +198,43 @@ export default function FlightsTab({ flights, config }: Props) {
                     </a>
                   ));
                 })()}
+                <WatchToggle flight={f} />
               </div>
             </motion.div>
           );
         })}
       </div>
     </motion.div>
+  );
+}
+
+function WatchToggle({ flight }: { flight: FlightLeg }) {
+  const id = flightWatchId(flight.from_code, flight.to_code, flight.date);
+  const [watched, setWatched] = useState<boolean>(() => isWatched(id));
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        const now = toggleWatch({
+          id, kind: 'flight',
+          label: `${flight.from_code} → ${flight.to_code} · ${formatDateAU(flight.date)}`,
+          basePrice: flight.price_estimate_aud,
+          addedAt: Date.now(),
+          tripId: getActiveTripId() || undefined,
+          flight: { from: flight.from_code, to: flight.to_code, date: flight.date },
+        });
+        setWatched(now);
+      }}
+      aria-pressed={watched}
+      aria-label={watched ? 'Stop tracking this flight\'s price' : 'Track this flight\'s price'}
+      className={`text-[11px] font-medium px-3 py-1.5 rounded-full border transition-all ${
+        watched
+          ? 'border-[var(--terracotta)] bg-[var(--terracotta)]/10 text-[var(--terracotta)]'
+          : 'border-[var(--line-strong)] text-[var(--text-muted)] hover:text-[var(--cream)]'
+      }`}
+    >
+      {watched ? '🔔 Tracking' : '🔔 Track price'}
+    </button>
   );
 }

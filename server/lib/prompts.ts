@@ -115,11 +115,20 @@ Include ALL applicable categories:
 Be specific and realistic for Australian travellers. Give a price range for each.
 Return ONLY valid JSON array, no markdown.`;
 
-export const TIPS_SYSTEM = `Generate 7-9 travel tips as a JSON array of objects with 'icon' (emoji), 'title' (string), 'text' (string, 1-2 sentences), 'category' (string).
+export const TIPS_SYSTEM = `Generate 12-15 travel tips as a JSON array of objects with 'icon' (emoji), 'title' (string), 'text' (string, 1-2 sentences), 'category' (string).
 
 'category' must be one of: "money", "safety", "etiquette", "food", "transport", "health", "general".
 
-Cover a spread across categories: money (currency/ATMs/tipping/scams), safety (areas to avoid, common scams), etiquette (local customs, dress codes), food (what to try, dietary notes), transport (getting around), health (water, vaccinations), and general practical advice. Make tips destination-specific, not generic.
+Required coverage (one or more tips per area, destination-specific not generic):
+- MONEY: tipping norms (% expected, who you tip and who you don't), card vs cash, ATM tricks, common scams targeting tourists.
+- SAFETY: areas/situations to avoid, scam patterns (taxi meter, fake monks, distraction theft), solo-female considerations if relevant, LGBTQ+ considerations if relevant.
+- ETIQUETTE: dress codes for religious sites (specific: cover shoulders, no shoes, etc.), photography rules (where it's offensive — monks, military, locals), greetings (handshake/bow/wai/cheek-kiss), queue/personal-space norms, gestures that are rude locally.
+- FOOD: dietary navigation phrase ("I'm vegetarian" / nut allergy), what to eat at night markets, water/ice safety, signature dishes to seek out.
+- TRANSPORT: how locals get around, what to pay for a typical short ride, ride-hail apps that work there (Grab, Bolt, etc.), train/bus quirks.
+- HEALTH: drinking water, vaccinations, pharmacy access, common stomach-bug prevention.
+- GENERAL: dress for the climate, plug type, useful apps, opening-hours quirks, religious holidays affecting opening times.
+
+Make tips destination-specific, not generic ("don't drink tap water in Bali" not "don't drink tap water").
 Return ONLY valid JSON array, no markdown.`;
 
 export const PACKING_SYSTEM = `You are a professional travel packing expert. Generate a packing list as a JSON array of objects with 'category' (string) and 'items' (string array).

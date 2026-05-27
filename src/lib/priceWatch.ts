@@ -1,0 +1,87 @@
+/**
+ * Price tracking — local-only watch list for flights and hotels.
+ *
+ * MVP behaviour:
+ *  - User taps "Track" on a flight or hotel card → item added to watch list.
+ *  - Watch list lives in localStorage; surfaces in the Dashboard "watching"
+ *    section so users can see what they're monitoring.
+ *  - Each item records its baseline price (the LLM estimate) and the date it
+ *    was added.
+ *  - Real price-monitoring would require a backend cron + provider price-feeds.
+ *    For now this is a UI scaffold that captures intent; we can add the
+ *    polling layer later without changing the UI contract.
+ */
+
+const STORAGE_KEY = 'adventure-planner:price-watch';
+
+export type WatchKind = 'flight' | 'hotel';
+
+export interface WatchItem {
+  id: string;             // unique key (kind:hash-of-attrs)
+  kind: WatchKind;
+  label: string;          // human-readable: "MEL → HAN · 01/07/2026" or "La Sinfonia, Hanoi"
+  basePrice: string;      // the price at add-time, raw LLM string
+  /** ISO timestamp when added. */
+  addedAt: number;
+  /** Trip id (when the item was added during a specific trip). */
+  tripId?: string;
+  /** Optional booking deep link for one-tap retry. */
+  link?: string;
+  /** Optional flight-specific metadata for richer display. */
+  flight?: { from: string; to: string; date: string };
+  /** Optional hotel-specific metadata. */
+  hotel?: { name: string; destination: string };
+}
+
+function safeRead(): WatchItem[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch { return []; }
+}
+
+function safeWrite(items: WatchItem[]): void {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); }
+  catch { /* ignore */ }
+}
+
+export function listWatched(): WatchItem[] {
+  return safeRead().sort((a, b) => b.addedAt - a.addedAt);
+}
+
+export function listWatchedForTrip(tripId: string | null | undefined): WatchItem[] {
+  if (!tripId) return listWatched();
+  return listWatched().filter(i => !i.tripId || i.tripId === tripId);
+}
+
+export function isWatched(id: string): boolean {
+  return safeRead().some(i => i.id === id);
+}
+
+export function toggleWatch(item: WatchItem): boolean {
+  const items = safeRead();
+  const idx = items.findIndex(i => i.id === item.id);
+  if (idx >= 0) {
+    items.splice(idx, 1);
+    safeWrite(items);
+    return false;
+  }
+  items.unshift({ ...item, addedAt: Date.now() });
+  // Cap at 50
+  safeWrite(items.slice(0, 50));
+  return true;
+}
+
+export function removeWatch(id: string): void {
+  safeWrite(safeRead().filter(i => i.id !== id));
+}
+
+/** Stable id builder for flights and hotels. */
+export function flightWatchId(fromCode: string, toCode: string, date: string): string {
+  return `flight:${fromCode}-${toCode}-${date}`;
+}
+export function hotelWatchId(name: string, destination: string): string {
+  return `hotel:${(destination || '').toLowerCase()}-${(name || '').toLowerCase().replace(/\s+/g, '-')}`;
+}
