@@ -209,8 +209,70 @@ export default function DashboardTab({ config, results, onTabChange }: Props) {
     );
   }
 
+  // Pre-trip state banner: readiness countdown + jump to Prepare tab.
+  // Surfaces ONLY when the trip is in the future (not underway, not past).
+  const daysToGo = Math.ceil(
+    (new Date(config.departureDate).getTime() - new Date(today).getTime()) / (1000 * 60 * 60 * 24)
+  );
+  const preTrip = Number.isFinite(daysToGo) && daysToGo > 0 && !tripUnderway;
+  const postTrip = Number.isFinite(daysToGo) && daysSinceDeparture >= totalDays;
+
+  let stateBanner: React.ReactNode = null;
+  if (preTrip) {
+    stateBanner = (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
+        className="surface-card rounded-3xl p-6 flex items-center gap-5"
+        style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--terracotta) 6%, var(--ink-3)), var(--ink-3))' }}
+      >
+        <div className="flex-shrink-0 w-16 h-16 rounded-2xl bg-[var(--terracotta)]/12 flex flex-col items-center justify-center">
+          <span className="font-display text-2xl text-[var(--terracotta)] leading-none">{daysToGo}</span>
+          <span className="text-[9px] tracking-wider uppercase text-[var(--terracotta)]/80 mt-0.5">{daysToGo === 1 ? 'day' : 'days'}</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="eyebrow text-[var(--terracotta)]">Until departure</p>
+          <p className="font-display-soft text-base text-[var(--cream)] mt-1 leading-snug">
+            {daysToGo <= 7 ? 'Final week — let\'s lock everything in.' :
+             daysToGo <= 30 ? 'Less than a month to go.' :
+             daysToGo <= 90 ? 'Plenty of time — start with the big-ticket items.' :
+             'You\'re early — relax, the AI plan will adapt as you tweak it.'}
+          </p>
+        </div>
+        <button
+          onClick={() => onTabChange?.('prepare')}
+          className="px-5 py-2.5 rounded-full text-sm font-medium bg-[var(--terracotta)] text-white hover:bg-[var(--terracotta-soft)] transition-colors whitespace-nowrap"
+        >
+          Open checklist →
+        </button>
+      </motion.div>
+    );
+  } else if (postTrip) {
+    stateBanner = (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
+        className="surface-card rounded-3xl p-6 flex items-center gap-5"
+        style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--sage) 6%, var(--ink-3)), var(--ink-3))' }}
+      >
+        <div className="flex-shrink-0 w-16 h-16 rounded-2xl bg-[var(--sage)]/12 flex items-center justify-center text-3xl">🎉</div>
+        <div className="flex-1 min-w-0">
+          <p className="eyebrow text-[var(--sage)]">Welcome back</p>
+          <p className="font-display-soft text-base text-[var(--cream)] mt-1 leading-snug">
+            Your trip is in the past. Capture the memories before they fade.
+          </p>
+        </div>
+        <button
+          onClick={() => onTabChange?.('journal')}
+          className="px-5 py-2.5 rounded-full text-sm font-medium border border-[var(--sage)]/40 text-[var(--sage)] hover:bg-[var(--sage)]/5 transition-colors whitespace-nowrap"
+        >
+          Open journal →
+        </button>
+      </motion.div>
+    );
+  }
+
   return (
     <div className="space-y-8">
+      {stateBanner}
       {todayPanel}
       {/* Editorial hero */}
       <motion.div
