@@ -277,6 +277,36 @@ export default function JournalTab({ config, results }: Props) {
         </div>
       )}
 
+      {/* Trip recap stats — shown when there's anything to recap */}
+      {(() => {
+        const photoCount = Object.values(entries).reduce((n, e) => n + (e?.photos?.length || 0), 0);
+        const dayCount = Object.values(entries).filter(e => (e?.note?.trim()?.length || 0) > 0 || (e?.photos?.length || 0) > 0).length;
+        if (photoCount === 0 && dayCount === 0) return null;
+        return (
+          <div className="mb-10 surface-card rounded-3xl p-6 sm:p-8">
+            <p className="eyebrow mb-4">The recap</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
+              <div>
+                <p className="font-display text-4xl text-[var(--terracotta)] leading-none">{dayCount}</p>
+                <p className="text-[10px] tracking-wider uppercase text-[var(--text-dim)] mt-2">Days captured</p>
+              </div>
+              <div>
+                <p className="font-display text-4xl text-[var(--gold)] leading-none">{photoCount}</p>
+                <p className="text-[10px] tracking-wider uppercase text-[var(--text-dim)] mt-2">Photos</p>
+              </div>
+              <div>
+                <p className="font-display text-4xl text-[var(--sage)] leading-none">{config.destinations.length}</p>
+                <p className="text-[10px] tracking-wider uppercase text-[var(--text-dim)] mt-2">Places</p>
+              </div>
+              <div>
+                <p className="font-display text-4xl text-[var(--cream)] leading-none">{totalDays}</p>
+                <p className="text-[10px] tracking-wider uppercase text-[var(--text-dim)] mt-2">Days total</p>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       <div className="space-y-12">
         {days.map((d, i) => {
           const entry = entries[d.day] ?? { photos: [], note: '' };
