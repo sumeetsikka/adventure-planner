@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { Country, Destination, VibeOption, TravelConfig, GenerationResults, AppView, WizardStep } from './types';
+import type { Country, Destination, VibeOption, TravelConfig, GenerationResults, AppView, WizardStep, TravellerProfile, TripMode } from './types';
 import { searchFlights, searchHotels, generateItinerary, generateBudget, generateTips, generateDestinations, generatePacking, generateWeather, generateVisa, generateCurrency, generateNearby, generateTransport, generateRestaurants, generateActivities } from './lib/api';
 import { getDestinationsForCountry } from './data/destinations';
 import CountryPicker from './components/wizard/CountryPicker';
@@ -74,6 +74,8 @@ function AppInner() {
     if (trip.config.origin) setOrigin(trip.config.origin);
     if (trip.config.homeCurrency) setHomeCurrency(trip.config.homeCurrency);
     setBudgetPerPerson(trip.config.budgetPerPerson);
+    setTravellerProfiles(trip.config.travellerProfiles);
+    setTripMode(trip.config.tripMode);
     setResults(trip.results);
     // NOTE: we deliberately do NOT jump straight into the last trip's results.
     // The landing view is the "My Trips" gallery (set in useState initialiser)
@@ -136,6 +138,8 @@ function AppInner() {
   const [origin, setOrigin] = useState<string>('MEL');
   const [homeCurrency, setHomeCurrency] = useState<string>('AUD');
   const [budgetPerPerson, setBudgetPerPerson] = useState<number | undefined>(undefined);
+  const [travellerProfiles, setTravellerProfiles] = useState<TravellerProfile[] | undefined>(undefined);
+  const [tripMode, setTripMode] = useState<TripMode | undefined>(undefined);
 
   const [progress, setProgress] = useState({
     route: false, flights: false, hotels: false, itinerary: false, budget: false, tips: false,
@@ -152,7 +156,7 @@ function AppInner() {
       country: selectedCountry,
       destinations: selectedDests,
       departureDate, returnDate, travellers, ages, vibes,
-      origin, homeCurrency, budgetPerPerson,
+      origin, homeCurrency, budgetPerPerson, travellerProfiles, tripMode,
     };
     const hasMeaningfulData =
       selectedDests.length > 0 ||
@@ -161,7 +165,7 @@ function AppInner() {
     if (!hasMeaningfulData) return;
     saveTrip({ config, results });
     setTripsVersion((v) => v + 1);
-  }, [selectedCountry, selectedDests, departureDate, returnDate, travellers, ages, vibes, origin, homeCurrency, budgetPerPerson, results]);
+  }, [selectedCountry, selectedDests, departureDate, returnDate, travellers, ages, vibes, origin, homeCurrency, budgetPerPerson, travellerProfiles, tripMode, results]);
 
   const loadTrip = (trip: SavedTrip) => {
     setActiveTripId(trip.id);
@@ -177,6 +181,8 @@ function AppInner() {
     if (trip.config.origin) setOrigin(trip.config.origin);
     if (trip.config.homeCurrency) setHomeCurrency(trip.config.homeCurrency);
     setBudgetPerPerson(trip.config.budgetPerPerson);
+    setTravellerProfiles(trip.config.travellerProfiles);
+    setTripMode(trip.config.tripMode);
     setResults(trip.results);
     const hasResults = trip.results.itinerary.length > 0 || trip.results.flights.length > 0;
     setView(hasResults ? 'results' : 'wizard');
@@ -194,6 +200,8 @@ function AppInner() {
     setAges([30, 30]);
     setVibes(['adventure', 'foodie']);
     setBudgetPerPerson(undefined);
+    setTravellerProfiles(undefined);
+    setTripMode(undefined);
     setResults({ ...EMPTY_RESULTS });
     setStep(1);
     setView('country');
@@ -208,6 +216,8 @@ function AppInner() {
     newTripId();
     setSelectedDests([]);
     setResults({ ...EMPTY_RESULTS });
+    setTravellerProfiles(undefined);
+    setTripMode(undefined);
     setStep(1);
     setSelectedCountry(country);
     const prebuilt = getDestinationsForCountry(country.id);
@@ -233,7 +243,7 @@ function AppInner() {
     country: selectedCountry!,
     destinations: selectedDests,
     departureDate, returnDate, travellers, ages, vibes,
-    origin, homeCurrency, budgetPerPerson,
+    origin, homeCurrency, budgetPerPerson, travellerProfiles, tripMode,
   });
 
   const handleGenerate = useCallback(async (data?: {
@@ -245,6 +255,8 @@ function AppInner() {
     origin?: string;
     homeCurrency?: string;
     budgetPerPerson?: number;
+    travellerProfiles?: TravellerProfile[];
+    tripMode?: TripMode;
   }) => {
     // IMPORTANT: build the config from `data` (the fresh values handed over
     // by TravelDetails) when present — NOT from component state. TravelDetails
@@ -262,6 +274,8 @@ function AppInner() {
       origin: data?.origin ?? origin,
       homeCurrency: data?.homeCurrency ?? homeCurrency,
       budgetPerPerson: data ? data.budgetPerPerson : budgetPerPerson,
+      travellerProfiles: data ? data.travellerProfiles : travellerProfiles,
+      tripMode: data ? data.tripMode : tripMode,
     };
     setView('loading');
     setProgress({ route: false, flights: false, hotels: false, itinerary: false, budget: false, tips: false, packing: false, weather: false, visa: false, currency: false, nearby: false, transport: false, restaurants: false, activities: false });
@@ -352,7 +366,7 @@ function AppInner() {
 
     await Promise.all([p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13]);
     setView('results');
-  }, [selectedDests, departureDate, returnDate, travellers, ages, vibes, selectedCountry, origin, homeCurrency, budgetPerPerson]);
+  }, [selectedDests, departureDate, returnDate, travellers, ages, vibes, selectedCountry, origin, homeCurrency, budgetPerPerson, travellerProfiles, tripMode]);
 
   const handleStartOver = () => {
     // "Start Over" now means "go to My Trips" rather than wiping state.
@@ -461,6 +475,7 @@ function AppInner() {
         <TravelDetails destinations={selectedDests} departureDate={departureDate} returnDate={returnDate}
           travellers={travellers} ages={ages} vibes={vibes}
           origin={origin} homeCurrency={homeCurrency} budgetPerPerson={budgetPerPerson}
+          travellerProfiles={travellerProfiles} tripMode={tripMode}
           onUpdate={(d) => {
             setDepartureDate(d.departureDate);
             setReturnDate(d.returnDate);
@@ -470,6 +485,8 @@ function AppInner() {
             if (d.origin) setOrigin(d.origin);
             if (d.homeCurrency) setHomeCurrency(d.homeCurrency);
             setBudgetPerPerson(d.budgetPerPerson);
+            setTravellerProfiles(d.travellerProfiles);
+            setTripMode(d.tripMode);
           }}
           onBack={() => setStep(1)} onGenerate={handleGenerate} />
       )}

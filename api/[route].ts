@@ -68,6 +68,63 @@ function parseResult(result: any): any[] {
   return [];
 }
 
+/** Auto-derive the trip mode from traveller profiles when not explicitly set.
+ *  Priority: any mobility need → accessibility; any kid < 13 → family;
+ *  oldest ≥ 65 → senior; otherwise standard. */
+function deriveTripMode(config: any): 'standard' | 'family' | 'senior' | 'accessibility' {
+  if (config?.tripMode === 'standard' || config?.tripMode === 'family' || config?.tripMode === 'senior' || config?.tripMode === 'accessibility') {
+    return config.tripMode;
+  }
+  const profiles: any[] = Array.isArray(config?.travellerProfiles) ? config.travellerProfiles : [];
+  const ages: number[] = Array.isArray(config?.ages) ? config.ages : [];
+  const anyMobility = profiles.some(p => Array.isArray(p?.mobility) && p.mobility.length > 0);
+  if (anyMobility) return 'accessibility';
+  const minAge = ages.length ? Math.min(...ages) : 30;
+  const maxAge = ages.length ? Math.max(...ages) : 30;
+  if (minAge < 13) return 'family';
+  if (maxAge >= 65) return 'senior';
+  return 'standard';
+}
+
+/** Mode directive — reshapes the LLM's recommendations. */
+function modeDirective(config: any): string {
+  const mode = deriveTripMode(config);
+  switch (mode) {
+    case 'family':
+      return `\n\nTRIP MODE: FAMILY. Recommendations MUST be family-friendly with children in mind: prefer attractions with low queues and stroller access, family-room hotels, restaurants with kids' menus or relaxed seating. Pace days gently with afternoon rest/pool time. Suggest indoor backups for outdoor-heavy days. Avoid late-night activities. Highlight playgrounds, parks, kid-friendly museums.`;
+    case 'senior':
+      return `\n\nTRIP MODE: SENIOR. Slow the pace: 2-3 activities per day max, with rest stops. Prioritise sit-down meals over standing-bar food. Prefer attractions with elevators/ramps and short walks. Flag the nearest pharmacy and hospital for each base. Avoid long-haul early flights; allow recovery time after travel days.`;
+    case 'accessibility':
+      return `\n\nTRIP MODE: ACCESSIBILITY. Every recommendation MUST be step-free or have an alternative step-free route. Prefer hotels with accessible rooms, restaurants with ground-floor entry. Note specifically any unavoidable barriers (cobblestones, narrow alleys, long staircases). Surface accessible transport options (metro elevators, accessible taxis).`;
+    default:
+      return '';
+  }
+}
+
+/** Per-traveller profile context — names, dietary, mobility, interests.
+ *  Returns '' when no detailed profiles are provided. */
+function profilesHint(config: any): string {
+  const profiles: any[] = Array.isArray(config?.travellerProfiles) ? config.travellerProfiles : [];
+  if (profiles.length === 0) return '';
+  const lines: string[] = [];
+  for (let i = 0; i < profiles.length; i++) {
+    const p = profiles[i] || {};
+    const parts: string[] = [];
+    parts.push(`#${i + 1}: age ${p.age ?? 'unknown'}`);
+    if (p.name) parts.push(`(${p.name})`);
+    if (Array.isArray(p.dietary) && p.dietary.length) parts.push(`diet: ${p.dietary.join('/')}`);
+    if (Array.isArray(p.mobility) && p.mobility.length) parts.push(`mobility: ${p.mobility.join('/')}`);
+    if (Array.isArray(p.interests) && p.interests.length) parts.push(`loves: ${p.interests.join('/')}`);
+    lines.push(parts.join(' · '));
+  }
+  return `\n\nTRAVELLER PROFILES (tailor every recommendation to these people):\n${lines.join('\n')}\nMatch dietary needs in restaurant picks. Respect mobility constraints in routing. Weight activity choices toward stated interests.`;
+}
+
+/** Combined personalisation block — profiles + mode together. */
+function personalisationHint(config: any): string {
+  return modeDirective(config) + profilesHint(config);
+}
+
 /**
  * Build a budget-target instruction for the LLM prompt.
  * Returns '' when the traveller set no budget — the prompt is unchanged then.
@@ -89,7 +146,7 @@ async function handleItinerary(config: any) {
   const schedule = computeSchedule(ordered, config.departureDate, config.returnDate);
   const scheduleText = formatScheduleForPrompt(schedule);
 
-  const userMessage = `Country: ${countryName}.\nCRITICAL: Generate EXACTLY ${totalDays} days (Day 1 through Day ${totalDays}).\nDay 1 (${config.departureDate}): Fly Melbourne to ${countryName}.\nDays 2 to ${totalDays - 1}:\n${scheduleText}\nDay ${totalDays} (${config.returnDate}): Fly home.\nTravellers: ${config.travellers}, ages: ${config.ages.join(', ')}. Vibes: ${vibeList}.${budgetHint(config)}`;
+  const userMessage = `Country: ${countryName}.\nCRITICAL: Generate EXACTLY ${totalDays} days (Day 1 through Day ${totalDays}).\nDay 1 (${config.departureDate}): Fly Melbourne to ${countryName}.\nDays 2 to ${totalDays - 1}:\n${scheduleText}\nDay ${totalDays} (${config.returnDate}): Fly home.\nTravellers: ${config.travellers}, ages: ${config.ages.join(', ')}. Vibes: ${vibeList}.${budgetHint(config)}${personalisationHint(config)}`;
 
   let itinerary = await callLLM(ITINERARY_SYSTEM, userMessage);
   if (!Array.isArray(itinerary)) itinerary = [];
@@ -118,7 +175,7 @@ async function handleFlights(config: any) {
   const lastDest = schedule[schedule.length - 1];
   flightLegs.push(`Flight ${flightLegs.length + 1}: ${lastDest?.destination} (${lastDest?.airport}) to Melbourne (MEL) on ${config.returnDate}`);
 
-  const userMessage = `Country: ${countryName}. Travellers: ${config.travellers}.\n\nGenerate flight recommendations for these EXACT flights with these EXACT dates:\n${flightLegs.join('\n')}${budgetHint(config)}`;
+  const userMessage = `Country: ${countryName}. Travellers: ${config.travellers}.\n\nGenerate flight recommendations for these EXACT flights with these EXACT dates:\n${flightLegs.join('\n')}${budgetHint(config)}${personalisationHint(config)}`;
   let flights = parseResult(await callLLM(FLIGHTS_SYSTEM, userMessage));
   flights = fixFlightDates(flights, schedule, config.departureDate, config.returnDate);
   return flights;
@@ -133,7 +190,7 @@ async function handleHotels(config: any) {
   const limitedSchedule = schedule.slice(0, 5);
   const hotelSchedule = limitedSchedule.map((s, i) => `${i + 1}. ${s.destination}: check-in ${s.arrival}, check-out ${s.departure}, ${s.nights} nights`).join('\n');
 
-  const userMessage = `Country: ${countryName}. Vibes: ${vibeList}. Travellers: ${config.travellers}, ages: ${config.ages.join(', ')}.\n\nRecommend 3 hotels per destination for these EXACT dates:\n${hotelSchedule}${budgetHint(config)}`;
+  const userMessage = `Country: ${countryName}. Vibes: ${vibeList}. Travellers: ${config.travellers}, ages: ${config.ages.join(', ')}.\n\nRecommend 3 hotels per destination for these EXACT dates:\n${hotelSchedule}${budgetHint(config)}${personalisationHint(config)}`;
   let hotels = parseResult(await callLLM(HOTELS_SYSTEM, userMessage));
   hotels = fixHotelDates(hotels, limitedSchedule);
   return hotels;
@@ -148,7 +205,7 @@ async function handleBudget(config: any) {
   const schedule = computeSchedule(ordered, config.departureDate, config.returnDate);
   const scheduleText = formatScheduleForPrompt(schedule);
 
-  const userMessage = `Country: ${countryName}. Trip: ${config.departureDate} to ${config.returnDate} (${totalDays} days). Travellers: ${config.travellers}, ages: ${config.ages.join(', ')}. Vibes: ${vibeList}.\n\nSchedule:\n${scheduleText}\n\nInclude flight costs for Melbourne to ${schedule[0]?.destination || countryName} and back.${budgetHint(config)}`;
+  const userMessage = `Country: ${countryName}. Trip: ${config.departureDate} to ${config.returnDate} (${totalDays} days). Travellers: ${config.travellers}, ages: ${config.ages.join(', ')}. Vibes: ${vibeList}.\n\nSchedule:\n${scheduleText}\n\nInclude flight costs for Melbourne to ${schedule[0]?.destination || countryName} and back.${budgetHint(config)}${personalisationHint(config)}`;
   return parseResult(await callLLM(BUDGET_SYSTEM, userMessage));
 }
 
@@ -156,7 +213,7 @@ async function handleTips(config: any) {
   const countryName = config.country?.name || 'the destination';
   const destNames = config.destinations.map((d: any) => d.name).join(', ');
   const travelMonth = new Date(config.departureDate).toLocaleString('en-AU', { month: 'long' });
-  const userMessage = `Country: ${countryName}. Destinations: ${destNames}. Travel month: ${travelMonth}. Ages: ${config.ages.join(', ')}.`;
+  const userMessage = `Country: ${countryName}. Destinations: ${destNames}. Travel month: ${travelMonth}. Ages: ${config.ages.join(', ')}.${personalisationHint(config)}`;
   return parseResult(await callLLM(TIPS_SYSTEM, userMessage));
 }
 
@@ -170,7 +227,7 @@ async function handlePacking(config: any) {
   const schedule = computeSchedule(ordered, config.departureDate, config.returnDate);
   const scheduleText = formatScheduleForPrompt(schedule);
 
-  const userMessage = `Country: ${countryName}. Travel month: ${travelMonth}. Total days: ${totalDays}. Vibes: ${vibeList}.\n\nSchedule:\n${scheduleText}`;
+  const userMessage = `Country: ${countryName}. Travel month: ${travelMonth}. Total days: ${totalDays}. Vibes: ${vibeList}.\n\nSchedule:\n${scheduleText}${personalisationHint(config)}`;
   return parseResult(await callLLM(PACKING_SYSTEM, userMessage));
 }
 
@@ -270,7 +327,7 @@ async function handleNearby(config: any) {
   const ordered = orderDestinations(config.destinations, entryCity);
   const schedule = computeSchedule(ordered, config.departureDate, config.returnDate);
   const destNames = schedule.map((s) => `${s.destination} (${s.nights} nights)`).join(', ');
-  const userMessage = `Country: ${countryName}. Destinations: ${destNames}. Suggest 2-3 nearby day trips from each destination.`;
+  const userMessage = `Country: ${countryName}. Destinations: ${destNames}. Suggest 2-3 nearby day trips from each destination.${personalisationHint(config)}`;
   return parseResult(await callLLM(NEARBY_SYSTEM, userMessage));
 }
 
@@ -298,7 +355,7 @@ Rules: REAL restaurants only — do not invent names. Mix price tiers (1 $, 2 $$
   const ordered = orderDestinations(config.destinations, entryCity);
   const destNames = ordered.map((d: any) => d.name).join(', ');
   const vibes = (config.vibes || []).join(', ');
-  const userMessage = `Country: ${countryName}. Destinations: ${destNames}. Traveller vibes: ${vibes || 'general'}. Recommend restaurants per destination, mixing street food, mid-range, and one fine-dining pick each.`;
+  const userMessage = `Country: ${countryName}. Destinations: ${destNames}. Traveller vibes: ${vibes || 'general'}. Recommend restaurants per destination, mixing street food, mid-range, and one fine-dining pick each.${personalisationHint(config)}`;
   return parseResult(await callLLM(RESTAURANTS_SYSTEM, userMessage));
 }
 
@@ -327,7 +384,7 @@ Rules: REAL activities tied to the destination — temples, hikes, classes, tour
   const ordered = orderDestinations(config.destinations, entryCity);
   const destNames = ordered.map((d: any) => d.name).join(', ');
   const vibes = (config.vibes || []).join(', ');
-  const userMessage = `Country: ${countryName}. Destinations: ${destNames}. Traveller vibes: ${vibes || 'general'}. Recommend things to do per destination — culture, nature, adventure, family-friendly mix.`;
+  const userMessage = `Country: ${countryName}. Destinations: ${destNames}. Traveller vibes: ${vibes || 'general'}. Recommend things to do per destination — culture, nature, adventure, family-friendly mix.${personalisationHint(config)}`;
   return parseResult(await callLLM(ACTIVITIES_SYSTEM, userMessage));
 }
 

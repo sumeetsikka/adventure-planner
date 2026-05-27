@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import type { Destination, VibeOption } from '../../types';
+import type { Destination, VibeOption, TravellerProfile, TripMode, DietaryTag, MobilityTag, InterestTag } from '../../types';
 import { calculateMidpointDays, determineEntryCity, orderDestinations } from '../../lib/routePlanner';
 import { formatDateAU, addDaysISO, todayISO } from '../../lib/dateUtils';
 import {
@@ -19,6 +19,8 @@ export interface TravelDetailsData {
   origin?: string;
   homeCurrency?: string;
   budgetPerPerson?: number;
+  travellerProfiles?: TravellerProfile[];
+  tripMode?: TripMode;
 }
 
 interface Props {
@@ -31,9 +33,82 @@ interface Props {
   origin?: string;
   homeCurrency?: string;
   budgetPerPerson?: number;
+  travellerProfiles?: TravellerProfile[];
+  tripMode?: TripMode;
   onUpdate: (data: TravelDetailsData) => void;
   onBack: () => void;
   onGenerate: (data: TravelDetailsData) => void;
+}
+
+const DIETARY_OPTIONS: { value: DietaryTag; label: string; icon: string }[] = [
+  { value: 'vegetarian', label: 'Vegetarian', icon: '🥗' },
+  { value: 'vegan', label: 'Vegan', icon: '🌱' },
+  { value: 'halal', label: 'Halal', icon: '☪️' },
+  { value: 'kosher', label: 'Kosher', icon: '✡️' },
+  { value: 'gluten-free', label: 'Gluten-free', icon: '🌾' },
+  { value: 'dairy-free', label: 'Dairy-free', icon: '🥛' },
+  { value: 'pescatarian', label: 'Pescatarian', icon: '🐟' },
+  { value: 'nut-allergy', label: 'Nut allergy', icon: '🥜' },
+  { value: 'shellfish-allergy', label: 'Shellfish allergy', icon: '🦐' },
+];
+
+const MOBILITY_OPTIONS: { value: MobilityTag; label: string; icon: string }[] = [
+  { value: 'wheelchair', label: 'Wheelchair', icon: '♿' },
+  { value: 'limited-walking', label: 'Limited walking', icon: '🚶' },
+  { value: 'no-stairs', label: 'Avoid stairs', icon: '🪜' },
+  { value: 'stroller', label: 'Stroller/pram', icon: '👶' },
+  { value: 'vision-impaired', label: 'Vision impaired', icon: '👁️' },
+  { value: 'hearing-impaired', label: 'Hearing impaired', icon: '👂' },
+];
+
+const INTEREST_OPTIONS: { value: InterestTag; label: string; icon: string }[] = [
+  { value: 'food', label: 'Food', icon: '🍜' },
+  { value: 'culture', label: 'Culture', icon: '🏛️' },
+  { value: 'nature', label: 'Nature', icon: '🌿' },
+  { value: 'history', label: 'History', icon: '📜' },
+  { value: 'shopping', label: 'Shopping', icon: '🛍️' },
+  { value: 'nightlife', label: 'Nightlife', icon: '🌃' },
+  { value: 'sports', label: 'Sports', icon: '⚽' },
+  { value: 'art', label: 'Art', icon: '🎨' },
+  { value: 'family-fun', label: 'Family fun', icon: '🎢' },
+  { value: 'wellness', label: 'Wellness', icon: '🧘' },
+  { value: 'photography', label: 'Photography', icon: '📷' },
+  { value: 'live-music', label: 'Live music', icon: '🎵' },
+];
+
+function ProfileChips({
+  label, options, selected, onToggle,
+}: {
+  label: string;
+  options: { value: string; label: string; icon: string }[];
+  selected: string[];
+  onToggle: (v: string) => void;
+}) {
+  return (
+    <div>
+      <p className="eyebrow mb-2 text-[10px]">{label}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {options.map((opt) => {
+          const isActive = selected.includes(opt.value);
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => onToggle(opt.value)}
+              className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs transition-all border ${
+                isActive
+                  ? 'border-[var(--terracotta)]/50 bg-[var(--terracotta)]/8 text-[var(--cream)]'
+                  : 'border-[var(--line)] bg-[var(--ink)] text-[var(--text-muted)] hover:text-[var(--cream)]'
+              }`}
+            >
+              <span className="text-sm leading-none">{opt.icon}</span>
+              <span>{opt.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 const VIBES: { value: VibeOption; label: string; icon: string; desc: string }[] = [
@@ -62,6 +137,8 @@ export default function TravelDetails({
   origin,
   homeCurrency,
   budgetPerPerson,
+  travellerProfiles,
+  tripMode,
   onUpdate,
   onBack,
   onGenerate,
@@ -97,6 +174,27 @@ export default function TravelDetails({
     budgetPerPerson ? String(budgetPerPerson) : ''
   );
 
+  // Per-traveller profiles — names, dietary, mobility, interests. Initialised
+  // from incoming prop or empty profiles aligned to the traveller count.
+  const [profiles, setProfiles] = useState<TravellerProfile[]>(() => {
+    if (travellerProfiles && travellerProfiles.length === travellers) return travellerProfiles;
+    return Array.from({ length: travellers }, (_, i) => ({ age: ages[i] ?? 30 }));
+  });
+  const [expandedProfile, setExpandedProfile] = useState<number | null>(null);
+
+  // Trip mode — auto-detected unless the user manually overrides.
+  const autoMode: TripMode = (() => {
+    const minAge = Math.min(...localAges);
+    const maxAge = Math.max(...localAges);
+    const mobilityNeeds = profiles.some(p => (p.mobility?.length ?? 0) > 0);
+    if (mobilityNeeds) return 'accessibility';
+    if (minAge < 13) return 'family';
+    if (maxAge >= 65) return 'senior';
+    return 'standard';
+  })();
+  const [modeOverride, setModeOverride] = useState<TripMode | undefined>(tripMode);
+  const effectiveMode: TripMode = modeOverride ?? autoMode;
+
   const filteredOrigins = useMemo(() => {
     const q = originSearch.trim().toLowerCase();
     if (!q) return ORIGIN_AIRPORTS;
@@ -117,6 +215,31 @@ export default function TravelDetails({
     } else if (localAges.length > count) {
       setLocalAges(localAges.slice(0, count));
     }
+    // Keep per-traveller profiles aligned to the count.
+    setProfiles((prev) => {
+      if (prev.length === count) return prev;
+      if (prev.length < count) {
+        return [...prev, ...Array.from({ length: count - prev.length }, () => ({ age: 30 }))];
+      }
+      return prev.slice(0, count);
+    });
+    if (expandedProfile != null && expandedProfile >= count) setExpandedProfile(null);
+  };
+
+  const updateProfile = (idx: number, patch: Partial<TravellerProfile>) => {
+    setProfiles((prev) => prev.map((p, i) => i === idx ? { ...p, ...patch } : p));
+  };
+
+  const toggleProfileTag = <K extends 'dietary' | 'mobility' | 'interests'>(
+    idx: number, key: K, value: K extends 'dietary' ? DietaryTag : K extends 'mobility' ? MobilityTag : InterestTag
+  ) => {
+    setProfiles((prev) => prev.map((p, i) => {
+      if (i !== idx) return p;
+      const list = (p[key] as string[] | undefined) ?? [];
+      const has = list.includes(value);
+      const next = has ? list.filter(x => x !== value) : [...list, value];
+      return { ...p, [key]: next.length > 0 ? next : undefined };
+    }));
   };
 
   const toggleVibe = (v: VibeOption) => {
@@ -128,6 +251,16 @@ export default function TravelDetails({
   const parsedBudget = Math.round(Number(budgetInput)) || 0;
 
   const handleGenerate = () => {
+    // Build per-traveller profiles aligned to current ages, only including
+    // a profile if it has any non-default detail to share with the LLM.
+    const alignedProfiles: TravellerProfile[] = localAges.map((age, i) => {
+      const base = profiles[i] || { age };
+      return { ...base, age }; // age from the age input always wins
+    });
+    const hasAnyProfileDetail = alignedProfiles.some(
+      p => (p.name && p.name.trim()) || (p.dietary?.length ?? 0) > 0 || (p.mobility?.length ?? 0) > 0 || (p.interests?.length ?? 0) > 0
+    );
+
     const data: TravelDetailsData = {
       departureDate: startDate,
       returnDate: endDate,
@@ -137,6 +270,8 @@ export default function TravelDetails({
       origin: localOrigin,
       homeCurrency: localHomeCurrency,
       budgetPerPerson: parsedBudget > 0 ? parsedBudget : undefined,
+      travellerProfiles: hasAnyProfileDetail ? alignedProfiles : undefined,
+      tripMode: modeOverride, // undefined means the API auto-detects
     };
     // Persist to app state for saving / ResultsView…
     onUpdate(data);
@@ -367,21 +502,116 @@ export default function TravelDetails({
               <button type="button" onClick={() => updateTravellers(Math.min(10, localTravellers + 1))}
                 className="w-10 h-10 rounded-full bg-[var(--ink-3)] text-[var(--cream)] text-lg hover:bg-[var(--ink-4)] transition-colors">+</button>
             </div>
-            <div className="flex flex-wrap gap-2 justify-center">
-              {localAges.map((age, i) => (
-                <div key={i} className="text-center">
-                  <span className="text-[9px] text-[var(--text-dim)] tracking-widest uppercase block mb-1">Age {i + 1}</span>
-                  <input
-                    type="number" min={1} max={99} value={age}
-                    onChange={(e) => {
-                      const next = [...localAges];
-                      next[i] = Math.max(1, Math.min(99, parseInt(e.target.value) || 1));
-                      setLocalAges(next);
-                    }}
-                    className="w-14 bg-[var(--ink-3)] border border-[var(--line)] rounded-lg px-2 py-2 text-[var(--cream)] text-center text-sm focus:outline-none focus:border-[var(--gold)]/40 transition-colors font-light"
-                  />
-                </div>
-              ))}
+            {/* Per-traveller rows — name + age + optional details. */}
+            <div className="space-y-2">
+              {localAges.map((age, i) => {
+                const profile = profiles[i] ?? { age };
+                const isExpanded = expandedProfile === i;
+                const tagCount = (profile.dietary?.length ?? 0) + (profile.mobility?.length ?? 0) + (profile.interests?.length ?? 0);
+                return (
+                  <div key={i} className="bg-[var(--ink-3)] border border-[var(--line)] rounded-2xl overflow-hidden">
+                    <div className="flex items-center gap-2 px-3 py-2.5">
+                      <span className="text-[10px] font-semibold tracking-wider uppercase text-[var(--text-dim)] w-7 text-center">{String(i + 1).padStart(2, '0')}</span>
+                      <input
+                        type="text"
+                        value={profile.name ?? ''}
+                        onChange={(e) => updateProfile(i, { name: e.target.value })}
+                        placeholder={`Traveller ${i + 1}`}
+                        className="flex-1 bg-transparent text-[var(--cream)] text-sm focus:outline-none placeholder:text-[var(--text-dim)] font-light"
+                      />
+                      <input
+                        type="number" min={1} max={99} value={age}
+                        onChange={(e) => {
+                          const v = Math.max(1, Math.min(99, parseInt(e.target.value) || 1));
+                          const next = [...localAges];
+                          next[i] = v;
+                          setLocalAges(next);
+                          updateProfile(i, { age: v });
+                        }}
+                        aria-label={`Age of traveller ${i + 1}`}
+                        className="w-12 bg-[var(--ink)] border border-[var(--line)] rounded-lg px-1.5 py-1.5 text-[var(--cream)] text-center text-sm focus:outline-none focus:border-[var(--gold)]/40"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setExpandedProfile(isExpanded ? null : i)}
+                        className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] tracking-wider uppercase transition-all ${
+                          isExpanded
+                            ? 'bg-[var(--terracotta)]/10 text-[var(--terracotta)] border border-[var(--terracotta)]/30'
+                            : tagCount > 0
+                              ? 'bg-[var(--sage)]/10 text-[var(--sage)] border border-[var(--sage)]/30'
+                              : 'border border-[var(--line)] text-[var(--text-muted)] hover:text-[var(--cream)]'
+                        }`}
+                        aria-label={`${isExpanded ? 'Hide' : 'Show'} details for traveller ${i + 1}`}
+                      >
+                        {tagCount > 0 && !isExpanded ? `${tagCount} note${tagCount > 1 ? 's' : ''}` : 'Details'}
+                        <span className={`inline-block transition-transform ${isExpanded ? 'rotate-180' : ''}`}>▾</span>
+                      </button>
+                    </div>
+                    {isExpanded && (
+                      <div className="px-4 pb-4 pt-1 border-t border-[var(--line)] space-y-4">
+                        <ProfileChips
+                          label="Diet"
+                          options={DIETARY_OPTIONS}
+                          selected={profile.dietary ?? []}
+                          onToggle={(v) => toggleProfileTag(i, 'dietary', v as DietaryTag)}
+                        />
+                        <ProfileChips
+                          label="Mobility"
+                          options={MOBILITY_OPTIONS}
+                          selected={profile.mobility ?? []}
+                          onToggle={(v) => toggleProfileTag(i, 'mobility', v as MobilityTag)}
+                        />
+                        <ProfileChips
+                          label="Interests"
+                          options={INTEREST_OPTIONS}
+                          selected={profile.interests ?? []}
+                          onToggle={(v) => toggleProfileTag(i, 'interests', v as InterestTag)}
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Trip mode — auto-detected from profiles, user can override. */}
+            <div className="mt-4 pt-4 border-t border-[var(--line)]">
+              <div className="flex items-baseline justify-between mb-2.5">
+                <span className="eyebrow">Trip mode</span>
+                <span className="text-[10px] text-[var(--text-dim)] tracking-wider uppercase">
+                  {modeOverride ? 'Override' : `Auto · ${autoMode}`}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {(['standard', 'family', 'senior', 'accessibility'] as const).map((m) => {
+                  const isActive = effectiveMode === m;
+                  const isAuto = !modeOverride && autoMode === m;
+                  return (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setModeOverride(isActive && modeOverride === m ? undefined : m)}
+                      className={`flex flex-col items-center gap-1 py-2.5 rounded-xl text-xs transition-all border ${
+                        isActive
+                          ? 'border-[var(--terracotta)]/60 bg-[var(--terracotta)]/8 text-[var(--cream)]'
+                          : 'border-[var(--line)] bg-[var(--ink-3)] text-[var(--text-muted)] hover:text-[var(--cream)]'
+                      }`}
+                    >
+                      <span className="text-lg leading-none">
+                        {m === 'standard' ? '✦' : m === 'family' ? '🧸' : m === 'senior' ? '🌿' : '♿'}
+                      </span>
+                      <span className="font-medium capitalize">{m}</span>
+                      {isAuto && <span className="text-[9px] text-[var(--terracotta)] tracking-wider uppercase">Auto</span>}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[var(--text-dim)] text-[11px] font-light mt-2.5 leading-relaxed">
+                {effectiveMode === 'family' && '👨‍👩‍👧‍👦 Kid-friendly attractions, family hotels, indoor backups, naptime-aware pacing.'}
+                {effectiveMode === 'senior' && '🌿 Slower pace, fewer activities per day, mobility-friendly routes, medical resources surfaced.'}
+                {effectiveMode === 'accessibility' && '♿ Step-free routes, wheelchair-accessible venues, accessible-room hotels prioritised.'}
+                {effectiveMode === 'standard' && '✦ Balanced mix of culture, food, adventure — the classic adventure-planner experience.'}
+              </p>
             </div>
           </motion.div>
 

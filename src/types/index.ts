@@ -38,6 +38,54 @@ export interface DestinationInfo {
   vibe: string;                  // 1 sentence on the atmosphere
 }
 
+/** Per-traveller profile — drives age-appropriate, accessible, dietary-aware
+ *  recommendations. Each field is optional; the bare minimum is `age`. */
+export type DietaryTag =
+  | 'vegetarian'
+  | 'vegan'
+  | 'halal'
+  | 'kosher'
+  | 'gluten-free'
+  | 'dairy-free'
+  | 'pescatarian'
+  | 'nut-allergy'
+  | 'shellfish-allergy';
+
+export type MobilityTag =
+  | 'wheelchair'
+  | 'limited-walking'
+  | 'no-stairs'
+  | 'stroller'
+  | 'vision-impaired'
+  | 'hearing-impaired';
+
+export type InterestTag =
+  | 'food'
+  | 'culture'
+  | 'nature'
+  | 'history'
+  | 'shopping'
+  | 'nightlife'
+  | 'sports'
+  | 'art'
+  | 'family-fun'
+  | 'wellness'
+  | 'photography'
+  | 'live-music';
+
+export interface TravellerProfile {
+  age: number;
+  name?: string;
+  dietary?: DietaryTag[];
+  mobility?: MobilityTag[];
+  interests?: InterestTag[];
+}
+
+/** Trip-shape mode. Reshapes the whole experience (pace, content, surfacing).
+ *  Auto-derived from traveller profiles (kid → family, 65+ → senior, wheelchair
+ *  → accessibility) but the user can override. */
+export type TripMode = 'standard' | 'family' | 'senior' | 'accessibility';
+
 export interface TravelConfig {
   country: Country;
   destinations: Destination[];
@@ -52,6 +100,13 @@ export interface TravelConfig {
    *  When set, generation aims to keep the trip total within ±20% of
    *  (budgetPerPerson × travellers). Undefined/0 = no budget target. */
   budgetPerPerson?: number;
+  /** Optional per-traveller profiles. When present, length matches ages[].
+   *  Drives personalised generation — kid-friendly content, accessibility,
+   *  dietary preferences, interest matching. */
+  travellerProfiles?: TravellerProfile[];
+  /** Optional trip-mode override. When undefined, the API auto-derives from
+   *  traveller profiles. Set explicitly to force a specific experience. */
+  tripMode?: TripMode;
 }
 
 export interface FlightLeg {
@@ -93,13 +148,47 @@ export interface DestinationHotels {
   hotels: HotelRec[];
 }
 
+/** A single time-slotted event within a day. */
+export type TimelineEventType =
+  | 'travel'      // flight / train / drive
+  | 'meal'        // breakfast / lunch / dinner / coffee
+  | 'sight'       // landmark / museum / temple
+  | 'activity'    // tour / experience
+  | 'rest'        // hotel / siesta / chill
+  | 'shop'        // market / souvenirs
+  | 'nightlife';
+
+export interface TimelineEvent {
+  /** HH:MM in 24h local time. */
+  time: string;
+  duration_min: number;
+  title: string;
+  location?: string;
+  type: TimelineEventType;
+  /** Optional short tip — opening hours, queue tip, kid-friendly note, etc. */
+  tip?: string;
+  /** Walk/transit estimate from the PREVIOUS event, in minutes. */
+  travel_from_prev_min?: number;
+}
+
 export interface ItineraryDay {
   day: number;
   title: string;
   location: string;
   icon: string;
   vibe: string;
+  /** Day-level activity list — kept for backward compatibility and as a
+   *  high-level summary for the LLM/UI when no timeline is present. */
   activities: string[];
+  /** Optional hour-by-hour timeline. When present, the UI renders this instead
+   *  of the bare activities list. */
+  timeline?: TimelineEvent[];
+  /** Optional indoor / weather-backup plan for outdoor-heavy days. */
+  rainy_backup?: string;
+  /** Optional kid-friendly tip for family-mode trips. */
+  kids_tip?: string;
+  /** Optional accessibility note — steps, mobility considerations. */
+  accessibility_note?: string;
 }
 
 export interface BudgetItem {
