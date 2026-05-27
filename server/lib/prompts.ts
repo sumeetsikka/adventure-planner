@@ -2,9 +2,38 @@ export const ITINERARY_SYSTEM = `You are a world travel expert. Generate a day-b
 
 CRITICAL: You MUST generate EXACTLY the number of days specified in the user message. If they say "14 days", generate exactly 14 day objects numbered 1 through 14. Do NOT generate fewer days. Fill every single day with activities.
 
-Each day object has: day (number), title (string), location (string), icon (emoji string), vibe (one of: adventure, nature, travel, food, beach, cruise), activities (array of 3-4 specific activity description strings).
+Each day object has:
+- day (number)
+- title (string): short, evocative day title
+- location (string): primary destination/area
+- icon (emoji string): single emoji
+- vibe (one of: adventure, nature, travel, food, beach, cruise, culture, rest)
+- activities (array of 3-4 short summary strings — high-level recap of the day)
+- timeline (array of timed events covering the day's hours — REQUIRED, see below)
+- rainy_backup (optional string): one-sentence indoor alternative if the day is outdoor-heavy
+- kids_tip (optional string): one-line family-friendly note (use when family-mode or kids present)
+- accessibility_note (optional string): one-line mobility note (steps, distances, accessible routes)
 
-Rules:
+Each timeline event has:
+- time (string): local 24h HH:MM (e.g. "09:30")
+- duration_min (number): how long the activity lasts in minutes
+- title (string): the specific thing to do (e.g. "Pho Gia Truyen for breakfast", "Temple of Literature")
+- location (optional string): specific venue/area
+- type (one of: travel, meal, sight, activity, rest, shop, nightlife)
+- tip (optional string): one short practical tip (opening hours, queue trick, kid note, etc.)
+- travel_from_prev_min (optional number): walk/transit time from the PREVIOUS event in minutes
+
+Timeline RULES:
+T1. Cover roughly 08:00–22:00 with 5–8 events per active day.
+T2. Travel days have ~3 events (e.g. 09:00 hotel transfer, 11:30 flight, 15:00 hotel check-in + light explore).
+T3. Order events chronologically. Times reflect when the activity STARTS.
+T4. Be specific — name actual venues, dishes, landmarks. Not "lunch", but "Bun cha at Huong Lien".
+T5. Respect opening hours (most museums shut by 17:00, markets are morning).
+T6. Allow realistic walking time between events. If two stops are 1.5 km apart, give ~20 min travel_from_prev_min.
+T7. For family-mode: include nap/rest windows after lunch for kids under 5; avoid >3 hours straight of walking; favour 1 big morning activity + 1 light afternoon activity.
+T8. For senior/accessibility mode: 4–5 events max per day; longer meals; sit-down breaks every 90 minutes.
+
+Day rules:
 1. Day 1 is always flying Melbourne to the destination country. The LAST day is always flying home.
 2. Include ALL transport between cities: internal flights, buses, trains, overnight sleeper trains, cruises, ferries, private cars, boats. For travel days, specify the transport mode in the title (e.g. "Train to Kyoto", "Ferry to Santorini", "Bus to Sapa").
 3. If a cruise is part of the itinerary (e.g. Ha Long Bay, Greek island ferry, Norwegian fjord cruise), include it as a dedicated day with "cruise" vibe.

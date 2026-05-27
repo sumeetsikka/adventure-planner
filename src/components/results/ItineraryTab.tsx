@@ -318,19 +318,52 @@ export default function ItineraryTab({ itinerary, config, hotels, onUpdate, flig
               </div>
             </div>
 
-            {/* Activities */}
+            {/* Hour-by-hour timeline (preferred) or fall back to activities list */}
             <div className="px-8 py-7">
-              <p className="eyebrow mb-5">What you'll do</p>
-              <ol className="space-y-4">
-                {selectedDayData.activities.map((activity, i) => (
-                  <li key={i} className="flex gap-5">
-                    <span className="font-display text-2xl text-[var(--gold)] leading-none w-8 flex-shrink-0">
-                      {String(i + 1).padStart(2, '0')}
+              {selectedDayData.timeline && selectedDayData.timeline.length > 0 ? (
+                <>
+                  <div className="flex items-baseline justify-between mb-5">
+                    <p className="eyebrow">Hour by hour</p>
+                    <span className="text-[10px] tracking-wider uppercase text-[var(--text-dim)]">
+                      {selectedDayData.timeline.length} stops
                     </span>
-                    <p className="text-[var(--text)] text-[15px] leading-relaxed pt-1">{activity}</p>
-                  </li>
-                ))}
-              </ol>
+                  </div>
+                  <ol className="relative space-y-3 pl-1">
+                    {selectedDayData.timeline.map((ev, i) => (
+                      <TimelineRow key={i} event={ev} isFirst={i === 0} isLast={i === selectedDayData.timeline!.length - 1} />
+                    ))}
+                  </ol>
+
+                  {/* Day-level notes (rainy backup, kids tip, accessibility) */}
+                  {(selectedDayData.rainy_backup || selectedDayData.kids_tip || selectedDayData.accessibility_note) && (
+                    <div className="mt-6 space-y-2">
+                      {selectedDayData.rainy_backup && (
+                        <DayNote icon="☔" label="If it rains" text={selectedDayData.rainy_backup} colour="var(--sage)" />
+                      )}
+                      {selectedDayData.kids_tip && (
+                        <DayNote icon="🧸" label="With kids" text={selectedDayData.kids_tip} colour="var(--terracotta)" />
+                      )}
+                      {selectedDayData.accessibility_note && (
+                        <DayNote icon="♿" label="Mobility" text={selectedDayData.accessibility_note} colour="var(--gold)" />
+                      )}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p className="eyebrow mb-5">What you'll do</p>
+                  <ol className="space-y-4">
+                    {selectedDayData.activities.map((activity, i) => (
+                      <li key={i} className="flex gap-5">
+                        <span className="font-display text-2xl text-[var(--gold)] leading-none w-8 flex-shrink-0">
+                          {String(i + 1).padStart(2, '0')}
+                        </span>
+                        <p className="text-[var(--text)] text-[15px] leading-relaxed pt-1">{activity}</p>
+                      </li>
+                    ))}
+                  </ol>
+                </>
+              )}
 
               {topPick && selectedDayData.vibe !== 'travel' && (
                 <div className="mt-8 pt-7 border-t border-[var(--line)]">
@@ -503,4 +536,93 @@ export default function ItineraryTab({ itinerary, config, hotels, onUpdate, flig
       </div>
     </motion.div>
   );
+}
+
+// ── Timeline rendering ────────────────────────────────────────────────────
+
+const TYPE_META: Record<string, { icon: string; colour: string }> = {
+  travel:    { icon: '✈️', colour: 'var(--gold)' },
+  meal:      { icon: '🍽️', colour: 'var(--terracotta)' },
+  sight:     { icon: '🗿', colour: 'var(--sage)' },
+  activity:  { icon: '✦',  colour: 'var(--terracotta)' },
+  rest:      { icon: '🛌', colour: 'var(--text-dim)' },
+  shop:      { icon: '🛍️', colour: 'var(--gold)' },
+  nightlife: { icon: '🌃', colour: 'var(--terracotta)' },
+};
+
+function TimelineRow({
+  event, isFirst, isLast,
+}: {
+  event: import('../../types').TimelineEvent;
+  isFirst: boolean;
+  isLast: boolean;
+}) {
+  const meta = TYPE_META[event.type] || TYPE_META.activity;
+  const endTime = computeEndTime(event.time, event.duration_min);
+  return (
+    <li className="relative pl-12">
+      {/* Vertical guide line */}
+      {!isLast && <span className="absolute left-[14px] top-7 bottom-[-12px] w-px bg-[var(--line)]" aria-hidden />}
+      {/* Dot */}
+      <span
+        className="absolute left-[6px] top-1.5 w-4 h-4 rounded-full border-2 flex items-center justify-center text-[9px] bg-[var(--ink-3)]"
+        style={{ borderColor: meta.colour }}
+        aria-hidden
+      >
+        {isFirst ? '▶' : ''}
+      </span>
+
+      {/* Walk/transit time from previous event */}
+      {!isFirst && (event.travel_from_prev_min ?? 0) > 0 && (
+        <p className="text-[10px] uppercase tracking-wider text-[var(--text-dim)] mb-1 -mt-1">
+          ↪ {event.travel_from_prev_min} min travel
+        </p>
+      )}
+
+      <div className="flex items-baseline gap-3 mb-1">
+        <span className="font-display text-sm text-[var(--cream)] tabular-nums">{event.time}</span>
+        <span className="text-[10px] text-[var(--text-dim)] tracking-wider uppercase">
+          {event.duration_min >= 60 ? `${(event.duration_min / 60).toFixed(event.duration_min % 60 === 0 ? 0 : 1)}h` : `${event.duration_min}m`}
+          {endTime && ` · ends ${endTime}`}
+        </span>
+      </div>
+      <div className="flex items-start gap-2 mb-0.5">
+        <span className="text-base leading-tight flex-shrink-0" style={{ filter: 'grayscale(0)' }}>{meta.icon}</span>
+        <p className="text-[var(--cream)] text-[14px] leading-snug flex-1">{event.title}</p>
+      </div>
+      {event.location && (
+        <p className="text-[var(--text-muted)] text-xs mt-1 ml-6 italic">📍 {event.location}</p>
+      )}
+      {event.tip && (
+        <p className="text-[var(--text-muted)] text-xs mt-1.5 ml-6 leading-relaxed">💡 {event.tip}</p>
+      )}
+    </li>
+  );
+}
+
+function DayNote({ icon, label, text, colour }: { icon: string; label: string; text: string; colour: string }) {
+  return (
+    <div
+      className="flex items-start gap-3 px-4 py-3 rounded-2xl border"
+      style={{ borderColor: `color-mix(in srgb, ${colour} 35%, transparent)`, background: `color-mix(in srgb, ${colour} 6%, transparent)` }}
+    >
+      <span className="text-base leading-none mt-0.5" aria-hidden>{icon}</span>
+      <div className="flex-1">
+        <p className="text-[10px] tracking-wider uppercase font-semibold" style={{ color: colour }}>{label}</p>
+        <p className="text-[var(--cream)] text-[13px] leading-relaxed mt-0.5">{text}</p>
+      </div>
+    </div>
+  );
+}
+
+function computeEndTime(start: string, durationMin: number): string | null {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(start);
+  if (!m) return null;
+  const h = parseInt(m[1], 10);
+  const min = parseInt(m[2], 10);
+  if (!Number.isFinite(h) || !Number.isFinite(min)) return null;
+  const total = h * 60 + min + (durationMin || 0);
+  const eh = Math.floor((total % (24 * 60)) / 60);
+  const em = total % 60;
+  return `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
 }
