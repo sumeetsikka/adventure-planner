@@ -221,6 +221,24 @@ export default function Inspiration({ onSelectCountry, onClose }: Props) {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Surprise me — picks one of the filtered countries at random */}
+          {matchedCountries.length > 0 && (
+            <div className="mt-10 text-center">
+              <button
+                onClick={() => {
+                  const pick = matchedCountries[Math.floor(Math.random() * matchedCountries.length)];
+                  onSelectCountry(pick);
+                }}
+                className="px-8 py-3.5 rounded-full bg-[var(--terracotta)] text-white hover:bg-[var(--terracotta-soft)] transition-colors text-sm font-medium tracking-wide shadow-[var(--shadow-sm)]"
+              >
+                🎲 Surprise me — pick one
+              </button>
+              <p className="text-[var(--text-dim)] text-[11px] mt-3 font-light">
+                We'll pick one of these {matchedCountries.length} country{matchedCountries.length === 1 ? '' : 'ies'} for you and dive straight in.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

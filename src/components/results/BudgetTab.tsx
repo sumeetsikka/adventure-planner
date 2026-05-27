@@ -529,9 +529,87 @@ export default function BudgetTab({ budget, config, onUpdate, flights = [], tran
         );
       })()}
 
+      {/* Quick split — for splitting individual bills (restaurants, taxis) */}
+      {config.travellers > 1 && (
+        <BillSplit travellers={config.travellers} formatMoney={formatMoney} effectiveRate={effectiveRate} symbol={symbol} />
+      )}
+
       <p className="text-[var(--text-dim)] text-[10px] text-center mt-8 tracking-wider uppercase">
         Estimates based on typical Australian traveller costs. Prices vary by season.
       </p>
+    </motion.div>
+  );
+}
+
+function BillSplit({ travellers, formatMoney, effectiveRate, symbol }: { travellers: number; formatMoney: (n: number) => string; effectiveRate: number; symbol: string }) {
+  const [amount, setAmount] = useState<string>('');
+  const [tipPct, setTipPct] = useState<number>(0);
+  const [people, setPeople] = useState<number>(travellers);
+  const total = Math.max(0, Number(amount) || 0);
+  const withTip = total * (1 + tipPct / 100);
+  const perPerson = people > 0 ? withTip / people : 0;
+  const safePeople = Math.max(1, people);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: EASE }}
+      className="surface-card rounded-3xl p-7 mt-10"
+    >
+      <div className="flex items-baseline justify-between mb-4">
+        <p className="eyebrow">Quick split</p>
+        <span className="text-[10px] text-[var(--text-dim)] tracking-wider uppercase">For shared bills</span>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+        <div>
+          <label className="block text-[10px] tracking-wider uppercase text-[var(--text-dim)] mb-1.5">Amount</label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">{symbol || '$'}</span>
+            <input
+              type="number" inputMode="decimal" min={0}
+              value={amount} onChange={(e) => setAmount(e.target.value)}
+              placeholder="e.g. 120"
+              className="w-full bg-[var(--ink-3)] border border-[var(--line)] rounded-xl pl-7 pr-3 py-2.5 text-[var(--cream)] text-sm focus:outline-none focus:border-[var(--terracotta)]"
+            />
+          </div>
+        </div>
+        <div>
+          <label className="block text-[10px] tracking-wider uppercase text-[var(--text-dim)] mb-1.5">Tip</label>
+          <div className="flex gap-1">
+            {[0, 5, 10, 15, 20].map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTipPct(t)}
+                className={`flex-1 px-1 py-2 rounded-lg text-xs transition-all border ${
+                  tipPct === t
+                    ? 'border-[var(--terracotta)]/50 bg-[var(--terracotta)]/8 text-[var(--cream)]'
+                    : 'border-[var(--line)] text-[var(--text-muted)]'
+                }`}
+              >
+                {t}%
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <label className="block text-[10px] tracking-wider uppercase text-[var(--text-dim)] mb-1.5">People</label>
+          <div className="flex items-center gap-2 bg-[var(--ink-3)] border border-[var(--line)] rounded-xl px-3 py-1.5">
+            <button type="button" onClick={() => setPeople(Math.max(1, people - 1))} className="w-7 h-7 rounded-full bg-[var(--ink-4)] text-[var(--cream)] text-base">−</button>
+            <span className="font-display text-xl text-[var(--cream)] flex-1 text-center tabular-nums">{people}</span>
+            <button type="button" onClick={() => setPeople(Math.min(20, people + 1))} className="w-7 h-7 rounded-full bg-[var(--ink-4)] text-[var(--cream)] text-base">+</button>
+          </div>
+        </div>
+      </div>
+      <div className="flex items-baseline justify-between gap-4 pt-5 border-t border-[var(--line)]">
+        <div>
+          <p className="text-[10px] tracking-wider uppercase text-[var(--text-dim)] mb-1">Per person</p>
+          <p className="font-display text-4xl text-[var(--terracotta)] leading-none tabular-nums">{formatMoney(perPerson / effectiveRate)}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-[10px] tracking-wider uppercase text-[var(--text-dim)] mb-1">Total {tipPct > 0 ? `(incl. ${tipPct}%)` : ''}</p>
+          <p className="font-display text-2xl text-[var(--cream)] leading-none tabular-nums">{formatMoney(withTip / effectiveRate)}</p>
+          <p className="text-[10px] tracking-wider uppercase text-[var(--text-dim)] mt-1">across {safePeople} {safePeople === 1 ? 'person' : 'people'}</p>
+        </div>
+      </div>
     </motion.div>
   );
 }
