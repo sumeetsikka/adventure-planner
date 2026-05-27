@@ -3,8 +3,8 @@
 > **Living document.** Maintained alongside the code. When adding/changing a feature,
 > the entry in this file must change too — see § 14 *Self-maintenance protocol*.
 
-**Last updated:** 2026-05-27
-**App version:** post-WOW build-out (Phases 1–12 shipped: per-traveller profiles, all-ages modes, hour-by-hour itinerary, pre-trip readiness, live-mode dashboard, cultural depth, price tracking, budget realism, memories recap, group splits, surprise-me inspiration, i18n scaffold).
+**Last updated:** 2026-05-27 (QA round 3 — post-WOW hardening)
+**App version:** post-WOW build-out (Phases 1–12 shipped: per-traveller profiles, all-ages modes, hour-by-hour itinerary, pre-trip readiness, live-mode dashboard, cultural depth, price tracking, budget realism, memories recap, group splits, surprise-me inspiration, i18n scaffold) + QA hardening.
 
 ---
 
@@ -289,7 +289,7 @@ A debounced auto-commit hook (`.claude/scripts/auto-commit.sh`) commits clean in
 | `src/lib/originAirports.ts` | Airports the traveller can pick as their origin. Used for flight deep-links. |
 | `src/lib/phrases.ts` | The "Essential phrases" pack used by the Currency tab. Add languages by adding entries to the phrase map. |
 | `server/lib/prompts.ts` | All LLM system prompts. The most-tweaked one is `ITINERARY_SYSTEM` — the hour-by-hour timeline contract lives here. |
-| `api/[route].ts` | Route handlers. `personalisationHint()`, `budgetHint()`, `modeDirective()`, `profilesHint()` are appended to user messages to shape generation. |
+| `api/[route].ts` | Route handlers. `personalisationHint()`, `budgetHint()`, `modeDirective()`, `profilesHint()` are appended to user messages to shape generation. `ORIGIN_CITY_BY_IATA` maps the user's chosen origin IATA to a city name for the prompts (so itinerary/flights actually use the chosen origin instead of hard-coding Melbourne). Add new origin airports here if you extend `originAirports.ts`. |
 | `server/lib/dateSchedule.ts` | The destination-by-destination schedule logic (`computeSchedule`, `fixFlightDates`, `fixHotelDates`). Adjust if you change trip-length semantics. |
 | `src/lib/i18n.ts` | i18n scaffold. To add a language: fill its block in `STRINGS`, add to `AVAILABLE_LANGUAGES`. |
 | `src/lib/readiness.ts` | The pre-trip readiness checklist. Add an item: append to `buildReadinessItems()` with a `daysBefore` deadline. |
@@ -384,6 +384,15 @@ Future sessions: when you edit code that maps to a section here, also update `GU
 ## 15. Changelog
 
 > Add newest entries at the top. Date format: YYYY-MM-DD.
+
+### 2026-05-27 — QA round 3 (post-WOW hardening)
+- Fixed `PrepareTab` nested `<a>` inside `<button>` — checklist rows now use `<div role="button" tabIndex={0}>` with keyboard handler, so the deep-link anchor is valid HTML.
+- Fixed `DashboardTab` NaN edge case — when `config.departureDate` or `returnDate` are missing/invalid, the component now renders "Dates pending" instead of "Invalid Date → Invalid Date · NaN days", and the state banner is suppressed.
+- Fixed `handleItinerary` + `handleFlights` + `handleBudget` hard-coding "Melbourne" — they now use the user's chosen `config.origin`. New `originCity()` / `originCode()` helpers in `api/[route].ts` resolve common IATA codes (MEL/SYD/BNE/PER/ADL/OOL/CBR/HBA/CNS/DRW/AKL/SIN/HKG/NRT/LHR/LAX) to city names; unknown codes fall through as the IATA code itself.
+- Fixed `flightWatchId` case-sensitivity — `SYD` and `syd` now produce the same watch-list id, so the same flight isn't tracked twice across regenerations.
+- Fixed `computeEndTime` midnight overflow — events that finish past midnight now display "01:30 +1d" instead of misleadingly showing "01:30" same-day.
+- Aligned `PrepareTab`'s "post-trip" boundary with `DashboardTab` — both now use `tripLengthDays`-based logic so the tab disappears the day after the trip ends, not earlier.
+- Cleaned up dead JPY branch in `BudgetTab.formatMoney`.
 
 ### 2026-05-27 — WOW build-out (12 phases)
 - Per-traveller profiles: dietary / mobility / interests / name per person. Drives personalised LLM generation.
