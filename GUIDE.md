@@ -390,12 +390,13 @@ Future sessions: when you edit code that maps to a section here, also update `GU
 
 > Add newest entries at the top. Date format: YYYY-MM-DD.
 
-### 2026-05-27 — Stitch follow-ons (3 of 5 shipped)
+### 2026-05-27 — Stitch follow-ons (4 of 5 shipped)
 - **Dashboard "Trip at a glance" rail** — a horizontal, scannable strip of the stitched days (day number, weekday, title, move icons, overnight), each tapping through to the Itinerary. Built in `DashboardTab.tsx` off `buildDayPlans` + `dayMoves`.
 - **Inline mismatch warnings on day cards** — the conflict engine's findings (e.g. "transport X→Y has no matching itinerary day") now render directly on the relevant `StitchedDayCard` in the Itinerary, not just in the top summary panel. `ItineraryTab.tsx` passes `dayConflicts` filtered by day.
 - **Per-day budget** — new "Day by day · what each day costs" section in `BudgetTab.tsx`, derived from `perDayCosts()` in `planStitch.ts`: flights land on their departure day, hotel cost is split across nights (per person), and food/activities/local-transport are spread evenly. `ResultsView` now passes `flights`/`transport`/`hotels`/`itinerary` to `BudgetTab`.
-- New `planStitch.ts` helpers: `destinationDayRanges`, `dayRangeForDestination`, `perDayCosts`. New `src/components/shared/DayRangeChip.tsx` (a "Days N–M" chip, ready for the Taste/Do/Nearby anchoring — see Deferred below).
-- **Deferred (tooling issue this session corrupted file reads): day-anchored Taste/Do/Nearby chips, and the stitched-PDF rewrite.** Code/types are ready (`DayRangeChip`, `destinationDayRanges`); these need a clean session to wire into the four large render files safely.
+- **Day-anchored Taste / Do / Nearby** — each destination header in those three tabs now carries a "🗓️ Days N–M" chip showing when you're actually there, so the suggestions read as part of the plan. New `src/components/shared/DayRangeChip.tsx` + `destinationDayRanges`/`dayRangeForDestination` in `planStitch.ts`. `ResultsView` passes `config` + `itinerary` to `TasteTab`/`DoTab`/`NearbyTab`.
+- New `planStitch.ts` helpers: `destinationDayRanges`, `dayRangeForDestination`, `perDayCosts`.
+- **Deferred — stitched-PDF rewrite (Task 5/5).** `tripPdf.tsx` (~800 lines, @react-pdf/renderer) should be rebuilt to render the day-by-day stitched plan (flights/hotels/transport inline per day). Not done this session; the `buildDayPlans`/`dayMoves` helpers it needs are ready.
 
 ### 2026-05-27 — Stitched plan (everything joined on dates)
 - New `src/lib/planStitch.ts` — `buildDayPlans()` joins flights / hotels / transport / itinerary on the date axis; `dayMoves()` produces the ordered fly→checkout→transport→checkin chips per day.
