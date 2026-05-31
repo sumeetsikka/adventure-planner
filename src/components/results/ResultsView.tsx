@@ -233,7 +233,7 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
             <RouteMapTab config={config} results={results} />
           )}
           {activeTab === 'budget' && (results.budget.length > 0
-            ? <BudgetTab budget={results.budget} config={config} onUpdate={(budget) => onUpdateResults({ budget })} />
+            ? <BudgetTab budget={results.budget} config={config} flights={results.flights} transport={results.transport} hotels={results.hotels} itinerary={results.itinerary} onUpdate={(budget) => onUpdateResults({ budget })} />
             : <RetryButton label="budget" onRetry={async () => { const d = await generateBudget(config); onUpdateResults({ budget: d }); }} />
           )}
           {activeTab === 'tips' && (results.tips.length > 0

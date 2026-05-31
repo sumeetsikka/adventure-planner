@@ -113,6 +113,131 @@ export interface DayMove {
   ref?: FlightLeg | TransportLeg | HotelStay;
 }
 
+/** Which trip-days you spend in each destination, keyed by lowercased name.
+ *  Used to anchor Taste/Do/Nearby suggestions to the days you're actually there. */
+export interface DestinationDays {
+  destination: string;     // original-cased name (from the itinerary)
+  firstDay: number;
+  lastDay: number;
+  firstDate: string;
+  lastDate: string;
+}
+
+function normaliseLoc(s: string): string {
+  return (s || '').toLowerCase().split('(')[0].split('/')[0].trim();
+}
+
+export function destinationDayRanges(plans: DayPlan[]): Map<string, DestinationDays> {
+  const map = new Map<string, DestinationDays>();
+  for (const plan of plans) {
+    const loc = plan.itineraryDay?.location || plan.stayingTonight?.dest.destination || plan.checkIns[0]?.dest.destination;
+    if (!loc) continue;
+    const key = normaliseLoc(loc);
+    if (!key) continue;
+    const existing = map.get(key);
+    if (existing) {
+      existing.lastDay = plan.day;
+      existing.lastDate = plan.date;
+    } else {
+      map.set(key, { destination: loc, firstDay: plan.day, lastDay: plan.day, firstDate: plan.date, lastDate: plan.date });
+    }
+  }
+  return map;
+}
+
+/** Look up the day-range for a destination name (fuzzy: substring either way).
+ *  Returns null if the destination isn't found in the plan. */
+export function dayRangeForDestination(
+  ranges: Map<string, DestinationDays>,
+  destination: string,
+): DestinationDays | null {
+  const key = normaliseLoc(destination);
+  if (!key) return null;
+  const exact = ranges.get(key);
+  if (exact) return exact;
+  // Fuzzy: either name contains the other.
+  for (const [k, v] of ranges) {
+    if (k.includes(key) || key.includes(k)) return v;
+  }
+  return null;
+}
+
+// ── Per-day cost allocation ───────────────────────────────────────────────
+
+export interface DayCost {
+  day: number;
+  date: string;
+  total: number;          // per-person AUD allocated to this day
+  parts: { label: string; amount: number }[];
+}
+
+function parseMid(cost: string): number {
+  const nums = (cost || '').match(/[\d,]+/g);
+  if (!nums || nums.length === 0) return 0;
+  const v = nums.map((n) => parseInt(n.replace(/,/g, ''), 10)).filter((n) => Number.isFinite(n));
+  if (v.length === 0) return 0;
+  if (v.length === 1) return v[0];
+  return Math.round((v[0] + v[1]) / 2);
+}
+
+/** Allocate the trip's costs across days:
+ *  - flights → the day they depart (per person)
+ *  - hotels → spread the per-night rate across the nights of that stay (per person share)
+ *  - the remaining budget categories (food/activities/transport/misc) → spread
+ *    evenly across all days, so each day shows a realistic running spend.
+ *  All figures are PER PERSON AUD to match the rest of the Budget tab. */
+export function perDayCosts(
+  plans: DayPlan[],
+  flights: FlightLeg[],
+  budget: { category: string; cost: string }[],
+  travellers: number,
+): DayCost[] {
+  const pax = Math.max(1, travellers || 1);
+  const dayCosts: DayCost[] = plans.map((p) => ({ day: p.day, date: p.date, total: 0, parts: [] }));
+  const byDay = new Map(dayCosts.map((d) => [d.day, d]));
+
+  // Flights → departure day (price is already per person).
+  for (const f of flights || []) {
+    const plan = plans.find((p) => p.date === f.date);
+    if (!plan) continue;
+    const amt = parseMid(f.price_estimate_aud);
+    if (amt <= 0) continue;
+    const dc = byDay.get(plan.day)!;
+    dc.parts.push({ label: `Flight ${f.from_code}→${f.to_code}`, amount: amt });
+    dc.total += amt;
+  }
+
+  // Hotels → spread per-night across the stay's nights (per person = rate / pax,
+  // assuming the per-night rate is a room shared by the party).
+  for (const plan of plans) {
+    const stay = plan.stayingTonight;
+    if (!stay?.pick) continue;
+    const perNightRoom = parseMid(stay.pick.price_per_night_aud);
+    if (perNightRoom <= 0) continue;
+    const perPerson = Math.round(perNightRoom / pax);
+    const dc = byDay.get(plan.day)!;
+    dc.parts.push({ label: `Stay · ${stay.pick.name}`, amount: perPerson });
+    dc.total += perPerson;
+  }
+
+  // Remaining categories (everything that isn't flights/accommodation) spread
+  // evenly across all days.
+  const dailyCats = (budget || []).filter((b) => {
+    const c = (b.category || '').toLowerCase();
+    return !c.includes('flight') && !c.includes('accommodation') && !c.includes('hotel') && !c.includes('lodging');
+  });
+  const dailyTotal = dailyCats.reduce((s, b) => s + parseMid(b.cost), 0);
+  if (dayCosts.length > 0 && dailyTotal > 0) {
+    const perDay = Math.round(dailyTotal / dayCosts.length);
+    for (const dc of dayCosts) {
+      dc.parts.push({ label: 'Food, activities & local transport', amount: perDay });
+      dc.total += perDay;
+    }
+  }
+
+  return dayCosts;
+}
+
 export function dayMoves(plan: DayPlan): DayMove[] {
   const moves: DayMove[] = [];
 

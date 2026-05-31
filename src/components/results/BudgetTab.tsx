@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import type { BudgetItem, TravelConfig, FlightLeg, TransportLeg } from '../../types';
+import type { BudgetItem, TravelConfig, FlightLeg, TransportLeg, DestinationHotels, ItineraryDay } from '../../types';
 import { generateBudget } from '../../lib/api';
 import { fetchRate, CURRENCY_SYMBOLS } from '../../lib/fx';
+import { buildDayPlans, perDayCosts } from '../../lib/planStitch';
+import { formatDayLabel } from '../../lib/dateUtils';
 import {
   flightCO2kg,
   trainCO2kg,
@@ -21,6 +23,8 @@ interface Props {
   onUpdate?: (budget: BudgetItem[]) => void;
   flights?: FlightLeg[];
   transport?: TransportLeg[];
+  hotels?: DestinationHotels[];
+  itinerary?: ItineraryDay[];
 }
 
 function transportCO2(mode: string, km: number): number {
@@ -42,8 +46,16 @@ function parseCostMid(cost: string): number {
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
-export default function BudgetTab({ budget, config, onUpdate, flights = [], transport = [] }: Props) {
+export default function BudgetTab({ budget, config, onUpdate, flights = [], transport = [], hotels = [], itinerary = [] }: Props) {
   const [retrying, setRetrying] = useState(false);
+  const [showPerDay, setShowPerDay] = useState(false);
+
+  // Per-day spend allocation built off the stitched plan.
+  const perDay = useMemo(() => {
+    if (!config.departureDate || (itinerary.length === 0 && hotels.length === 0)) return [];
+    const plans = buildDayPlans(config, itinerary, flights, hotels, transport);
+    return perDayCosts(plans, flights, budget, config.travellers);
+  }, [config, itinerary, flights, hotels, transport, budget]);
   const [displayCurrency, setDisplayCurrency] = useState<string>(config.homeCurrency || 'AUD');
   const [fxRate, setFxRate] = useState<number | null>(1);
   const [fxLoading, setFxLoading] = useState(false);
@@ -323,6 +335,60 @@ export default function BudgetTab({ budget, config, onUpdate, flights = [], tran
                 );
               })}
             </div>
+          </motion.div>
+        );
+      })()}
+
+      {/* Per-day spend — derived from the stitched plan */}
+      {perDay.length > 0 && perDay.some(d => d.total > 0) && (() => {
+        const maxDay = Math.max(...perDay.map(d => d.total));
+        const visible = showPerDay ? perDay : perDay.slice(0, 4);
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: EASE }}
+            className="surface-card rounded-3xl p-7 mb-10"
+          >
+            <div className="flex items-baseline justify-between mb-1.5">
+              <p className="eyebrow">Day by day</p>
+              <span className="text-[10px] text-[var(--text-dim)] tracking-wider uppercase">Per person</span>
+            </div>
+            <h3 className="font-display text-2xl text-[var(--cream)] leading-tight mb-6">
+              What each day <em className="italic text-[var(--gold)]">costs</em>.
+            </h3>
+            <div className="space-y-3">
+              {visible.map((d) => (
+                <div key={d.day} className="flex items-center gap-3">
+                  <div className="w-14 flex-shrink-0">
+                    <p className="font-display text-sm text-[var(--cream)] leading-none">Day {d.day}</p>
+                    <p className="text-[9px] text-[var(--text-dim)] mt-0.5">{formatDayLabel(d.date).split(' ').slice(1).join(' ')}</p>
+                  </div>
+                  <div className="flex-1 h-7 rounded-lg bg-[var(--ink-4)] overflow-hidden relative">
+                    <motion.div
+                      className="h-full rounded-lg flex items-center"
+                      style={{ background: 'color-mix(in srgb, var(--terracotta) 22%, transparent)' }}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${maxDay > 0 ? (d.total / maxDay) * 100 : 0}%` }}
+                      transition={{ duration: 0.7, ease: EASE }}
+                    />
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-[var(--text-muted)] truncate max-w-[60%]">
+                      {d.parts.find(p => /flight/i.test(p.label)) ? '✈️ ' : ''}{d.parts.find(p => /stay/i.test(p.label)) ? '🏨 ' : ''}{d.parts.filter(p => !/flight|stay/i.test(p.label)).length ? '🍜' : ''}
+                    </span>
+                  </div>
+                  <p className="font-display text-base text-[var(--gold)] w-16 text-right flex-shrink-0 tabular-nums">{formatMoney(d.total)}</p>
+                </div>
+              ))}
+            </div>
+            {perDay.length > 4 && (
+              <button
+                onClick={() => setShowPerDay(!showPerDay)}
+                className="mt-4 text-[11px] uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--cream)] transition-colors"
+              >
+                {showPerDay ? 'Show less ↑' : `Show all ${perDay.length} days →`}
+              </button>
+            )}
+            <p className="text-[var(--text-dim)] text-[10px] mt-4 leading-relaxed">
+              Flights land on their departure day; hotel cost is split across nights (per person); food, activities & local transport are spread evenly across the trip.
+            </p>
           </motion.div>
         );
       })()}

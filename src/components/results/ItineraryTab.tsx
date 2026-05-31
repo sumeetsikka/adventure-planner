@@ -385,6 +385,7 @@ export default function ItineraryTab({ itinerary, config, hotels, onUpdate, flig
               reorderMode={reorderMode}
               canMoveUp={plan.day > 1}
               canMoveDown={plan.day < itinerary.length}
+              dayConflicts={conflicts.filter((c) => c.day === plan.day)}
               onMove={(dir) => moveDay(plan.day, dir)}
               onToggle={() => setSelectedDay(selectedDay === plan.day ? null : plan.day)}
             />
@@ -398,7 +399,7 @@ export default function ItineraryTab({ itinerary, config, hotels, onUpdate, flig
 // ── Stitched day card ─────────────────────────────────────────────────────
 
 function StitchedDayCard({
-  plan, index, isSelected, reorderMode, canMoveUp, canMoveDown, onMove, onToggle,
+  plan, index, isSelected, reorderMode, canMoveUp, canMoveDown, dayConflicts, onMove, onToggle,
 }: {
   plan: DayPlan;
   index: number;
@@ -406,6 +407,7 @@ function StitchedDayCard({
   reorderMode: boolean;
   canMoveUp: boolean;
   canMoveDown: boolean;
+  dayConflicts: { severity: string; day: number; message: string; hint?: string }[];
   onMove: (dir: 'up' | 'down') => void;
   onToggle: () => void;
 }) {
@@ -476,6 +478,28 @@ function StitchedDayCard({
                 <div className="flex-1 min-w-0">
                   <p className="text-[var(--cream)] text-[13px] leading-snug font-medium">{m.text}</p>
                   {m.sub && <p className="text-[var(--text-muted)] text-[11px] mt-0.5">{m.sub}</p>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Inline mismatch warnings for this day */}
+        {dayConflicts.length > 0 && (
+          <div className="px-5 pb-4 space-y-1.5">
+            {dayConflicts.map((c, i) => (
+              <div
+                key={i}
+                className="flex items-start gap-2.5 rounded-xl px-3 py-2 border"
+                style={{
+                  borderColor: c.severity === 'warning' ? 'color-mix(in srgb, var(--terracotta) 35%, transparent)' : 'color-mix(in srgb, var(--gold) 35%, transparent)',
+                  background: c.severity === 'warning' ? 'color-mix(in srgb, var(--terracotta) 6%, transparent)' : 'color-mix(in srgb, var(--gold) 6%, transparent)',
+                }}
+              >
+                <span className="text-sm leading-tight flex-shrink-0">{c.severity === 'warning' ? '⚠️' : 'ⓘ'}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[var(--cream)] text-[12px] leading-snug">{c.message}</p>
+                  {c.hint && <p className="text-[var(--text-muted)] text-[11px] mt-0.5 italic">{c.hint}</p>}
                 </div>
               </div>
             ))}

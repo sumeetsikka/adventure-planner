@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { TravelConfig, GenerationResults, ResultsTab } from '../../types';
-import { formatDateAU, todayISO, addDaysISO } from '../../lib/dateUtils';
+import { formatDateAU, todayISO, addDaysISO, weekdayShort } from '../../lib/dateUtils';
 import { getCountryHero, getDestinationPhoto } from '../../lib/imagery';
 import { useGeolocation, distanceKm } from '../../lib/useGeolocation';
 import { directionsUrl } from '../../lib/deepLinks';
 import { geocodeDestination } from '../../lib/geocode';
+import { buildDayPlans, dayMoves } from '../../lib/planStitch';
 import AnimatedNumber from '../shared/AnimatedNumber';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
@@ -46,6 +47,21 @@ export default function DashboardTab({ config, results, onTabChange }: Props) {
     { label: 'Hotels', value: results.hotels.length, action: 'hotels' as ResultsTab },
     { label: 'Transfers', value: results.transport.length, action: 'transport' as ResultsTab },
   ];
+
+  // "Trip at a glance" rail — a compact, scannable strip of the stitched days.
+  const glanceDays = useMemo(() => {
+    if (!hasValidDates || results.itinerary.length === 0) return [];
+    const plans = buildDayPlans(config, results.itinerary, results.flights, results.hotels, results.transport);
+    return plans.map((p) => {
+      const icons = dayMoves(p).map((m) => m.icon).join(' ');
+      const title = p.itineraryDay?.title || (p.isLastDay ? 'Fly home' : p.isFirstDay ? 'Arrival' : `Day ${p.day}`);
+      const tonight = p.isLastDay && p.flights.some(f => f.type === 'international')
+        ? 'Home'
+        : p.stayingTonight?.pick?.name || (p.stayingTonight ? p.stayingTonight.dest.destination : '');
+      return { day: p.day, date: p.date, title, icons, tonight };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config, results.itinerary, results.flights, results.hotels, results.transport, hasValidDates]);
 
   const heroImage = getCountryHero(config.country?.name || 'travel', 1800, 900);
 
@@ -310,6 +326,39 @@ export default function DashboardTab({ config, results, onTabChange }: Props) {
           </div>
         </div>
       </motion.div>
+
+      {/* Trip at a glance — horizontal stitched-day rail */}
+      {glanceDays.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
+        >
+          <div className="flex items-baseline justify-between mb-3">
+            <p className="eyebrow">Trip at a glance</p>
+            {onTabChange && (
+              <button onClick={() => onTabChange('itinerary')} className="text-[11px] tracking-wider uppercase text-[var(--terracotta)] hover:underline">
+                Full plan →
+              </button>
+            )}
+          </div>
+          <div className="flex gap-2.5 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
+            {glanceDays.map((g) => (
+              <button
+                key={g.day}
+                onClick={() => onTabChange?.('itinerary')}
+                className="snap-start flex-shrink-0 w-[140px] text-left surface-card rounded-2xl p-3.5 hover:border-[var(--line-strong)] transition-colors"
+              >
+                <div className="flex items-baseline justify-between mb-1.5">
+                  <span className="font-display text-lg text-[var(--terracotta)] leading-none">Day {g.day}</span>
+                  <span className="text-[9px] tracking-wider uppercase text-[var(--text-dim)]">{weekdayShort(g.date)}</span>
+                </div>
+                <p className="text-[var(--cream)] text-[12.5px] font-medium leading-snug line-clamp-2 mb-1.5">{g.title}</p>
+                {g.icons && <p className="text-sm leading-none">{g.icons}</p>}
+                {g.tonight && <p className="text-[10px] text-[var(--text-dim)] mt-1.5 truncate">🛏️ {g.tonight}</p>}
+              </button>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
