@@ -257,7 +257,7 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
             : <RetryButton label="currency" onRetry={async () => { const d = await generateCurrency(config); onUpdateResults({ currency: d }); }} />
           )}
           {activeTab === 'nearby' && (results.nearby.length > 0
-            ? <NearbyTab nearby={results.nearby} destinations={config.destinations} />
+            ? <NearbyTab nearby={results.nearby} destinations={config.destinations} config={config} itinerary={results.itinerary} />
             : <RetryButton label="nearby" onRetry={async () => { const d = await generateNearby(config); onUpdateResults({ nearby: d }); }} />
           )}
           {activeTab === 'checklist' && <ChecklistTab config={config} />}
