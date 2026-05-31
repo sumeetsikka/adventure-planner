@@ -1,12 +1,16 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import type { NearbyPlace, Destination, NearbyCategory } from '../../types';
+import type { NearbyPlace, Destination, NearbyCategory, TravelConfig, ItineraryDay } from '../../types';
 import { getDestinationPhoto } from '../../lib/imagery';
+import { buildDayPlans, destinationDayRanges, dayRangeForDestination } from '../../lib/planStitch';
 import { PlaceActions } from '../shared/PlaceLink';
+import DayRangeChip from '../shared/DayRangeChip';
 
 interface Props {
   nearby: NearbyPlace[];
   destinations?: Destination[];
+  config?: TravelConfig;
+  itinerary?: ItineraryDay[];
 }
 
 const EASE = [0.16, 1, 0.3, 1] as const;
@@ -25,7 +29,11 @@ const ALL_CATEGORIES = Object.keys(CATEGORY_META) as NearbyCategory[];
 type CategoryFilter = 'all' | NearbyCategory;
 type LengthFilter = 'all' | 'half-day' | 'full-day';
 
-export default function NearbyTab({ nearby }: Props) {
+export default function NearbyTab({ nearby, config, itinerary = [] }: Props) {
+  const dayRanges = useMemo(
+    () => (config ? destinationDayRanges(buildDayPlans(config, itinerary, [], [], [])) : new Map()),
+    [config, itinerary]
+  );
   const [catFilter, setCatFilter] = useState<CategoryFilter>('all');
   const [lenFilter, setLenFilter] = useState<LengthFilter>('all');
 
@@ -125,6 +133,7 @@ export default function NearbyTab({ nearby }: Props) {
               <div className="flex items-baseline gap-4 mb-6">
                 <p className="eyebrow">While in</p>
                 <h3 className="font-display italic text-2xl text-[var(--cream)]">{dest}</h3>
+                <DayRangeChip range={dayRangeForDestination(dayRanges, dest)} />
                 <div className="flex-1 h-px bg-[var(--line)]" />
               </div>
 

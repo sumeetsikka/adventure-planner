@@ -1,10 +1,14 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import type { DestinationActivities, Activity, ActivityTimeFit, ActivityWeather } from '../../types';
+import type { DestinationActivities, Activity, ActivityTimeFit, ActivityWeather, TravelConfig, ItineraryDay } from '../../types';
 import { mapsUrl, directionsUrl } from '../../lib/deepLinks';
+import { buildDayPlans, destinationDayRanges, dayRangeForDestination } from '../../lib/planStitch';
+import DayRangeChip from '../shared/DayRangeChip';
 
 interface Props {
   activities: DestinationActivities[];
+  config?: TravelConfig;
+  itinerary?: ItineraryDay[];
 }
 
 const EASE = [0.16, 1, 0.3, 1] as const;
@@ -39,7 +43,11 @@ const WEATHER_FILTERS: { id: WeatherFilter; label: string }[] = [
   { id: 'all-weather', label: 'All-weather' },
 ];
 
-export default function DoTab({ activities }: Props) {
+export default function DoTab({ activities, config, itinerary = [] }: Props) {
+  const dayRanges = useMemo(
+    () => (config ? destinationDayRanges(buildDayPlans(config, itinerary, [], [], [])) : new Map()),
+    [config, itinerary]
+  );
   const [filter, setFilter] = useState<Activity['category'] | 'all'>('all');
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('any');
   const [weatherFilter, setWeatherFilter] = useState<WeatherFilter>('any');
@@ -242,6 +250,7 @@ export default function DoTab({ activities }: Props) {
               <div className="flex items-baseline gap-6 mb-6">
                 <span className="eyebrow">Stop {String(di + 1).padStart(2, '0')}</span>
                 <h3 className="font-display text-2xl sm:text-3xl text-[var(--cream)]">{dest.destination}</h3>
+                <DayRangeChip range={dayRangeForDestination(dayRanges, dest.destination)} />
                 <div className="flex-1 h-px bg-[var(--line)]" />
                 <span className="eyebrow text-[var(--text-dim)]">{dest.list.length} ideas</span>
               </div>
