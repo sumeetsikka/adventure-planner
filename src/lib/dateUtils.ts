@@ -67,3 +67,13 @@ export function isDateInStay(date: string, checkIn: string, checkOut: string): b
   if (!date || !checkIn || !checkOut) return false;
   return date >= checkIn && date < checkOut; // ISO strings compare lexically = chronologically
 }
+
+/** Which trip-day a date falls on (1-based). null if either date is invalid or
+ *  the date is before departure. Used to label flights/hotels with "Day N". */
+export function tripDayNumber(departureDate: string, date: string): number | null {
+  const dep = parseLocalDate(departureDate);
+  const d = parseLocalDate(date);
+  if (!dep || !d) return null;
+  const diff = Math.round((d.getTime() - dep.getTime()) / 86_400_000);
+  return diff >= 0 ? diff + 1 : null;
+}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import type { FlightLeg, TravelConfig } from '../../types';
-import { formatDateAU } from '../../lib/dateUtils';
+import { formatDateAU, formatDayLabel, tripDayNumber } from '../../lib/dateUtils';
 import { getFlightLinks } from '../../lib/bookingLinks';
 import { flightCO2kg, estimateLegDistance } from '../../lib/carbon';
 import { isWatched, toggleWatch, flightWatchId } from '../../lib/priceWatch';
@@ -50,9 +50,13 @@ export default function FlightsTab({ flights, config }: Props) {
         >
           <div className="flex items-start justify-between mb-8 gap-4">
             <div>
-              <p className="eyebrow mb-3">{selected.type === 'international' ? 'International leg' : 'Domestic leg'} · {formatDateAU(selected.date)}</p>
+              <p className="eyebrow mb-3">
+                {selected.type === 'international' ? 'International leg' : 'Domestic leg'}
+                {config?.departureDate && tripDayNumber(config.departureDate, selected.date) ? ` · Day ${tripDayNumber(config.departureDate, selected.date)}` : ''}
+              </p>
               <h3 className="font-display text-3xl text-[var(--cream)] leading-tight">{selected.leg}</h3>
               <p className="text-[var(--text-muted)] text-sm mt-2 tracking-wide font-mono">{selected.from_code} → {selected.to_code}</p>
+              <p className="text-[var(--terracotta)] text-sm mt-2 font-medium">🗓️ {formatDateAU(selected.date)} · {formatDayLabel(selected.date)}</p>
             </div>
             <button
               onClick={() => setSelectedFlight(null)}
@@ -141,10 +145,23 @@ export default function FlightsTab({ flights, config }: Props) {
             >
               <div className="flex items-start justify-between mb-5">
                 <div>
-                  <p className="eyebrow mb-2">{isIntl ? 'International' : 'Domestic'} · {formatDateAU(f.date)}</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    {(() => {
+                      const dn = config?.departureDate ? tripDayNumber(config.departureDate, f.date) : null;
+                      return dn ? (
+                        <span className="text-[10px] font-semibold tracking-wider uppercase text-[var(--terracotta)] bg-[var(--terracotta)]/10 rounded-full px-2 py-0.5">
+                          Day {dn}
+                        </span>
+                      ) : null;
+                    })()}
+                    <p className="eyebrow">{isIntl ? 'International' : 'Domestic'}</p>
+                  </div>
                   <h4 className="font-display text-xl text-[var(--cream)] leading-tight">{f.leg}</h4>
                   <p className="text-[var(--text-muted)] text-xs mt-1.5 font-mono tracking-wider">
                     {f.from_code} → {f.to_code}
+                  </p>
+                  <p className="text-[var(--terracotta)] text-[11px] mt-1.5 font-medium">
+                    🗓️ {formatDayLabel(f.date)}
                   </p>
                 </div>
                 <div className="text-right flex-shrink-0">

@@ -2,10 +2,11 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import type { ItineraryDay as DayType, TravelConfig, DestinationHotels, FlightLeg, TransportLeg, WeatherInfo } from '../../types';
 import { generateItinerary } from '../../lib/api';
-import { formatDateAU, addDaysISO } from '../../lib/dateUtils';
+import { formatDateAU, addDaysISO, formatDayLabel, weekdayShort } from '../../lib/dateUtils';
 import { VIBE_LABELS } from '../../lib/constants';
 import { getDestinationPhoto } from '../../lib/imagery';
 import { findConflicts, findNudges } from '../../lib/conflicts';
+import { buildDayPlans, dayMoves, type DayPlan } from '../../lib/planStitch';
 import { PlaceActions } from '../shared/PlaceLink';
 
 interface Props {
@@ -79,29 +80,12 @@ export default function ItineraryTab({ itinerary, config, hotels, onUpdate, flig
     }
   };
 
-  const locationGroups = useMemo(() => {
-    const groups: { location: string; days: DayType[]; hotelMatch: DestinationHotels | null; isTravel: boolean }[] = [];
-    let currentGroup: typeof groups[0] | null = null;
-
-    for (const day of itinerary) {
-      const isTravel = day.vibe === 'travel';
-      if (isTravel) {
-        groups.push({ location: day.location, days: [day], hotelMatch: null, isTravel: true });
-        currentGroup = null;
-      } else if (!currentGroup || day.location !== currentGroup.location) {
-        currentGroup = {
-          location: day.location,
-          days: [day],
-          hotelMatch: findHotelForLocation(day.location, hotels),
-          isTravel: false,
-        };
-        groups.push(currentGroup);
-      } else {
-        currentGroup.days.push(day);
-      }
-    }
-    return groups;
-  }, [itinerary, hotels]);
+  // Stitched plan: every flight / hotel check-in-out / transport joined onto
+  // its day so each day reads as a real plan, not a disconnected list.
+  const dayPlans = useMemo(
+    () => buildDayPlans(config, itinerary, flights, hotels, transport),
+    [config, itinerary, flights, hotels, transport]
+  );
 
   const selectedDayData = selectedDay !== null ? itinerary.find((d) => d.day === selectedDay) : null;
 
@@ -132,7 +116,7 @@ export default function ItineraryTab({ itinerary, config, hotels, onUpdate, flig
           <h2 className="font-display text-4xl sm:text-5xl text-[var(--cream)] leading-[1.05] tracking-tight">
             The <em className="italic text-[var(--gold)]">journey</em>.
           </h2>
-          <p className="text-[var(--text-muted)] text-sm mt-3 max-w-md">Tap any day for the full plan and where you'll rest your head.</p>
+          <p className="text-[var(--text-muted)] text-sm mt-3 max-w-md">Your whole trip, stitched together day by day — flights, stays, transfers and what to do, all in order. Tap any day for the hour-by-hour.</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -387,152 +371,164 @@ export default function ItineraryTab({ itinerary, config, hotels, onUpdate, flig
         );
       })()}
 
-      {/* Location groups */}
-      <div className="space-y-12">
-        {locationGroups.map((group, gi) => {
-          const topPick = group.hotelMatch ? getTopPick(group.hotelMatch) : null;
+      {/* Stitched day-by-day plan */}
+      <div className="relative">
+        {/* Continuous vertical spine connecting the days */}
+        <span className="absolute left-[19px] top-2 bottom-2 w-px bg-[var(--line)] hidden sm:block" aria-hidden />
+        <div className="space-y-4">
+          {dayPlans.map((plan, idx) => (
+            <StitchedDayCard
+              key={plan.day}
+              plan={plan}
+              index={idx}
+              isSelected={selectedDay === plan.day}
+              reorderMode={reorderMode}
+              canMoveUp={plan.day > 1}
+              canMoveDown={plan.day < itinerary.length}
+              onMove={(dir) => moveDay(plan.day, dir)}
+              onToggle={() => setSelectedDay(selectedDay === plan.day ? null : plan.day)}
+            />
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
 
-          if (group.isTravel) {
-            const day = group.days[0];
-            const dayDate = addDaysISO(config.departureDate, day.day - 1);
-            const isSelected = selectedDay === day.day;
+// ── Stitched day card ─────────────────────────────────────────────────────
 
-            return (
-              <motion.div
-                key={gi}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.6, delay: gi * 0.05, ease: EASE }}
-                className="flex justify-center"
+function StitchedDayCard({
+  plan, index, isSelected, reorderMode, canMoveUp, canMoveDown, onMove, onToggle,
+}: {
+  plan: DayPlan;
+  index: number;
+  isSelected: boolean;
+  reorderMode: boolean;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onMove: (dir: 'up' | 'down') => void;
+  onToggle: () => void;
+}) {
+  const day = plan.itineraryDay;
+  const moves = dayMoves(plan);
+  const title = day?.title || (plan.isLastDay ? 'Departure day' : plan.isFirstDay ? 'Arrival day' : `Day ${plan.day}`);
+  const location = day?.location || plan.checkIns[0]?.dest.destination || plan.stayingTonight?.dest.destination || '';
+  const activityCount = day?.timeline?.length || day?.activities?.length || 0;
+
+  // Tonight summary.
+  let tonight: { icon: string; text: string } | null = null;
+  if (plan.isLastDay && plan.flights.some(f => f.type === 'international')) {
+    tonight = { icon: '🏠', text: 'Fly home — trip complete' };
+  } else if (plan.stayingTonight?.pick) {
+    tonight = { icon: '🛏️', text: `Overnight: ${plan.stayingTonight.pick.name}` };
+  } else if (plan.stayingTonight) {
+    tonight = { icon: '🛏️', text: `Overnight in ${plan.stayingTonight.dest.destination}` };
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: Math.min(index * 0.04, 0.4), ease: EASE }}
+      className="relative sm:pl-12"
+    >
+      {/* Spine node */}
+      <span
+        className="absolute left-0 top-5 hidden sm:flex w-10 h-10 rounded-full bg-[var(--ink-3)] border border-[var(--line-strong)] items-center justify-center z-10"
+        aria-hidden
+      >
+        <span className="font-display text-sm text-[var(--terracotta)] leading-none">{plan.day}</span>
+      </span>
+
+      <div className={`surface-card rounded-2xl overflow-hidden transition-all ${isSelected ? 'ring-1 ring-[var(--terracotta)]' : ''}`}>
+        {/* Header row — clickable to expand the hour-by-hour detail */}
+        <button
+          onClick={onToggle}
+          className="w-full text-left px-5 py-4 flex items-start gap-3"
+        >
+          <div className="flex-shrink-0 sm:hidden text-center w-9">
+            <p className="text-[9px] uppercase tracking-wider text-[var(--text-dim)]">Day</p>
+            <p className="font-display text-xl text-[var(--terracotta)] leading-none">{plan.day}</p>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] tracking-wider uppercase text-[var(--text-dim)] mb-0.5">
+              {weekdayShort(plan.date)} · {formatDayLabel(plan.date)}{location ? ` · ${location}` : ''}
+            </p>
+            <h4 className="font-display-soft text-base text-[var(--cream)] leading-snug">{title}</h4>
+          </div>
+          {activityCount > 0 && (
+            <span className="text-[var(--text-dim)] text-[10px] tracking-wider uppercase flex-shrink-0 mt-1 flex items-center gap-1">
+              {isSelected ? 'Hide' : `${activityCount} ${activityCount === 1 ? 'stop' : 'stops'}`}
+              <span className={`inline-block transition-transform ${isSelected ? 'rotate-180' : ''}`}>▾</span>
+            </span>
+          )}
+        </button>
+
+        {/* Stitched moves strip — flights / check-out / transport / check-in */}
+        {moves.length > 0 && (
+          <div className="px-5 pb-4 space-y-2">
+            {moves.map((m, i) => (
+              <div
+                key={i}
+                className="flex items-start gap-3 rounded-xl bg-[var(--ink-2)] border border-[var(--line)] px-3.5 py-2.5"
               >
-                <button
-                  onClick={() => setSelectedDay(isSelected ? null : day.day)}
-                  className={`flex items-center gap-4 rounded-full px-6 py-3 transition-all border ${
-                    isSelected
-                      ? 'border-[var(--gold)]/50 bg-[var(--gold)]/10'
-                      : 'border-dashed border-[var(--line)] hover:border-[var(--line-strong)]'
-                  }`}
-                >
-                  <span className="eyebrow">In transit</span>
-                  <span className="divider w-12" />
-                  <span className="text-[var(--cream)] text-sm font-display">{day.title}</span>
-                  <span className="text-[var(--text-dim)] text-[11px]">Day {day.day} · {formatDateAU(dayDate)}</span>
-                </button>
-              </motion.div>
-            );
-          }
+                <span className="text-base leading-tight flex-shrink-0">{m.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[var(--cream)] text-[13px] leading-snug font-medium">{m.text}</p>
+                  {m.sub && <p className="text-[var(--text-muted)] text-[11px] mt-0.5">{m.sub}</p>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
-          return (
-            <motion.div
-              key={gi}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: gi * 0.06, ease: EASE }}
+        {/* Plan teaser — first couple of activities when not expanded */}
+        {!isSelected && day && (day.timeline?.length || day.activities?.length) ? (
+          <div className="px-5 pb-4">
+            <ul className="space-y-1.5">
+              {(day.timeline && day.timeline.length > 0
+                ? day.timeline.slice(0, 3).map(ev => `${ev.time} · ${ev.title}`)
+                : day.activities.slice(0, 3)
+              ).map((line, i) => (
+                <li key={i} className="text-[var(--text-muted)] text-[13px] leading-snug flex gap-2">
+                  <span className="text-[var(--terracotta)] flex-shrink-0">›</span>
+                  <span className="truncate">{line}</span>
+                </li>
+              ))}
+              {((day.timeline?.length || day.activities?.length || 0) > 3) && (
+                <li className="text-[var(--text-dim)] text-[11px] pl-4">+ more — tap to see the full day</li>
+              )}
+            </ul>
+          </div>
+        ) : null}
+
+        {/* Reorder controls */}
+        {reorderMode && (
+          <div className="px-5 pb-4 flex items-center gap-2">
+            <button
+              onClick={(e) => { e.stopPropagation(); onMove('up'); }}
+              disabled={!canMoveUp}
+              className="px-3 py-1.5 rounded-full text-[10px] uppercase tracking-wider border border-[var(--line)] text-[var(--text-muted)] hover:text-[var(--cream)] disabled:opacity-20 transition-all"
             >
-              {/* Location headline */}
-              <div className="flex items-end justify-between mb-6 gap-4">
-                <div>
-                  <p className="eyebrow mb-2">Chapter {String(gi + 1).padStart(2, '0')}</p>
-                  <h3 className="font-display text-2xl sm:text-3xl text-[var(--cream)] leading-tight">{group.location}</h3>
-                </div>
-                <div className="text-right">
-                  <p className="text-[var(--text-dim)] text-[11px] uppercase tracking-wider">
-                    {group.days.length} day{group.days.length > 1 ? 's' : ''}
-                  </p>
-                  {topPick && (
-                    <p className="text-[var(--text-muted)] text-[11px] mt-1">Stay · {topPick.name}</p>
-                  )}
-                </div>
-              </div>
-              <div className="divider mb-6" />
+              ↑ Up
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onMove('down'); }}
+              disabled={!canMoveDown}
+              className="px-3 py-1.5 rounded-full text-[10px] uppercase tracking-wider border border-[var(--line)] text-[var(--text-muted)] hover:text-[var(--cream)] disabled:opacity-20 transition-all"
+            >
+              ↓ Down
+            </button>
+          </div>
+        )}
 
-              {/* Day cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {group.days.map((day, di) => {
-                  const vibeLabel = VIBE_LABELS[day.vibe] || day.vibe;
-                  const dayDate = addDaysISO(config.departureDate, day.day - 1);
-                  const isSelected = selectedDay === day.day;
-                  const dayPhoto = getDestinationPhoto(day.location, 600, 400);
-
-                  return (
-                    <motion.div
-                      key={day.day}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5, delay: di * 0.04, ease: EASE }}
-                      onClick={() => setSelectedDay(isSelected ? null : day.day)}
-                      className={`surface-card rounded-3xl overflow-hidden cursor-pointer transition-all ${
-                        isSelected ? 'ring-1 ring-[var(--gold)]/50' : ''
-                      }`}
-                    >
-                      {/* Photo */}
-                      <div className="relative h-36 overflow-hidden">
-                        <img src={dayPhoto} alt={day.location} className="w-full h-full object-cover"
-                          onError={(e) => { const i = e.currentTarget; if (i.dataset.fell) return; i.dataset.fell = '1'; i.src = `https://picsum.photos/seed/${encodeURIComponent(day.location)}-${day.day}/600/400`; }} />
-                        <div
-                          className="absolute inset-0"
-                          style={{ background: 'linear-gradient(180deg, transparent 30%, rgba(10,8,6,0.9) 100%)' }}
-                        />
-                        <div className="absolute top-4 left-4">
-                          <span className="font-display text-3xl text-white leading-none">
-                            {String(day.day).padStart(2, '0')}
-                          </span>
-                        </div>
-                        <div className="absolute bottom-3 left-4 right-4 flex items-baseline justify-between">
-                          <p className="eyebrow text-[var(--gold-soft)]">{vibeLabel}</p>
-                          <p className="text-white/70 text-[10px] tracking-wider uppercase">{formatDateAU(dayDate)}</p>
-                        </div>
-                      </div>
-
-                      <div className="p-5">
-                        <h4 className="font-display text-lg text-[var(--cream)] mb-3 leading-snug">{day.title}</h4>
-
-                        <ul className="space-y-1.5 mb-4">
-                          {day.activities.slice(0, 2).map((a, i) => (
-                            <li key={i} className="text-[var(--text-muted)] text-[12.5px] leading-relaxed line-clamp-1">
-                              — {a}
-                            </li>
-                          ))}
-                          {day.activities.length > 2 && (
-                            <li className="text-[var(--text-dim)] text-[10px] tracking-wider uppercase pt-1">
-                              +{day.activities.length - 2} more
-                            </li>
-                          )}
-                        </ul>
-
-                        <div className="pt-3 border-t border-[var(--line)] flex items-center justify-between">
-                          {reorderMode ? (
-                            <div className="flex items-center gap-2 w-full justify-center">
-                              <button
-                                onClick={(e) => { e.stopPropagation(); moveDay(day.day, 'up'); }}
-                                disabled={day.day === 1}
-                                className="px-3 py-1.5 rounded-full text-[10px] uppercase tracking-wider border border-[var(--line)] text-[var(--text-muted)] hover:text-[var(--cream)] disabled:opacity-20 transition-all"
-                              >
-                                ↑ Up
-                              </button>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); moveDay(day.day, 'down'); }}
-                                disabled={day.day === itinerary.length}
-                                className="px-3 py-1.5 rounded-full text-[10px] uppercase tracking-wider border border-[var(--line)] text-[var(--text-muted)] hover:text-[var(--cream)] disabled:opacity-20 transition-all"
-                              >
-                                ↓ Down
-                              </button>
-                            </div>
-                          ) : (
-                            <>
-                              <span className="text-[10px] text-[var(--text-dim)] uppercase tracking-wider">Read on</span>
-                              <span className="text-[var(--gold)]">→</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </motion.div>
-          );
-        })}
+        {/* Tonight footer */}
+        {tonight && (
+          <div className="px-5 py-3 border-t border-[var(--line)] flex items-center gap-2.5 bg-[var(--ink-2)]/40">
+            <span className="text-sm leading-none">{tonight.icon}</span>
+            <span className="text-[var(--text-muted)] text-xs">{tonight.text}</span>
+          </div>
+        )}
       </div>
     </motion.div>
   );

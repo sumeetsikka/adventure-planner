@@ -3,7 +3,7 @@
 > **Living document.** Maintained alongside the code. When adding/changing a feature,
 > the entry in this file must change too — see § 14 *Self-maintenance protocol*.
 
-**Last updated:** 2026-05-27 (QA round 3 — post-WOW hardening)
+**Last updated:** 2026-05-27 (stitched plan — itinerary/flights/hotels joined on dates)
 **App version:** post-WOW build-out (Phases 1–12 shipped: per-traveller profiles, all-ages modes, hour-by-hour itinerary, pre-trip readiness, live-mode dashboard, cultural depth, price tracking, budget realism, memories recap, group splits, surprise-me inspiration, i18n scaffold) + QA hardening.
 
 ---
@@ -94,13 +94,16 @@ Results are split into 4 groups in the nav.
 | **State banner** at top adapts to where you are in the trip lifecycle: *Pre-trip* shows a countdown + checklist CTA; *In-trip* shows today's stop + distance/ETA + weather; *Post-trip* shows a "welcome back" prompt to open the journal. | `DashboardTab.tsx`. State derived from `daysSinceDeparture` vs `totalDays`. The today-panel uses `useGeolocation()` (only when trip is underway — no permission prompt for future trips) and `geocodeDestination()` (cached). |
 | Editorial hero image, then 4 quick stats (Days / Flights / Hotels / Transfers) — each is a button to its tab. | Hero is `getCountryHero()` from `src/lib/imagery.ts` (Wikipedia main image, falls back to picsum). |
 
-### 3.2 Itinerary — Hour by hour
+### 3.2 Itinerary — the stitched day-by-day plan
 
 | 👤 Traveller | 🛠️ Admin |
 |---|---|
-| Day cards show title, location, date. Tap one to expand: a timed timeline of events (`09:30 Pho Gia Truyen breakfast → 11:00 Temple of Literature → …`) with walking times between stops. | Each `ItineraryDay` has an optional `timeline: TimelineEvent[]`. The ITINERARY_SYSTEM prompt requires the LLM to emit it. If the LLM omits, the tab falls back to the legacy bullet list. |
+| **This is the heart of the app.** Every day is a card on a continuous timeline showing — in order — what actually happens that day: ✈️ flights you take, 🧳 hotels you check out of, 🚆 transfers, 🏨 hotels you check in to, the day's activities, and a 🛏️ "Overnight: [hotel]" footer (or 🏠 "Fly home" on the last day). The dates and stays are pulled from your real flights/hotels, so it reads like a plan, not a list. | The stitching lives in `src/lib/planStitch.ts` — `buildDayPlans(config, itinerary, flights, hotels, transport)` joins everything on the date axis (each day's date = `departureDate + (day-1)`; flights match by `f.date`, hotels by `check_in`/`check_out`, "overnight" by `isDateInStay`). `dayMoves(plan)` produces the ordered fly/checkout/transport/checkin chips. Rendered by `StitchedDayCard` in `ItineraryTab.tsx`. |
+| Each card shows a teaser of the first 3 activities. **Tap a day** to expand the full hour-by-hour timeline (`11:30 Flight → 21:00 Bun cha dinner`) with walking times between stops. | `ItineraryDay.timeline: TimelineEvent[]` (optional). If the LLM omits it, the card shows the bullet `activities` instead. The expand still uses the existing selected-day detail panel + `TimelineRow`. |
 | **If it rains / With kids / Mobility** banners surface when the day has a `rainy_backup`, `kids_tip`, or `accessibility_note`. | Optional fields on `ItineraryDay`. The LLM emits these when the trip mode and traveller profiles warrant it (family-mode → kids_tip; accessibility-mode → accessibility_note). |
 | **Reorder** + **Regenerate** at the top to nudge the AI for a different plan. | `ItineraryTab.tsx → regenerate()` calls `generateItinerary(config)` and replaces the array. Selection state resets. |
+
+> 🔗 **Date plumbing (how the stitch stays consistent).** The backend already stamps real dates: `computeSchedule` (in `server/lib/dateSchedule.ts`) derives a date-per-destination, then `fixFlightDates`/`fixHotelDates` overwrite whatever the LLM guessed with those exact dates. So flights, hotels, transport and itinerary all agree on dates by construction. `tripDayNumber(departureDate, date)` (in `dateUtils.ts`) converts any date back to a "Day N" label used across the Flights and Hotels tabs.
 
 ### 3.3 Map
 
@@ -112,14 +115,14 @@ Results are split into 4 groups in the nav.
 
 | 👤 Traveller | 🛠️ Admin |
 |---|---|
-| Each leg shows price, duration, stops, CO₂ estimate, airlines, and **Skyscanner / Google Flights / Webjet** deep-links pre-filled with your dates and travellers. | `getFlightLinks()` in `src/lib/bookingLinks.ts`. CO₂ via `flightCO2kg()` in `src/lib/carbon.ts`. |
+| Each leg shows a **Day N badge** + the full date (🗓️ Wed 1 Jul) tying it to the itinerary, plus price, duration, stops, CO₂ estimate, airlines, and **Skyscanner / Google Flights / Webjet** deep-links pre-filled with your dates and travellers. | `getFlightLinks()` in `src/lib/bookingLinks.ts`. Day badge via `tripDayNumber()`; date label via `formatDayLabel()` (both in `dateUtils.ts`). CO₂ via `flightCO2kg()` in `src/lib/carbon.ts`. |
 | **🔔 Track price** toggles a watch on this flight. Saved across sessions. | `priceWatch.ts` lib — localStorage `adventure-planner:price-watch`. UI in `FlightsTab.tsx → WatchToggle`. The actual price-monitoring backend isn't built yet — this captures intent only. |
 
 ### 3.5 Hotels
 
 | 👤 Traveller | 🛠️ Admin |
 |---|---|
-| Photo banner per destination (tap to expand). Recommended hotels show stars, area, style, price range, amenities, "best for" tag, and **Booking.com / Agoda / Hotels.com** links pre-filled with your dates. | `HotelsTab.tsx`. The destination banner is a `<div role="button">` (not a `<button>`) because `PlaceActions` renders `<a>` tags inside — anchors-inside-buttons is invalid HTML. |
+| Photo banner per destination shows the **stay range as Day N–M** + full dates (🗓️ Wed 1 Jul → Sat 4 Jul), matching exactly when the itinerary has you in that city. Tap to expand. Recommended hotels show stars, area, style, price range, amenities, "best for" tag, and **Booking.com / Agoda / Hotels.com** links pre-filled with your dates. | `HotelsTab.tsx`. Day range via `tripDayNumber()`, date labels via `formatDayLabel()`. The destination banner is a `<div role="button">` (not a `<button>`) because `PlaceActions` renders `<a>` tags inside — anchors-inside-buttons is invalid HTML. |
 
 ### 3.6 Transport, Bookings tracker
 
@@ -294,6 +297,8 @@ A debounced auto-commit hook (`.claude/scripts/auto-commit.sh`) commits clean in
 | `src/lib/i18n.ts` | i18n scaffold. To add a language: fill its block in `STRINGS`, add to `AVAILABLE_LANGUAGES`. |
 | `src/lib/readiness.ts` | The pre-trip readiness checklist. Add an item: append to `buildReadinessItems()` with a `daysBefore` deadline. |
 | `src/lib/priceWatch.ts` | Watch-list lib. Wire new "Track" buttons by importing `{ isWatched, toggleWatch, *WatchId }`. |
+| `src/lib/planStitch.ts` | The plan-stitching layer. `buildDayPlans()` joins flights/hotels/transport/itinerary by date; `dayMoves()` builds the per-day move chips. Use this anywhere you need "what happens on day N". |
+| `src/lib/dateUtils.ts` | Date helpers. `tripDayNumber()`, `formatDayLabel()`, `isDateInStay()`, `parseLocalDate()` (timezone-safe). Use these instead of raw `new Date('YYYY-MM-DD')` (which parses as UTC and can be a day off). |
 
 ### How to safely update a prompt
 
@@ -384,6 +389,13 @@ Future sessions: when you edit code that maps to a section here, also update `GU
 ## 15. Changelog
 
 > Add newest entries at the top. Date format: YYYY-MM-DD.
+
+### 2026-05-27 — Stitched plan (everything joined on dates)
+- New `src/lib/planStitch.ts` — `buildDayPlans()` joins flights / hotels / transport / itinerary on the date axis; `dayMoves()` produces the ordered fly→checkout→transport→checkin chips per day.
+- Rebuilt the **Itinerary tab** from a collapsible location-grouped list into a continuous day-by-day narrative (`StitchedDayCard`): each day shows its real flights, hotel check-in/out, transfers, activity teaser, and an "Overnight: [hotel]" / "Fly home" footer. Tap still expands the hour-by-hour timeline.
+- **Flights tab** now shows a "Day N" badge + full weekday date (🗓️ Wed 1 Jul) on each leg, tying it to the itinerary.
+- **Hotels tab** now shows the stay as "Day N–M" + full date range (🗓️ Wed 1 Jul → Sat 4 Jul), matching when the itinerary has you in that city.
+- New date helpers in `dateUtils.ts`: `parseLocalDate`, `formatDayLabel`, `formatDateFull`, `weekdayShort`, `isDateInStay`, `tripDayNumber` (all timezone-safe local-date parsing).
 
 ### 2026-05-27 — QA round 3 (post-WOW hardening)
 - Fixed `PrepareTab` nested `<a>` inside `<button>` — checklist rows now use `<div role="button" tabIndex={0}>` with keyboard handler, so the deep-link anchor is valid HTML.

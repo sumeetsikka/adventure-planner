@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import type { DestinationHotels, Destination, TravelConfig, HotelAmenity } from '../../types';
-import { formatDateAU } from '../../lib/dateUtils';
+import { formatDateAU, formatDayLabel, tripDayNumber } from '../../lib/dateUtils';
 import { getHotelLinks } from '../../lib/bookingLinks';
 import { getDestinationPhoto } from '../../lib/imagery';
 import { PlaceActions } from '../shared/PlaceLink';
@@ -183,8 +183,18 @@ export default function HotelsTab({ hotels, config }: Props) {
                 />
                 <div className="absolute bottom-5 left-6 right-6 flex items-end justify-between gap-4">
                   <div>
-                    <p className="eyebrow text-white/80 mb-2">{dest.nights} night{dest.nights > 1 ? 's' : ''} · {formatDateAU(dest.check_in)}</p>
+                    <p className="eyebrow text-white/80 mb-2">
+                      {dest.nights} night{dest.nights > 1 ? 's' : ''}
+                      {(() => {
+                        const inDay = config?.departureDate ? tripDayNumber(config.departureDate, dest.check_in) : null;
+                        const outDay = config?.departureDate ? tripDayNumber(config.departureDate, dest.check_out) : null;
+                        return inDay && outDay ? ` · Day ${inDay}–${outDay}` : '';
+                      })()}
+                    </p>
                     <h3 className="font-display text-2xl sm:text-3xl text-white leading-tight">{dest.destination}</h3>
+                    <p className="text-white/85 text-[12px] mt-1.5 font-medium">
+                      🗓️ {formatDayLabel(dest.check_in)} → {formatDayLabel(dest.check_out)}
+                    </p>
                     <div className="mt-2.5" onClick={(e) => e.stopPropagation()}>
                       <PlaceActions place={dest.destination} compact />
                     </div>
