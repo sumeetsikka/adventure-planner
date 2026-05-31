@@ -60,7 +60,6 @@ export default function DashboardTab({ config, results, onTabChange }: Props) {
         : p.stayingTonight?.pick?.name || (p.stayingTonight ? p.stayingTonight.dest.destination : '');
       return { day: p.day, date: p.date, title, icons, tonight };
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config, results.itinerary, results.flights, results.hotels, results.transport, hasValidDates]);
 
   const heroImage = getCountryHero(config.country?.name || 'travel', 1800, 900);
