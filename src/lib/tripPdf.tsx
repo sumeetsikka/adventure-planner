@@ -30,21 +30,14 @@ import { buildDayPlans, dayMoves, perDayCosts, type DayPlan, type DayMove } from
 import { getCountryHero, getDestinationPhoto } from './imagery';
 
 /* ------------------------------------------------------------------ */
-/* Fonts — Inter (modern sans) to match the app                        */
+/* Fonts                                                              */
 /* ------------------------------------------------------------------ */
 
-Font.register({
-  family: 'Inter',
-  fonts: [
-    { src: 'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7.ttf', fontWeight: 400 },
-    { src: 'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMa25L7.ttf', fontWeight: 500 },
-    { src: 'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7.ttf', fontWeight: 600 },
-    { src: 'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMa1pL7.ttf', fontWeight: 700 },
-  ],
-});
-
-// Built-in fallback if Inter fails to fetch.
-const SANS = 'Inter';
+// Use the built-in Helvetica family. It needs no network fetch, so the export
+// can never fail because a webfont CDN 404s or is offline (a real bug we hit
+// trying to register remote Inter .ttf files). Helvetica is a clean modern
+// sans that reads well on the light theme; bold weights come for free.
+const SANS = 'Helvetica';
 
 // Disable hyphenation so words don't break mid-flow.
 Font.registerHyphenationCallback((word) => [word]);
