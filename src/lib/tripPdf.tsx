@@ -1,14 +1,16 @@
 /* eslint-disable react-refresh/only-export-components */
 /**
- * Magazine-quality PDF export for the Holiday Planner trip.
+ * Trip PDF export — a clean, modern, STITCHED day-by-day plan.
  *
- * Generates a multi-page editorial-style PDF using @react-pdf/renderer:
- *   - Cover page with hero photograph and serif typography
- *   - At-a-glance route + stats spread
- *   - Day-by-day itinerary
- *   - Hotels, flights, budget, restaurants, activities, and a practical page
+ * The centrepiece is the day-by-day itinerary: each day shows, in order, the
+ * flights you take, hotels you check in/out of, transfers, the things you do,
+ * an estimated per-day spend, and where you sleep that night — built from the
+ * same `planStitch` join the app uses, so the PDF reads as one plan rather than
+ * disconnected lists. Booking-reference pages (flights, hotels) follow, each
+ * tagged with the matching trip-day so nothing is "random and dateless".
  *
- * Exported as a single async function — call from a click handler.
+ * Light, modern theme to match the app. Exported as a single async function —
+ * call from a click handler.
  */
 
 import {
@@ -23,52 +25,44 @@ import {
 } from '@react-pdf/renderer';
 import type { ReactElement } from 'react';
 import type { TravelConfig, GenerationResults } from '../types';
-import { formatDateAU, addDaysISO } from './dateUtils';
+import { formatDateAU, formatDayLabel, tripDayNumber } from './dateUtils';
+import { buildDayPlans, dayMoves, perDayCosts, type DayPlan, type DayMove } from './planStitch';
 import { getCountryHero, getDestinationPhoto } from './imagery';
 
 /* ------------------------------------------------------------------ */
-/* Fonts                                                              */
+/* Fonts — Inter (modern sans) to match the app                        */
 /* ------------------------------------------------------------------ */
 
-// Register Fraunces (serif display). Google Fonts gstatic URLs serve
-// .ttf files that @react-pdf can consume directly.
 Font.register({
-  family: 'Fraunces',
+  family: 'Inter',
   fonts: [
-    {
-      // Fraunces 400 regular
-      src: 'https://fonts.gstatic.com/s/fraunces/v32/6NUh8FyLNQOQZAnv9bYEvDiIdE9Ea92uemAk.ttf',
-      fontWeight: 400,
-      fontStyle: 'normal',
-    },
-    {
-      // Fraunces 700 bold
-      src: 'https://fonts.gstatic.com/s/fraunces/v32/6NUh8FyLNQOQZAnv9bYEvDiIdE9Ea9-uemAk.ttf',
-      fontWeight: 700,
-      fontStyle: 'normal',
-    },
-    {
-      // Fraunces 400 italic
-      src: 'https://fonts.gstatic.com/s/fraunces/v32/6NUu8FyLNQOQZAnv9ZwNqvUry7HhcdR6eUKxJ7t6.ttf',
-      fontWeight: 400,
-      fontStyle: 'italic',
-    },
+    { src: 'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7.ttf', fontWeight: 400 },
+    { src: 'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMa25L7.ttf', fontWeight: 500 },
+    { src: 'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7.ttf', fontWeight: 600 },
+    { src: 'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMa1pL7.ttf', fontWeight: 700 },
   ],
 });
 
-// Reasonable system-sans fallback for body. Helvetica is built-in.
-const SANS = 'Helvetica';
+// Built-in fallback if Inter fails to fetch.
+const SANS = 'Inter';
+
+// Disable hyphenation so words don't break mid-flow.
+Font.registerHyphenationCallback((word) => [word]);
 
 /* ------------------------------------------------------------------ */
-/* Palette                                                            */
+/* Palette — light, modern (mirrors the app's CSS tokens)              */
 /* ------------------------------------------------------------------ */
 
-const INK = '#0A0806';
-const CREAM = '#F5EDE0';
-const CREAM_DIM = '#C9BCA8';
-const GOLD = '#D4A574';
-const TERRACOTTA = '#C65D3B';
-const LINE = '#3A322A';
+const INK = '#1B1B1B';        // primary text
+const MUTED = '#6A6A6E';
+const DIM = '#9B9B9F';
+const PAPER = '#FFFFFF';
+const SOFT = '#F6F6F7';       // subtle section bg
+const SOFT2 = '#EFEFF1';
+const TERRACOTTA = '#F15B4B';
+const GOLD = '#B57C1C';
+const SAGE = '#1F8A70';
+const LINE = '#E6E6E9';
 
 /* ------------------------------------------------------------------ */
 /* Styles                                                             */
@@ -76,455 +70,183 @@ const LINE = '#3A322A';
 
 const styles = StyleSheet.create({
   page: {
-    backgroundColor: INK,
-    color: CREAM,
+    backgroundColor: PAPER,
+    color: INK,
     fontFamily: SANS,
     fontSize: 10,
-    padding: 48,
+    paddingTop: 56,
+    paddingBottom: 56,
+    paddingHorizontal: 46,
   },
   coverPage: {
-    backgroundColor: INK,
-    color: CREAM,
+    backgroundColor: PAPER,
+    color: INK,
     fontFamily: SANS,
     padding: 0,
   },
-  coverImage: {
-    width: '100%',
-    height: '62%',
-    objectFit: 'cover',
-  },
+  coverImage: { width: '100%', height: '58%', objectFit: 'cover' },
   coverFallback: {
-    width: '100%',
-    height: '62%',
-    backgroundColor: TERRACOTTA,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: '100%', height: '58%', backgroundColor: TERRACOTTA,
+    alignItems: 'center', justifyContent: 'center',
   },
-  coverEmoji: {
-    fontSize: 140,
-    color: CREAM,
-  },
-  coverBody: {
-    padding: 48,
-    paddingTop: 36,
-  },
+  coverEmoji: { fontSize: 130, color: PAPER },
+  coverBody: { padding: 46, paddingTop: 34 },
   eyebrow: {
-    fontFamily: SANS,
-    fontSize: 8,
-    letterSpacing: 3,
-    color: GOLD,
-    textTransform: 'uppercase',
-    marginBottom: 14,
+    fontFamily: SANS, fontWeight: 600, fontSize: 8, letterSpacing: 2.5,
+    color: TERRACOTTA, textTransform: 'uppercase', marginBottom: 12,
   },
   display: {
-    fontFamily: 'Fraunces',
-    fontWeight: 700,
-    fontSize: 56,
-    color: CREAM,
-    lineHeight: 1.05,
-    marginBottom: 4,
+    fontFamily: SANS, fontWeight: 700, fontSize: 46, color: INK,
+    lineHeight: 1.05, letterSpacing: -1,
   },
-  displayItalic: {
-    fontFamily: 'Fraunces',
-    fontStyle: 'italic',
-    fontWeight: 400,
-    color: GOLD,
-  },
-  coverMeta: {
-    marginTop: 20,
-    color: CREAM_DIM,
-    fontSize: 10,
-    fontFamily: SANS,
-    letterSpacing: 0.5,
-  },
+  displayAccent: { color: TERRACOTTA },
+  coverMeta: { marginTop: 18, color: MUTED, fontSize: 11, fontFamily: SANS },
   credit: {
-    position: 'absolute',
-    bottom: 32,
-    left: 48,
-    right: 48,
-    fontFamily: SANS,
-    fontSize: 7,
-    letterSpacing: 3,
-    color: GOLD,
-    textTransform: 'uppercase',
+    position: 'absolute', bottom: 30, left: 46, right: 46,
+    fontFamily: SANS, fontWeight: 600, fontSize: 7, letterSpacing: 2.5,
+    color: DIM, textTransform: 'uppercase',
   },
   h1: {
-    fontFamily: 'Fraunces',
-    fontWeight: 700,
-    fontSize: 32,
-    color: CREAM,
-    marginBottom: 8,
-    lineHeight: 1.1,
+    fontFamily: SANS, fontWeight: 700, fontSize: 28, color: INK,
+    marginBottom: 6, lineHeight: 1.1, letterSpacing: -0.6,
   },
-  h2: {
-    fontFamily: 'Fraunces',
-    fontWeight: 700,
-    fontSize: 20,
-    color: CREAM,
-    marginBottom: 8,
-  },
-  italic: {
-    fontFamily: 'Fraunces',
-    fontStyle: 'italic',
-    color: GOLD,
-  },
-  body: {
-    fontFamily: SANS,
-    fontSize: 10,
-    lineHeight: 1.55,
-    color: CREAM,
-  },
-  bodyDim: {
-    fontFamily: SANS,
-    fontSize: 10,
-    lineHeight: 1.55,
-    color: CREAM_DIM,
-  },
-  rule: {
-    borderBottomWidth: 0.6,
-    borderBottomColor: LINE,
-    marginVertical: 14,
-  },
-  twoCol: {
-    flexDirection: 'row',
-    gap: 28,
-  },
-  col: {
-    flex: 1,
-  },
+  h1Accent: { color: TERRACOTTA },
+  h2: { fontFamily: SANS, fontWeight: 700, fontSize: 17, color: INK, marginBottom: 8 },
+  body: { fontFamily: SANS, fontSize: 10, lineHeight: 1.55, color: INK },
+  bodyDim: { fontFamily: SANS, fontSize: 10, lineHeight: 1.55, color: MUTED },
+  rule: { borderBottomWidth: 1, borderBottomColor: LINE, marginVertical: 12 },
+  twoCol: { flexDirection: 'row', gap: 24 },
+  col: { flex: 1 },
+
   statBox: {
-    borderWidth: 0.6,
-    borderColor: LINE,
-    borderRadius: 4,
-    padding: 14,
-    marginBottom: 10,
+    backgroundColor: SOFT, borderRadius: 8, padding: 14, marginBottom: 9,
   },
-  statValue: {
-    fontFamily: 'Fraunces',
-    fontWeight: 700,
-    fontSize: 26,
-    color: GOLD,
-  },
+  statValue: { fontFamily: SANS, fontWeight: 700, fontSize: 24, color: INK },
   statLabel: {
-    fontFamily: SANS,
-    fontSize: 7,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    color: CREAM_DIM,
-    marginTop: 4,
+    fontFamily: SANS, fontWeight: 600, fontSize: 7, letterSpacing: 1.5,
+    textTransform: 'uppercase', color: DIM, marginTop: 4,
   },
-  routeItem: {
-    flexDirection: 'row',
-    marginBottom: 10,
-  },
-  routeNum: {
-    fontFamily: 'Fraunces',
-    fontWeight: 700,
-    fontSize: 16,
-    color: GOLD,
-    width: 30,
-  },
-  routeText: {
-    fontFamily: 'Fraunces',
-    fontSize: 14,
-    color: CREAM,
-    flex: 1,
-    paddingTop: 1,
-  },
-  routeNote: {
-    fontFamily: SANS,
-    fontSize: 8,
-    color: CREAM_DIM,
-    marginTop: 1,
-  },
+
+  routeItem: { flexDirection: 'row', marginBottom: 9, alignItems: 'baseline' },
+  routeNum: { fontFamily: SANS, fontWeight: 700, fontSize: 14, color: TERRACOTTA, width: 26 },
+  routeText: { fontFamily: SANS, fontWeight: 500, fontSize: 13, color: INK, flex: 1 },
+  routeNote: { fontFamily: SANS, fontSize: 8, color: DIM, marginTop: 1 },
+
+  /* Stitched day card */
   dayCard: {
-    marginBottom: 22,
-    paddingBottom: 16,
-    borderBottomWidth: 0.6,
-    borderBottomColor: LINE,
+    marginBottom: 16, padding: 14,
+    backgroundColor: PAPER, borderWidth: 1, borderColor: LINE, borderRadius: 10,
   },
-  dayHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 8,
+  dayHeaderRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
+  dayBadge: {
+    backgroundColor: SOFT2, borderRadius: 8, width: 42, height: 42,
+    alignItems: 'center', justifyContent: 'center', marginRight: 12,
   },
-  dayNumber: {
-    fontFamily: 'Fraunces',
-    fontWeight: 700,
-    fontSize: 42,
-    color: GOLD,
-    marginRight: 16,
-    lineHeight: 1,
+  dayBadgeNum: { fontFamily: SANS, fontWeight: 700, fontSize: 17, color: TERRACOTTA, lineHeight: 1 },
+  dayBadgeLbl: { fontFamily: SANS, fontWeight: 600, fontSize: 6, letterSpacing: 1, color: DIM, textTransform: 'uppercase', marginTop: 1 },
+  dayHeaderMid: { flex: 1, paddingTop: 2 },
+  dayDate: { fontFamily: SANS, fontWeight: 600, fontSize: 7.5, letterSpacing: 1.2, color: DIM, textTransform: 'uppercase', marginBottom: 2 },
+  dayTitle: { fontFamily: SANS, fontWeight: 700, fontSize: 14, color: INK, lineHeight: 1.15 },
+  dayCost: { fontFamily: SANS, fontWeight: 700, fontSize: 12, color: GOLD, textAlign: 'right' },
+  dayCostLbl: { fontFamily: SANS, fontWeight: 600, fontSize: 6, letterSpacing: 1, color: DIM, textTransform: 'uppercase', textAlign: 'right', marginTop: 1 },
+
+  /* Move chips (fly / check-out / transfer / check-in) */
+  moveRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 5 },
+  moveTag: {
+    fontFamily: SANS, fontWeight: 700, fontSize: 6.5, letterSpacing: 1,
+    color: PAPER, textTransform: 'uppercase',
+    borderRadius: 3, paddingVertical: 2, paddingHorizontal: 4,
+    marginRight: 7, marginTop: 1, width: 48, textAlign: 'center',
   },
-  dayMetaWrap: {
-    flex: 1,
-    paddingTop: 4,
+  moveText: { fontFamily: SANS, fontWeight: 500, fontSize: 9.5, color: INK, flex: 1, lineHeight: 1.35 },
+  moveSub: { fontFamily: SANS, fontSize: 8, color: MUTED, marginTop: 0.5 },
+
+  /* Activity / timeline rows */
+  actSectionLabel: {
+    fontFamily: SANS, fontWeight: 600, fontSize: 7, letterSpacing: 1.5,
+    color: DIM, textTransform: 'uppercase', marginTop: 8, marginBottom: 4,
   },
-  dayDate: {
-    fontFamily: SANS,
-    fontSize: 7,
-    letterSpacing: 2,
-    color: CREAM_DIM,
-    textTransform: 'uppercase',
-    marginBottom: 2,
+  actRow: { flexDirection: 'row', marginBottom: 3 },
+  actTime: { fontFamily: SANS, fontWeight: 600, fontSize: 8.5, color: TERRACOTTA, width: 34 },
+  actBullet: { fontFamily: SANS, fontWeight: 700, fontSize: 9, color: TERRACOTTA, width: 12 },
+  actText: { fontFamily: SANS, fontSize: 9.5, color: INK, flex: 1, lineHeight: 1.4 },
+
+  /* Day notes (rainy / kids / mobility) */
+  noteBox: { marginTop: 7, borderRadius: 6, padding: 7, flexDirection: 'row' },
+  noteLabel: { fontFamily: SANS, fontWeight: 700, fontSize: 7, letterSpacing: 0.8, textTransform: 'uppercase', width: 56 },
+  noteText: { fontFamily: SANS, fontSize: 8.5, color: INK, flex: 1, lineHeight: 1.4 },
+
+  /* Overnight footer */
+  tonightRow: {
+    marginTop: 9, paddingTop: 8, borderTopWidth: 1, borderTopColor: LINE,
+    flexDirection: 'row', alignItems: 'center',
   },
-  dayLocation: {
-    fontFamily: SANS,
-    fontSize: 9,
-    color: GOLD,
-    marginBottom: 4,
+  tonightLbl: { fontFamily: SANS, fontWeight: 600, fontSize: 7, letterSpacing: 1.2, color: DIM, textTransform: 'uppercase', marginRight: 6 },
+  tonightText: { fontFamily: SANS, fontWeight: 500, fontSize: 9.5, color: INK },
+
+  /* Booking-reference tables */
+  refDayTag: {
+    fontFamily: SANS, fontWeight: 700, fontSize: 7, letterSpacing: 0.5,
+    color: TERRACOTTA, backgroundColor: '#FCEBE9', borderRadius: 4,
+    paddingVertical: 2, paddingHorizontal: 5, marginRight: 8,
   },
-  dayTitle: {
-    fontFamily: 'Fraunces',
-    fontStyle: 'italic',
-    fontSize: 18,
-    color: CREAM,
+  hotelEntry: { marginBottom: 14, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: LINE },
+  hotelDateRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 5 },
+  hotelDates: { fontFamily: SANS, fontWeight: 600, fontSize: 8, letterSpacing: 0.5, color: MUTED },
+  hotelName: { fontFamily: SANS, fontWeight: 700, fontSize: 13, color: INK, marginBottom: 2 },
+  hotelArea: { fontFamily: SANS, fontSize: 9, color: MUTED, marginBottom: 4 },
+  hotelWhy: { fontFamily: SANS, fontSize: 9, color: INK, lineHeight: 1.5, marginBottom: 3 },
+  hotelPrice: { fontFamily: SANS, fontWeight: 700, fontSize: 10, color: GOLD },
+
+  flightCard: {
+    flexDirection: 'row', alignItems: 'center', paddingVertical: 9,
+    borderBottomWidth: 1, borderBottomColor: LINE,
   },
-  activityRow: {
-    flexDirection: 'row',
-    marginBottom: 4,
-    marginLeft: 58,
-  },
-  activityNum: {
-    fontFamily: 'Fraunces',
-    fontSize: 9,
-    color: GOLD,
-    width: 18,
-  },
-  activityText: {
-    fontFamily: SANS,
-    fontSize: 9.5,
-    color: CREAM,
-    flex: 1,
-    lineHeight: 1.45,
-  },
-  hotelCallout: {
-    marginTop: 10,
-    marginLeft: 58,
-    padding: 10,
-    borderLeftWidth: 2,
-    borderLeftColor: GOLD,
-    backgroundColor: '#13100C',
-  },
-  hotelCalloutLabel: {
-    fontFamily: SANS,
-    fontSize: 7,
-    letterSpacing: 2,
-    color: GOLD,
-    textTransform: 'uppercase',
-    marginBottom: 3,
-  },
-  hotelCalloutName: {
-    fontFamily: 'Fraunces',
-    fontSize: 11,
-    color: CREAM,
-  },
-  hotelEntry: {
-    marginBottom: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 0.4,
-    borderBottomColor: LINE,
-  },
-  hotelDates: {
-    fontFamily: SANS,
-    fontSize: 7,
-    letterSpacing: 2,
-    color: GOLD,
-    textTransform: 'uppercase',
-    marginBottom: 4,
-  },
-  hotelName: {
-    fontFamily: 'Fraunces',
-    fontWeight: 700,
-    fontSize: 14,
-    color: CREAM,
-    marginBottom: 2,
-  },
-  hotelArea: {
-    fontFamily: SANS,
-    fontStyle: 'italic',
-    fontSize: 9,
-    color: CREAM_DIM,
-    marginBottom: 5,
-  },
-  hotelWhy: {
-    fontFamily: SANS,
-    fontSize: 9,
-    color: CREAM,
-    lineHeight: 1.5,
-    marginBottom: 3,
-  },
-  hotelPrice: {
-    fontFamily: 'Fraunces',
-    fontSize: 10,
-    color: GOLD,
-  },
-  flightRow: {
-    flexDirection: 'row',
-    paddingVertical: 9,
-    borderBottomWidth: 0.4,
-    borderBottomColor: LINE,
-  },
-  flightFromTo: {
-    fontFamily: 'Fraunces',
-    fontSize: 13,
-    color: CREAM,
-    flex: 2,
-  },
-  flightDate: {
-    fontFamily: SANS,
-    fontSize: 8,
-    color: CREAM_DIM,
-    flex: 1,
-  },
-  flightAirline: {
-    fontFamily: SANS,
-    fontSize: 8,
-    color: CREAM,
-    flex: 1.4,
-  },
-  flightDuration: {
-    fontFamily: SANS,
-    fontSize: 8,
-    color: CREAM_DIM,
-    flex: 1,
-  },
-  flightPrice: {
-    fontFamily: 'Fraunces',
-    fontWeight: 700,
-    fontSize: 11,
-    color: GOLD,
-    flex: 1,
-    textAlign: 'right',
-  },
+  flightRoute: { fontFamily: SANS, fontWeight: 700, fontSize: 12, color: INK, flex: 2 },
+  flightMeta: { fontFamily: SANS, fontSize: 8, color: MUTED, flex: 1.6 },
+  flightPrice: { fontFamily: SANS, fontWeight: 700, fontSize: 11, color: GOLD, flex: 1, textAlign: 'right' },
+
   budgetRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 9,
-    borderBottomWidth: 0.4,
-    borderBottomColor: LINE,
+    flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8,
+    borderBottomWidth: 1, borderBottomColor: LINE,
   },
-  budgetCat: {
-    fontFamily: 'Fraunces',
-    fontSize: 12,
-    color: CREAM,
-  },
-  budgetCost: {
-    fontFamily: 'Fraunces',
-    fontSize: 12,
-    color: GOLD,
-  },
+  budgetCat: { fontFamily: SANS, fontWeight: 500, fontSize: 11, color: INK },
+  budgetCost: { fontFamily: SANS, fontWeight: 700, fontSize: 11, color: GOLD },
   budgetTotalBlock: {
-    marginTop: 24,
-    paddingTop: 18,
-    borderTopWidth: 1,
-    borderTopColor: GOLD,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
+    marginTop: 20, paddingTop: 16, borderTopWidth: 2, borderTopColor: TERRACOTTA,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end',
   },
-  budgetTotalNum: {
-    fontFamily: 'Fraunces',
-    fontWeight: 700,
-    fontSize: 38,
-    color: GOLD,
-  },
-  restaurantRow: {
-    marginBottom: 10,
-    paddingBottom: 8,
-    borderBottomWidth: 0.3,
-    borderBottomColor: LINE,
-  },
-  restaurantName: {
-    fontFamily: 'Fraunces',
-    fontWeight: 700,
-    fontSize: 12,
-    color: CREAM,
-  },
-  restaurantMeta: {
-    fontFamily: SANS,
-    fontSize: 8,
-    color: CREAM_DIM,
-    marginTop: 1,
-  },
-  restaurantDish: {
-    fontFamily: SANS,
-    fontStyle: 'italic',
-    fontSize: 9,
-    color: GOLD,
-    marginTop: 2,
-  },
-  activityCard: {
-    marginBottom: 10,
-    paddingBottom: 8,
-    borderBottomWidth: 0.3,
-    borderBottomColor: LINE,
-  },
-  activityName: {
-    fontFamily: 'Fraunces',
-    fontWeight: 700,
-    fontSize: 12,
-    color: CREAM,
-  },
-  activityCategory: {
-    fontFamily: SANS,
-    fontSize: 7,
-    letterSpacing: 2,
-    color: GOLD,
-    textTransform: 'uppercase',
-    marginTop: 2,
-  },
-  activityMeta: {
-    fontFamily: SANS,
-    fontSize: 8,
-    color: CREAM_DIM,
-    marginTop: 2,
-  },
-  pageNum: {
-    position: 'absolute',
-    bottom: 24,
-    right: 48,
-    fontFamily: SANS,
-    fontSize: 7,
-    color: CREAM_DIM,
-    letterSpacing: 2,
-  },
-  pageRunningHead: {
-    position: 'absolute',
-    top: 22,
-    left: 48,
-    right: 48,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  runningHeadText: {
-    fontFamily: SANS,
-    fontSize: 7,
-    color: CREAM_DIM,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
-  visaRow: {
-    flexDirection: 'row',
-    paddingVertical: 5,
-    borderBottomWidth: 0.3,
-    borderBottomColor: LINE,
-  },
-  visaLabel: {
-    fontFamily: SANS,
-    fontSize: 8,
-    letterSpacing: 2,
-    color: CREAM_DIM,
-    textTransform: 'uppercase',
-    width: 110,
-  },
-  visaValue: {
-    fontFamily: SANS,
-    fontSize: 10,
-    color: CREAM,
-    flex: 1,
-  },
+  budgetTotalNum: { fontFamily: SANS, fontWeight: 700, fontSize: 32, color: INK },
+
+  restaurantRow: { marginBottom: 9, paddingBottom: 7, borderBottomWidth: 1, borderBottomColor: LINE },
+  restaurantName: { fontFamily: SANS, fontWeight: 700, fontSize: 11, color: INK },
+  restaurantMeta: { fontFamily: SANS, fontSize: 8, color: MUTED, marginTop: 1 },
+  restaurantDish: { fontFamily: SANS, fontSize: 9, color: GOLD, marginTop: 2 },
+
+  activityCard: { marginBottom: 9, paddingBottom: 7, borderBottomWidth: 1, borderBottomColor: LINE },
+  activityName: { fontFamily: SANS, fontWeight: 700, fontSize: 11, color: INK },
+  activityCategory: { fontFamily: SANS, fontWeight: 600, fontSize: 7, letterSpacing: 1.5, color: TERRACOTTA, textTransform: 'uppercase', marginTop: 2 },
+  activityMeta: { fontFamily: SANS, fontSize: 8, color: MUTED, marginTop: 2 },
+
+  pageNum: { position: 'absolute', bottom: 24, right: 46, fontFamily: SANS, fontSize: 7, color: DIM, letterSpacing: 1.5 },
+  pageRunningHead: { position: 'absolute', top: 24, left: 46, right: 46, flexDirection: 'row', justifyContent: 'space-between' },
+  runningHeadText: { fontFamily: SANS, fontWeight: 600, fontSize: 7, color: DIM, letterSpacing: 1.5, textTransform: 'uppercase' },
+
+  visaRow: { flexDirection: 'row', paddingVertical: 5, borderBottomWidth: 1, borderBottomColor: LINE },
+  visaLabel: { fontFamily: SANS, fontWeight: 600, fontSize: 8, letterSpacing: 1, color: DIM, textTransform: 'uppercase', width: 110 },
+  visaValue: { fontFamily: SANS, fontSize: 10, color: INK, flex: 1 },
 });
+
+/* ------------------------------------------------------------------ */
+/* Move tag styling per kind                                          */
+/* ------------------------------------------------------------------ */
+
+const MOVE_TAG: Record<DayMove['kind'], { label: string; bg: string }> = {
+  flight: { label: 'Fly', bg: TERRACOTTA },
+  checkout: { label: 'Check out', bg: DIM },
+  transport: { label: 'Transfer', bg: GOLD },
+  checkin: { label: 'Check in', bg: SAGE },
+};
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                            */
@@ -540,6 +262,10 @@ function sumBudget(budget: { category: string; cost: string }[]): number {
   return budget.reduce((acc, b) => acc + priceToNumber(b.cost), 0);
 }
 
+function money(n: number): string {
+  return `$${Math.round(n).toLocaleString()}`;
+}
+
 function RunningHead({ left, right }: { left: string; right: string }) {
   return (
     <View style={styles.pageRunningHead} fixed>
@@ -551,16 +277,12 @@ function RunningHead({ left, right }: { left: string; right: string }) {
 
 function PageNum() {
   return (
-    <Text
-      style={styles.pageNum}
-      render={({ pageNumber }) => `${String(pageNumber).padStart(2, '0')}`}
-      fixed
-    />
+    <Text style={styles.pageNum} render={({ pageNumber }) => `${String(pageNumber).padStart(2, '0')}`} fixed />
   );
 }
 
 /* ------------------------------------------------------------------ */
-/* Page components                                                    */
+/* Cover                                                              */
 /* ------------------------------------------------------------------ */
 
 interface CoverProps {
@@ -574,7 +296,6 @@ function CoverPage({ config, totalDays, tripIdShort, heroUrl }: CoverProps) {
   return (
     <Page size="A4" style={styles.coverPage}>
       {heroUrl ? (
-        // @react-pdf accepts a string src — cross-origin is fine here.
         <Image src={heroUrl} style={styles.coverImage} />
       ) : (
         <View style={styles.coverFallback}>
@@ -582,11 +303,10 @@ function CoverPage({ config, totalDays, tripIdShort, heroUrl }: CoverProps) {
         </View>
       )}
       <View style={styles.coverBody}>
-        <Text style={styles.eyebrow}>An Editorial Itinerary</Text>
+        <Text style={styles.eyebrow}>Your trip, day by day</Text>
         <Text style={styles.display}>
-          {config.country?.name || 'Your'}
+          {config.country?.name || 'Your'} <Text style={styles.displayAccent}>adventure.</Text>
         </Text>
-        <Text style={[styles.display, styles.displayItalic]}>adventure.</Text>
         <Text style={styles.coverMeta}>
           {formatDateAU(config.departureDate)}  —  {formatDateAU(config.returnDate)}
         </Text>
@@ -594,33 +314,27 @@ function CoverPage({ config, totalDays, tripIdShort, heroUrl }: CoverProps) {
           {config.travellers} traveller{config.travellers > 1 ? 's' : ''}  ·  {totalDays} days
         </Text>
       </View>
-      <Text style={styles.credit}>
-        Adventure Planner  ·  Issue No. {tripIdShort}
-      </Text>
+      <Text style={styles.credit}>Adventure Planner  ·  {tripIdShort}</Text>
     </Page>
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* At a glance                                                        */
+/* ------------------------------------------------------------------ */
+
 function AtAGlancePage({
-  config,
-  results,
-  totalDays,
-}: {
-  config: TravelConfig;
-  results: GenerationResults;
-  totalDays: number;
-}) {
+  config, results, totalDays,
+}: { config: TravelConfig; results: GenerationResults; totalDays: number }) {
   const perPerson = sumBudget(results.budget);
   const group = perPerson * (config.travellers || 1);
 
   return (
     <Page size="A4" style={styles.page}>
       <RunningHead left="At a glance" right={config.country?.name || ''} />
-      <View style={{ marginTop: 24 }}>
-        <Text style={styles.eyebrow}>Chapter One</Text>
-        <Text style={styles.h1}>
-          The trip <Text style={styles.italic}>at a glance.</Text>
-        </Text>
+      <View style={{ marginTop: 8 }}>
+        <Text style={styles.eyebrow}>Overview</Text>
+        <Text style={styles.h1}>The trip <Text style={styles.h1Accent}>at a glance.</Text></Text>
         <View style={styles.rule} />
       </View>
 
@@ -631,9 +345,7 @@ function AtAGlancePage({
             <View key={d.id} style={styles.routeItem}>
               <Text style={styles.routeNum}>{String(i + 1).padStart(2, '0')}</Text>
               <View style={{ flex: 1 }}>
-                <Text style={styles.routeText}>
-                  {d.name.split('(')[0].split('/')[0].trim()}
-                </Text>
+                <Text style={styles.routeText}>{(d.name || '').split('(')[0].split('/')[0].trim()}</Text>
                 {d.region ? <Text style={styles.routeNote}>{d.region}</Text> : null}
               </View>
             </View>
@@ -642,26 +354,11 @@ function AtAGlancePage({
 
         <View style={styles.col}>
           <Text style={styles.eyebrow}>By the numbers</Text>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{totalDays}</Text>
-            <Text style={styles.statLabel}>Total days</Text>
-          </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{results.flights?.length || 0}</Text>
-            <Text style={styles.statLabel}>Flight legs</Text>
-          </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{results.hotels?.length || 0}</Text>
-            <Text style={styles.statLabel}>Hotel stops</Text>
-          </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>${Math.round(perPerson).toLocaleString()}</Text>
-            <Text style={styles.statLabel}>Per person AUD</Text>
-          </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>${Math.round(group).toLocaleString()}</Text>
-            <Text style={styles.statLabel}>Group total AUD</Text>
-          </View>
+          <View style={styles.statBox}><Text style={styles.statValue}>{totalDays}</Text><Text style={styles.statLabel}>Total days</Text></View>
+          <View style={styles.statBox}><Text style={styles.statValue}>{results.flights?.length || 0}</Text><Text style={styles.statLabel}>Flight legs</Text></View>
+          <View style={styles.statBox}><Text style={styles.statValue}>{results.hotels?.length || 0}</Text><Text style={styles.statLabel}>Hotel stops</Text></View>
+          <View style={styles.statBox}><Text style={styles.statValue}>{money(perPerson)}</Text><Text style={styles.statLabel}>Per person AUD</Text></View>
+          <View style={styles.statBox}><Text style={styles.statValue}>{money(group)}</Text><Text style={styles.statLabel}>Group total AUD</Text></View>
         </View>
       </View>
 
@@ -670,56 +367,132 @@ function AtAGlancePage({
   );
 }
 
-function ItineraryPages({
-  config,
-  results,
+/* ------------------------------------------------------------------ */
+/* THE STITCHED ITINERARY — the centrepiece                            */
+/* ------------------------------------------------------------------ */
+
+function StitchedItineraryPages({
+  config, plans, dayCostByDay,
 }: {
   config: TravelConfig;
-  results: GenerationResults;
+  plans: DayPlan[];
+  dayCostByDay: Map<number, number>;
 }) {
-  if (!results.itinerary || results.itinerary.length === 0) return null;
-
-  const hotelByDest = new Map(
-    (results.hotels || []).map((h) => [(h.destination || '').toLowerCase(), h])
-  );
+  if (plans.length === 0) return null;
 
   return (
     <Page size="A4" style={styles.page} wrap>
-      <RunningHead left="The itinerary" right={config.country?.name || ''} />
-      <View style={{ marginTop: 24 }}>
-        <Text style={styles.eyebrow}>Chapter Two</Text>
-        <Text style={styles.h1}>
-          Day <Text style={styles.italic}>by day.</Text>
+      <RunningHead left="Day by day" right={config.country?.name || ''} />
+      <View style={{ marginTop: 8 }}>
+        <Text style={styles.eyebrow}>The plan</Text>
+        <Text style={styles.h1}>Day <Text style={styles.h1Accent}>by day.</Text></Text>
+        <Text style={styles.bodyDim}>
+          Everything in order — flights, stays, transfers and what to do, stitched together.
         </Text>
         <View style={styles.rule} />
       </View>
 
-      {results.itinerary.map((day) => {
-        const date = addDaysISO(config.departureDate, day.day - 1);
-        const hotel = hotelByDest.get((day.location || '').toLowerCase());
-        const firstHotel = hotel?.hotels?.[0];
+      {plans.map((plan) => {
+        const day = plan.itineraryDay;
+        const moves = dayMoves(plan);
+        const title = day?.title || (plan.isLastDay ? 'Departure day' : plan.isFirstDay ? 'Arrival day' : `Day ${plan.day}`);
+        const location = day?.location || plan.checkIns[0]?.dest.destination || plan.stayingTonight?.dest.destination || '';
+        const cost = dayCostByDay.get(plan.day) ?? 0;
+
+        // Timeline (preferred) or bullet activities.
+        const timeline = day?.timeline && day.timeline.length > 0 ? day.timeline : null;
+        const activities = !timeline ? (day?.activities || []) : [];
+
+        // Tonight.
+        let tonight: string | null = null;
+        if (plan.isLastDay && plan.flights.some((f) => f.type === 'international')) tonight = 'Fly home — trip complete';
+        else if (plan.stayingTonight?.pick) tonight = `Overnight: ${plan.stayingTonight.pick.name}`;
+        else if (plan.stayingTonight) tonight = `Overnight in ${plan.stayingTonight.dest.destination}`;
+
         return (
-          <View key={day.day} style={styles.dayCard} wrap={false}>
-            <View style={styles.dayHeader}>
-              <Text style={styles.dayNumber}>{String(day.day).padStart(2, '0')}</Text>
-              <View style={styles.dayMetaWrap}>
-                <Text style={styles.dayDate}>{formatDateAU(date)}</Text>
-                <Text style={styles.dayLocation}>{day.location}</Text>
-                <Text style={styles.dayTitle}>{day.title}</Text>
+          <View key={plan.day} style={styles.dayCard} wrap={false}>
+            {/* Header */}
+            <View style={styles.dayHeaderRow}>
+              <View style={styles.dayBadge}>
+                <Text style={styles.dayBadgeNum}>{plan.day}</Text>
+                <Text style={styles.dayBadgeLbl}>Day</Text>
               </View>
+              <View style={styles.dayHeaderMid}>
+                <Text style={styles.dayDate}>{formatDayLabel(plan.date)}{location ? `  ·  ${location}` : ''}</Text>
+                <Text style={styles.dayTitle}>{title}</Text>
+              </View>
+              {cost > 0 ? (
+                <View>
+                  <Text style={styles.dayCost}>{money(cost)}</Text>
+                  <Text style={styles.dayCostLbl}>est. pp</Text>
+                </View>
+              ) : null}
             </View>
-            {(day.activities || []).map((a, i) => (
-              <View key={i} style={styles.activityRow}>
-                <Text style={styles.activityNum}>{i + 1}.</Text>
-                <Text style={styles.activityText}>{a}</Text>
+
+            {/* Stitched moves */}
+            {moves.map((m, i) => {
+              const tag = MOVE_TAG[m.kind];
+              return (
+                <View key={i} style={styles.moveRow}>
+                  <Text style={[styles.moveTag, { backgroundColor: tag.bg }]}>{tag.label}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.moveText}>{m.text}</Text>
+                    {m.sub ? <Text style={styles.moveSub}>{m.sub}</Text> : null}
+                  </View>
+                </View>
+              );
+            })}
+
+            {/* Plan — timeline or activities */}
+            {timeline ? (
+              <>
+                <Text style={styles.actSectionLabel}>Hour by hour</Text>
+                {timeline.map((ev, i) => (
+                  <View key={i} style={styles.actRow}>
+                    <Text style={styles.actTime}>{ev.time}</Text>
+                    <Text style={styles.actText}>
+                      {ev.title}{ev.location ? ` — ${ev.location}` : ''}
+                    </Text>
+                  </View>
+                ))}
+              </>
+            ) : activities.length > 0 ? (
+              <>
+                <Text style={styles.actSectionLabel}>What you'll do</Text>
+                {activities.map((a, i) => (
+                  <View key={i} style={styles.actRow}>
+                    <Text style={styles.actBullet}>›</Text>
+                    <Text style={styles.actText}>{a}</Text>
+                  </View>
+                ))}
+              </>
+            ) : null}
+
+            {/* Day notes */}
+            {day?.rainy_backup ? (
+              <View style={[styles.noteBox, { backgroundColor: '#EAF5F1' }]}>
+                <Text style={[styles.noteLabel, { color: SAGE }]}>If it rains</Text>
+                <Text style={styles.noteText}>{day.rainy_backup}</Text>
               </View>
-            ))}
-            {firstHotel ? (
-              <View style={styles.hotelCallout}>
-                <Text style={styles.hotelCalloutLabel}>Tonight you stay at</Text>
-                <Text style={styles.hotelCalloutName}>
-                  {firstHotel.name} <Text style={styles.bodyDim}>— {firstHotel.area}</Text>
-                </Text>
+            ) : null}
+            {day?.kids_tip ? (
+              <View style={[styles.noteBox, { backgroundColor: '#FCEBE9' }]}>
+                <Text style={[styles.noteLabel, { color: TERRACOTTA }]}>With kids</Text>
+                <Text style={styles.noteText}>{day.kids_tip}</Text>
+              </View>
+            ) : null}
+            {day?.accessibility_note ? (
+              <View style={[styles.noteBox, { backgroundColor: '#F6EFDF' }]}>
+                <Text style={[styles.noteLabel, { color: GOLD }]}>Mobility</Text>
+                <Text style={styles.noteText}>{day.accessibility_note}</Text>
+              </View>
+            ) : null}
+
+            {/* Tonight */}
+            {tonight ? (
+              <View style={styles.tonightRow}>
+                <Text style={styles.tonightLbl}>Tonight</Text>
+                <Text style={styles.tonightText}>{tonight}</Text>
               </View>
             ) : null}
           </View>
@@ -731,34 +504,70 @@ function ItineraryPages({
   );
 }
 
-function HotelsPage({
-  config,
-  results,
-}: {
-  config: TravelConfig;
-  results: GenerationResults;
-}) {
+/* ------------------------------------------------------------------ */
+/* Booking reference — flights (day-tagged)                            */
+/* ------------------------------------------------------------------ */
+
+function FlightsPage({ config, results }: { config: TravelConfig; results: GenerationResults }) {
+  if (!results.flights || results.flights.length === 0) return null;
+
+  return (
+    <Page size="A4" style={styles.page} wrap>
+      <RunningHead left="Flights" right={config.country?.name || ''} />
+      <View style={{ marginTop: 8 }}>
+        <Text style={styles.eyebrow}>Booking reference</Text>
+        <Text style={styles.h1}>Your <Text style={styles.h1Accent}>flights.</Text></Text>
+        <View style={styles.rule} />
+      </View>
+
+      {results.flights.map((f, i) => {
+        const dn = config.departureDate ? tripDayNumber(config.departureDate, f.date) : null;
+        return (
+          <View key={i} style={styles.flightCard} wrap={false}>
+            {dn ? <Text style={styles.refDayTag}>Day {dn}</Text> : null}
+            <Text style={styles.flightRoute}>{f.from_code} → {f.to_code}</Text>
+            <Text style={styles.flightMeta}>
+              {formatDayLabel(f.date)}{'\n'}{(f.airlines || []).join(', ') || '—'} · {f.duration}
+            </Text>
+            <Text style={styles.flightPrice}>{f.price_estimate_aud}</Text>
+          </View>
+        );
+      })}
+
+      <PageNum />
+    </Page>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Booking reference — hotels (day-range-tagged)                       */
+/* ------------------------------------------------------------------ */
+
+function HotelsPage({ config, results }: { config: TravelConfig; results: GenerationResults }) {
   if (!results.hotels || results.hotels.length === 0) return null;
 
   return (
     <Page size="A4" style={styles.page} wrap>
-      <RunningHead left="Where you sleep" right={config.country?.name || ''} />
-      <View style={{ marginTop: 24 }}>
-        <Text style={styles.eyebrow}>Chapter Three</Text>
-        <Text style={styles.h1}>
-          Where you <Text style={styles.italic}>sleep.</Text>
-        </Text>
+      <RunningHead left="Hotels" right={config.country?.name || ''} />
+      <View style={{ marginTop: 8 }}>
+        <Text style={styles.eyebrow}>Booking reference</Text>
+        <Text style={styles.h1}>Where you <Text style={styles.h1Accent}>sleep.</Text></Text>
         <View style={styles.rule} />
       </View>
 
       {results.hotels.map((destBlock, di) => {
         const pick = destBlock.hotels?.find((h) => h.recommended) || destBlock.hotels?.[0];
         if (!pick) return null;
+        const inDay = config.departureDate ? tripDayNumber(config.departureDate, destBlock.check_in) : null;
+        const outDay = config.departureDate ? tripDayNumber(config.departureDate, destBlock.check_out) : null;
         return (
           <View key={di} style={styles.hotelEntry} wrap={false}>
-            <Text style={styles.hotelDates}>
-              {formatDateAU(destBlock.check_in)} → {formatDateAU(destBlock.check_out)}  ·  {destBlock.nights} night{destBlock.nights > 1 ? 's' : ''}  ·  {destBlock.destination}
-            </Text>
+            <View style={styles.hotelDateRow}>
+              {inDay && outDay ? <Text style={styles.refDayTag}>Day {inDay}–{outDay}</Text> : null}
+              <Text style={styles.hotelDates}>
+                {formatDayLabel(destBlock.check_in)} → {formatDayLabel(destBlock.check_out)}  ·  {destBlock.nights} night{destBlock.nights > 1 ? 's' : ''}  ·  {destBlock.destination}
+              </Text>
+            </View>
             <Text style={styles.hotelName}>{pick.name}</Text>
             <Text style={styles.hotelArea}>
               {pick.area} · {pick.style} · {'★'.repeat(Math.max(0, Math.min(5, Math.round(Number(pick.stars) || 0))))}
@@ -774,70 +583,29 @@ function HotelsPage({
   );
 }
 
-function FlightsPage({
-  config,
-  results,
-}: {
-  config: TravelConfig;
-  results: GenerationResults;
-}) {
-  if (!results.flights || results.flights.length === 0) return null;
-
-  return (
-    <Page size="A4" style={styles.page} wrap>
-      <RunningHead left="In transit" right={config.country?.name || ''} />
-      <View style={{ marginTop: 24 }}>
-        <Text style={styles.eyebrow}>Chapter Four</Text>
-        <Text style={styles.h1}>
-          In <Text style={styles.italic}>transit.</Text>
-        </Text>
-        <View style={styles.rule} />
-      </View>
-
-      <View style={{ flexDirection: 'row', paddingBottom: 6, borderBottomWidth: 0.6, borderBottomColor: LINE }}>
-        <Text style={[styles.runningHeadText, { flex: 2 }]}>Route</Text>
-        <Text style={[styles.runningHeadText, { flex: 1 }]}>Date</Text>
-        <Text style={[styles.runningHeadText, { flex: 1.4 }]}>Airline</Text>
-        <Text style={[styles.runningHeadText, { flex: 1 }]}>Duration</Text>
-        <Text style={[styles.runningHeadText, { flex: 1, textAlign: 'right' }]}>Price</Text>
-      </View>
-
-      {results.flights.map((f, i) => (
-        <View key={i} style={styles.flightRow} wrap={false}>
-          <Text style={styles.flightFromTo}>
-            {f.from_code} → {f.to_code}
-          </Text>
-          <Text style={styles.flightDate}>{formatDateAU(f.date)}</Text>
-          <Text style={styles.flightAirline}>{(f.airlines || []).join(', ') || '—'}</Text>
-          <Text style={styles.flightDuration}>{f.duration}</Text>
-          <Text style={styles.flightPrice}>{f.price_estimate_aud}</Text>
-        </View>
-      ))}
-
-      <PageNum />
-    </Page>
-  );
-}
+/* ------------------------------------------------------------------ */
+/* Budget — with per-day breakdown                                    */
+/* ------------------------------------------------------------------ */
 
 function BudgetPage({
-  config,
-  results,
+  config, results, perDay,
 }: {
   config: TravelConfig;
   results: GenerationResults;
+  perDay: { day: number; date: string; total: number }[];
 }) {
   if (!results.budget || results.budget.length === 0) return null;
   const perPerson = sumBudget(results.budget);
   const group = perPerson * (config.travellers || 1);
+  const hasPerDay = perDay.some((d) => d.total > 0);
+  const maxDay = hasPerDay ? Math.max(...perDay.map((d) => d.total)) : 0;
 
   return (
     <Page size="A4" style={styles.page} wrap>
-      <RunningHead left="The numbers" right={config.country?.name || ''} />
-      <View style={{ marginTop: 24 }}>
-        <Text style={styles.eyebrow}>Chapter Five</Text>
-        <Text style={styles.h1}>
-          The <Text style={styles.italic}>numbers.</Text>
-        </Text>
+      <RunningHead left="Budget" right={config.country?.name || ''} />
+      <View style={{ marginTop: 8 }}>
+        <Text style={styles.eyebrow}>The numbers</Text>
+        <Text style={styles.h1}>The <Text style={styles.h1Accent}>budget.</Text></Text>
         <View style={styles.rule} />
       </View>
 
@@ -851,37 +619,49 @@ function BudgetPage({
       <View style={styles.budgetTotalBlock}>
         <View>
           <Text style={styles.eyebrow}>Per person · AUD</Text>
-          <Text style={styles.budgetTotalNum}>${Math.round(perPerson).toLocaleString()}</Text>
+          <Text style={styles.budgetTotalNum}>{money(perPerson)}</Text>
         </View>
         <View style={{ alignItems: 'flex-end' }}>
           <Text style={styles.eyebrow}>Group total</Text>
-          <Text style={[styles.budgetTotalNum, { color: TERRACOTTA }]}>
-            ${Math.round(group).toLocaleString()}
-          </Text>
+          <Text style={[styles.budgetTotalNum, { color: TERRACOTTA }]}>{money(group)}</Text>
         </View>
       </View>
+
+      {hasPerDay ? (
+        <View style={{ marginTop: 24 }} wrap={false}>
+          <Text style={styles.eyebrow}>Day by day · per person</Text>
+          {perDay.map((d) => (
+            <View key={d.day} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+              <Text style={{ fontFamily: SANS, fontWeight: 600, fontSize: 8, color: INK, width: 44 }}>Day {d.day}</Text>
+              <View style={{ flex: 1, height: 8, backgroundColor: SOFT2, borderRadius: 4, marginRight: 8 }}>
+                <View style={{ height: 8, borderRadius: 4, backgroundColor: '#F8B5AD', width: `${maxDay > 0 ? Math.round((d.total / maxDay) * 100) : 0}%` }} />
+              </View>
+              <Text style={{ fontFamily: SANS, fontWeight: 700, fontSize: 9, color: GOLD, width: 44, textAlign: 'right' }}>{money(d.total)}</Text>
+            </View>
+          ))}
+          <Text style={[styles.bodyDim, { fontSize: 7.5, marginTop: 6 }]}>
+            Flights land on their departure day; hotel cost split across nights (per person); food, activities & local transport spread evenly.
+          </Text>
+        </View>
+      ) : null}
 
       <PageNum />
     </Page>
   );
 }
 
-function RestaurantsPage({
-  config,
-  results,
-}: {
-  config: TravelConfig;
-  results: GenerationResults;
-}) {
+/* ------------------------------------------------------------------ */
+/* Restaurants / Activities / Practical                               */
+/* ------------------------------------------------------------------ */
+
+function RestaurantsPage({ config, results }: { config: TravelConfig; results: GenerationResults }) {
   if (!results.restaurants || results.restaurants.length === 0) return null;
   return (
     <Page size="A4" style={styles.page} wrap>
       <RunningHead left="The table" right={config.country?.name || ''} />
-      <View style={{ marginTop: 24 }}>
-        <Text style={styles.eyebrow}>Chapter Six</Text>
-        <Text style={styles.h1}>
-          At the <Text style={styles.italic}>table.</Text>
-        </Text>
+      <View style={{ marginTop: 8 }}>
+        <Text style={styles.eyebrow}>Where to eat</Text>
+        <Text style={styles.h1}>At the <Text style={styles.h1Accent}>table.</Text></Text>
         <View style={styles.rule} />
       </View>
 
@@ -890,9 +670,9 @@ function RestaurantsPage({
           <Text style={[styles.h2, { marginTop: 6 }]}>{destBlock.destination}</Text>
           {(destBlock.restaurants || []).slice(0, 5).map((r, i) => (
             <View key={i} style={styles.restaurantRow}>
-              <Text style={styles.restaurantName}>{r.name}  <Text style={[styles.bodyDim, { fontSize: 9 }]}>{r.price_tier}</Text></Text>
+              <Text style={styles.restaurantName}>{r.name}  <Text style={{ fontFamily: SANS, fontSize: 9, color: MUTED }}>{r.price_tier}</Text></Text>
               <Text style={styles.restaurantMeta}>{r.cuisine} · {r.neighbourhood}</Text>
-              {r.signature_dish ? <Text style={styles.restaurantDish}>“{r.signature_dish}”</Text> : null}
+              {r.signature_dish ? <Text style={styles.restaurantDish}>{r.signature_dish}</Text> : null}
             </View>
           ))}
         </View>
@@ -903,22 +683,14 @@ function RestaurantsPage({
   );
 }
 
-function ActivitiesPage({
-  config,
-  results,
-}: {
-  config: TravelConfig;
-  results: GenerationResults;
-}) {
+function ActivitiesPage({ config, results }: { config: TravelConfig; results: GenerationResults }) {
   if (!results.activities || results.activities.length === 0) return null;
   return (
     <Page size="A4" style={styles.page} wrap>
       <RunningHead left="Things to do" right={config.country?.name || ''} />
-      <View style={{ marginTop: 24 }}>
-        <Text style={styles.eyebrow}>Chapter Seven</Text>
-        <Text style={styles.h1}>
-          Things to <Text style={styles.italic}>do.</Text>
-        </Text>
+      <View style={{ marginTop: 8 }}>
+        <Text style={styles.eyebrow}>Experiences</Text>
+        <Text style={styles.h1}>Things to <Text style={styles.h1Accent}>do.</Text></Text>
         <View style={styles.rule} />
       </View>
 
@@ -940,13 +712,7 @@ function ActivitiesPage({
   );
 }
 
-function PracticalPage({
-  config,
-  results,
-}: {
-  config: TravelConfig;
-  results: GenerationResults;
-}) {
+function PracticalPage({ config, results }: { config: TravelConfig; results: GenerationResults }) {
   const hasVisa = !!results.visa;
   const hasCurrency = !!results.currency;
   if (!hasVisa && !hasCurrency) return null;
@@ -954,68 +720,35 @@ function PracticalPage({
   return (
     <Page size="A4" style={styles.page} wrap>
       <RunningHead left="Practical" right={config.country?.name || ''} />
-      <View style={{ marginTop: 24 }}>
-        <Text style={styles.eyebrow}>Final chapter</Text>
-        <Text style={styles.h1}>
-          The <Text style={styles.italic}>practical.</Text>
-        </Text>
+      <View style={{ marginTop: 8 }}>
+        <Text style={styles.eyebrow}>Good to know</Text>
+        <Text style={styles.h1}>The <Text style={styles.h1Accent}>practical.</Text></Text>
         <View style={styles.rule} />
       </View>
 
       {hasVisa && results.visa ? (
         <View style={{ marginBottom: 22 }}>
           <Text style={[styles.h2, { marginBottom: 12 }]}>Visa</Text>
-          <View style={styles.visaRow}>
-            <Text style={styles.visaLabel}>Required</Text>
-            <Text style={styles.visaValue}>{results.visa.visa_required ? 'Yes' : 'No'}</Text>
-          </View>
-          <View style={styles.visaRow}>
-            <Text style={styles.visaLabel}>Type</Text>
-            <Text style={styles.visaValue}>{results.visa.visa_type}</Text>
-          </View>
-          <View style={styles.visaRow}>
-            <Text style={styles.visaLabel}>Max stay</Text>
-            <Text style={styles.visaValue}>{results.visa.max_stay}</Text>
-          </View>
-          <View style={styles.visaRow}>
-            <Text style={styles.visaLabel}>Cost</Text>
-            <Text style={styles.visaValue}>{results.visa.cost_aud}</Text>
-          </View>
-          <View style={styles.visaRow}>
-            <Text style={styles.visaLabel}>Processing</Text>
-            <Text style={styles.visaValue}>{results.visa.processing_time}</Text>
-          </View>
+          <View style={styles.visaRow}><Text style={styles.visaLabel}>Required</Text><Text style={styles.visaValue}>{results.visa.visa_required ? 'Yes' : 'No'}</Text></View>
+          <View style={styles.visaRow}><Text style={styles.visaLabel}>Type</Text><Text style={styles.visaValue}>{results.visa.visa_type}</Text></View>
+          <View style={styles.visaRow}><Text style={styles.visaLabel}>Max stay</Text><Text style={styles.visaValue}>{results.visa.max_stay}</Text></View>
+          <View style={styles.visaRow}><Text style={styles.visaLabel}>Cost</Text><Text style={styles.visaValue}>{results.visa.cost_aud}</Text></View>
+          <View style={styles.visaRow}><Text style={styles.visaLabel}>Processing</Text><Text style={styles.visaValue}>{results.visa.processing_time}</Text></View>
         </View>
       ) : null}
 
       {hasCurrency && results.currency ? (
         <View style={{ marginBottom: 22 }}>
           <Text style={[styles.h2, { marginBottom: 12 }]}>Currency</Text>
-          <View style={styles.visaRow}>
-            <Text style={styles.visaLabel}>Local currency</Text>
-            <Text style={styles.visaValue}>
-              {results.currency.currency_name} ({results.currency.currency_code}, {results.currency.symbol})
-            </Text>
-          </View>
-          <View style={styles.visaRow}>
-            <Text style={styles.visaLabel}>1 AUD =</Text>
-            <Text style={styles.visaValue}>
-              {results.currency.rate_to_aud} {results.currency.currency_code}
-            </Text>
-          </View>
-          <View style={styles.visaRow}>
-            <Text style={styles.visaLabel}>Tipping</Text>
-            <Text style={styles.visaValue}>{results.currency.tipping_culture}</Text>
-          </View>
-          <View style={styles.visaRow}>
-            <Text style={styles.visaLabel}>Cash vs card</Text>
-            <Text style={styles.visaValue}>{results.currency.cash_vs_card}</Text>
-          </View>
+          <View style={styles.visaRow}><Text style={styles.visaLabel}>Local currency</Text><Text style={styles.visaValue}>{results.currency.currency_name} ({results.currency.currency_code}, {results.currency.symbol})</Text></View>
+          <View style={styles.visaRow}><Text style={styles.visaLabel}>1 AUD =</Text><Text style={styles.visaValue}>{results.currency.rate_to_aud} {results.currency.currency_code}</Text></View>
+          <View style={styles.visaRow}><Text style={styles.visaLabel}>Tipping</Text><Text style={styles.visaValue}>{results.currency.tipping_culture}</Text></View>
+          <View style={styles.visaRow}><Text style={styles.visaLabel}>Cash vs card</Text><Text style={styles.visaValue}>{results.currency.cash_vs_card}</Text></View>
         </View>
       ) : null}
 
-      <Text style={[styles.bodyDim, { textAlign: 'center', marginTop: 32, fontSize: 8, letterSpacing: 2, textTransform: 'uppercase', color: GOLD }]}>
-        Bon Voyage  ·  {config.country?.name || ''}
+      <Text style={[styles.eyebrow, { textAlign: 'center', marginTop: 32, color: TERRACOTTA }]}>
+        Bon voyage  ·  {config.country?.name || ''}
       </Text>
 
       <PageNum />
@@ -1027,11 +760,6 @@ function PracticalPage({
 /* Image loading w/ fallback                                          */
 /* ------------------------------------------------------------------ */
 
-/**
- * Try to load the hero image as a data URL so @react-pdf can embed it
- * without re-fetching at render time. Returns null on failure — the
- * caller renders a coloured gradient fallback with the country emoji.
- */
 async function loadHeroDataUrl(url: string): Promise<string | null> {
   try {
     const controller = new AbortController();
@@ -1055,67 +783,49 @@ async function loadHeroDataUrl(url: string): Promise<string | null> {
 /* Public API                                                         */
 /* ------------------------------------------------------------------ */
 
-/**
- * Build the magazine PDF and return a Blob ready to download.
- */
 export async function generateTripPdf(
   config: TravelConfig,
   results: GenerationResults
 ): Promise<Blob> {
-  // Use the country name as the trip ID surrogate — it's deterministic
-  // for the issue number on the cover. Fall back to a short hash of the
-  // destination IDs so two trips to the same country still differ.
   const seed =
-    (config.country?.id || config.country?.name || '') +
-    '|' +
+    (config.country?.id || config.country?.name || '') + '|' +
     config.destinations.map((d) => d.id).join(',');
   const tripIdShort = seed.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase() || 'TRIP';
 
   const totalDays = Math.max(
     1,
     Math.round(
-      (new Date(config.returnDate).getTime() -
-        new Date(config.departureDate).getTime()) /
-        (1000 * 60 * 60 * 24)
+      (new Date(config.returnDate).getTime() - new Date(config.departureDate).getTime()) / (1000 * 60 * 60 * 24)
     )
   );
 
-  // Pre-fetch the hero into a data URL so the PDF render is offline-safe.
-  const heroUrlRemote = config.country?.name
-    ? getCountryHero(config.country.name, 1600, 1100)
-    : '';
-  const heroUrl = heroUrlRemote ? await loadHeroDataUrl(heroUrlRemote) : null;
+  // Build the stitched plan + per-day costs once.
+  const plans = buildDayPlans(config, results.itinerary || [], results.flights || [], results.hotels || [], results.transport || []);
+  const perDay = perDayCosts(plans, results.flights || [], results.budget || [], config.travellers || 1);
+  const dayCostByDay = new Map(perDay.map((d) => [d.day, d.total]));
 
-  // Also try a destination photo as a backup — not currently used in
-  // layout but reserved for future cards. Kept side-effect-free.
+  const heroUrlRemote = config.country?.name ? getCountryHero(config.country.name, 1600, 1100) : '';
+  const heroUrl = heroUrlRemote ? await loadHeroDataUrl(heroUrlRemote) : null;
   void getDestinationPhoto;
 
   const doc: ReactElement = (
     <Document
       title={`${config.country?.name || 'Trip'} — Adventure Planner`}
       author="Adventure Planner"
-      subject="Magazine itinerary"
+      subject="Day-by-day itinerary"
     >
-      <CoverPage
-        config={config}
-        totalDays={totalDays}
-        tripIdShort={tripIdShort}
-        heroUrl={heroUrl}
-      />
+      <CoverPage config={config} totalDays={totalDays} tripIdShort={tripIdShort} heroUrl={heroUrl} />
       <AtAGlancePage config={config} results={results} totalDays={totalDays} />
-      <ItineraryPages config={config} results={results} />
-      <HotelsPage config={config} results={results} />
+      <StitchedItineraryPages config={config} plans={plans} dayCostByDay={dayCostByDay} />
       <FlightsPage config={config} results={results} />
-      <BudgetPage config={config} results={results} />
+      <HotelsPage config={config} results={results} />
+      <BudgetPage config={config} results={results} perDay={perDay} />
       <RestaurantsPage config={config} results={results} />
       <ActivitiesPage config={config} results={results} />
       <PracticalPage config={config} results={results} />
     </Document>
   );
 
-  // pdf() returns an instance; toBlob() resolves to the final Blob.
-  // The cast keeps TS happy when react-pdf's typings think this is a
-  // node-only doc element.
   const instance = pdf(doc as unknown as Parameters<typeof pdf>[0]);
   return await instance.toBlob();
 }
