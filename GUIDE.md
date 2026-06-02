@@ -3,7 +3,7 @@
 > **Living document.** Maintained alongside the code. When adding/changing a feature,
 > the entry in this file must change too — see § 14 *Self-maintenance protocol*.
 
-**Last updated:** 2026-05-27 (stitched plan — itinerary/flights/hotels joined on dates)
+**Last updated:** 2026-05-27 (stitched PDF — printable plan now matches the app, all 5 stitch follow-ons shipped)
 **App version:** post-WOW build-out (Phases 1–12 shipped: per-traveller profiles, all-ages modes, hour-by-hour itinerary, pre-trip readiness, live-mode dashboard, cultural depth, price tracking, budget realism, memories recap, group splits, surprise-me inspiration, i18n scaffold) + QA hardening.
 
 ---
@@ -183,7 +183,7 @@ Results are split into 4 groups in the nav.
 
 | 👤 Traveller | 🛠️ Admin |
 |---|---|
-| Top of results: **Share / Email / Calendar / PDF**. **Share** = a self-contained URL (the trip config encoded in the query string); the recipient lands on the Travel Details step pre-filled and just taps generate. **Email** = formatted email body. **Calendar** = `.ics` download. **PDF** = print-ready full trip. | URL encode/decode in `src/lib/tripUrl.ts` — UTF-8-safe base64 (works with emoji/accented country names). Email body assembled in `src/lib/emailTrip.ts`. ICS in `src/lib/calendarExport.ts` (search for `.ics`). PDF via `@react-pdf/renderer` in `src/lib/tripPdf.tsx`. |
+| Top of results: **Share / Email / Calendar / PDF**. **Share** = a self-contained URL (the trip config encoded in the query string); the recipient lands on the Travel Details step pre-filled and just taps generate. **Email** = formatted email body. **Calendar** = `.ics` download. **PDF** = a print-ready, day-by-day stitched plan (the same flights/hotels/transfers-woven-into-each-day view as the Itinerary tab, plus day-tagged flight/hotel reference pages and a per-day spend chart). | URL encode/decode in `src/lib/tripUrl.ts` — UTF-8-safe base64 (works with emoji/accented country names). Email body assembled in `src/lib/emailTrip.ts`. ICS in `src/lib/calendarExport.ts` (search for `.ics`). PDF via `@react-pdf/renderer` in `src/lib/tripPdf.tsx` — built off `planStitch.buildDayPlans`. **Uses built-in Helvetica (no remote webfonts) so the export can't break on a CDN failure.** |
 | The shared URL contains config only (no booking data), so the recipient regenerates — but the dates, destinations, travellers, vibes are preserved. | Encoded fields in `MinimalTripConfig` in `tripUrl.ts`. Results are NOT shared (results are LLM-generated and would be inconsistent between recipients anyway). |
 
 ---
@@ -390,13 +390,19 @@ Future sessions: when you edit code that maps to a section here, also update `GU
 
 > Add newest entries at the top. Date format: YYYY-MM-DD.
 
+### 2026-05-27 — Stitched PDF export (5 of 5 stitch follow-ons done)
+- **`tripPdf.tsx` fully rebuilt.** The PDF is now a day-by-day stitched plan matching the app: the centrepiece "Day by day" pages render one card per day with the ordered move chips (Fly / Check out / Transfer / Check in), the hour-by-hour timeline or activity bullets, rainy/kids/mobility notes, an estimated per-day spend, and an "Overnight: [hotel]" / "Fly home" footer — built from the same `buildDayPlans`/`dayMoves`/`perDayCosts` helpers as the app.
+- **Booking-reference pages are now day-tagged:** Flights show a "Day N" chip + weekday date per leg; Hotels show "Day N–M" + the full date range. Budget page gained a per-day spend bar chart.
+- **Theme flip:** PDF moved from the old dark/Fraunces-serif editorial look to the light, modern app theme (white pages, Helvetica, coral accent). **Removed the remote webfont registration** (it was 404-ing and could break the whole export) in favour of the built-in Helvetica — the export now has no network dependency for fonts and can't fail that way.
+- Verified at runtime: `generateTripPdf()` produces a valid ~117 KB `application/pdf` with a fully-populated stitched trip.
+
 ### 2026-05-27 — Stitch follow-ons (4 of 5 shipped)
 - **Dashboard "Trip at a glance" rail** — a horizontal, scannable strip of the stitched days (day number, weekday, title, move icons, overnight), each tapping through to the Itinerary. Built in `DashboardTab.tsx` off `buildDayPlans` + `dayMoves`.
 - **Inline mismatch warnings on day cards** — the conflict engine's findings (e.g. "transport X→Y has no matching itinerary day") now render directly on the relevant `StitchedDayCard` in the Itinerary, not just in the top summary panel. `ItineraryTab.tsx` passes `dayConflicts` filtered by day.
 - **Per-day budget** — new "Day by day · what each day costs" section in `BudgetTab.tsx`, derived from `perDayCosts()` in `planStitch.ts`: flights land on their departure day, hotel cost is split across nights (per person), and food/activities/local-transport are spread evenly. `ResultsView` now passes `flights`/`transport`/`hotels`/`itinerary` to `BudgetTab`.
 - **Day-anchored Taste / Do / Nearby** — each destination header in those three tabs now carries a "🗓️ Days N–M" chip showing when you're actually there, so the suggestions read as part of the plan. New `src/components/shared/DayRangeChip.tsx` + `destinationDayRanges`/`dayRangeForDestination` in `planStitch.ts`. `ResultsView` passes `config` + `itinerary` to `TasteTab`/`DoTab`/`NearbyTab`.
 - New `planStitch.ts` helpers: `destinationDayRanges`, `dayRangeForDestination`, `perDayCosts`.
-- **Deferred — stitched-PDF rewrite (Task 5/5).** `tripPdf.tsx` (~800 lines, @react-pdf/renderer) should be rebuilt to render the day-by-day stitched plan (flights/hotels/transport inline per day). Not done this session; the `buildDayPlans`/`dayMoves` helpers it needs are ready.
+- **Task 5/5 (stitched-PDF rewrite) — now done, see the entry above this one.**
 
 ### 2026-05-27 — Stitched plan (everything joined on dates)
 - New `src/lib/planStitch.ts` — `buildDayPlans()` joins flights / hotels / transport / itinerary on the date axis; `dayMoves()` produces the ordered fly→checkout→transport→checkin chips per day.
