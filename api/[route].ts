@@ -48,6 +48,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     switch (route) {
       case 'itinerary': return res.json(await handleItinerary(config));
+      case 'regenerateDay': return res.json(await handleRegenerateDay(config));
       case 'flights': return res.json(await handleFlights(config));
       case 'hotels': return res.json(await handleHotels(config));
       case 'hotelAlternatives': return res.json(await handleHotelAlternatives(config));
@@ -176,6 +177,45 @@ async function handleItinerary(config: any) {
   itinerary = itinerary.map((d: any, i: number) => ({ ...d, day: i + 1 }));
   if (itinerary.length > totalDays) itinerary = itinerary.slice(0, totalDays);
   return itinerary;
+}
+
+/**
+ * Regenerate a SINGLE itinerary day — used by the per-day "Regenerate" edit.
+ * Client sends: day (number), date, location, vibe, and `avoid` (the current
+ * day's activity titles, so the new version is genuinely different). Returns
+ * one ItineraryDay object with a fresh timeline, keeping day/location/date fixed.
+ */
+async function handleRegenerateDay(config: any) {
+  const countryName = config.country?.name || 'the destination';
+  const day = Number(config.day) || 1;
+  const location = (config.location || '').toString() || countryName;
+  const vibe = (config.vibe || 'culture').toString();
+  const avoid: string[] = Array.isArray(config.avoid) ? config.avoid.filter(Boolean) : [];
+  const avoidLine = avoid.length
+    ? `\nMake it genuinely DIFFERENT — do NOT repeat any of these: ${avoid.join('; ')}.`
+    : '';
+
+  const SINGLE_DAY_SYSTEM = `You are a travel expert rewriting ONE day of an itinerary. Return ONLY a single JSON object (not an array) for this one day, in this shape:
+{
+  "day": <number>,
+  "title": "short evocative day title",
+  "location": "<the location given>",
+  "icon": "single emoji",
+  "vibe": "adventure | nature | travel | food | beach | cruise | culture | rest",
+  "activities": ["3-4 short summary strings"],
+  "timeline": [ { "time": "HH:MM", "duration_min": <number>, "title": "specific thing to do", "location": "venue/area", "type": "travel|meal|sight|activity|rest|shop|nightlife", "tip": "optional short tip", "travel_from_prev_min": <number optional> } ],
+  "rainy_backup": "optional one-sentence indoor alternative",
+  "kids_tip": "optional one-line family note",
+  "accessibility_note": "optional one-line mobility note"
+}
+Cover ~08:00–22:00 with 5–8 timeline events, named real venues/dishes, realistic walking times. Return ONLY the JSON object.`;
+
+  const userMessage = `Country: ${countryName}. Rewrite Day ${day} in ${location} (vibe: ${vibe}). Keep "day" = ${day} and "location" = "${location}".${avoidLine}${personalisationHint(config)}`;
+  const result = await callLLM(SINGLE_DAY_SYSTEM, userMessage);
+  // Accept either a bare object or (defensively) the first element of an array.
+  const dayObj = Array.isArray(result) ? result[0] : result;
+  if (!dayObj || typeof dayObj !== 'object') return null;
+  return { ...dayObj, day, location };
 }
 
 async function handleFlights(config: any) {

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import type { ItineraryDay as DayType, TravelConfig, DestinationHotels, FlightLeg, TransportLeg, WeatherInfo } from '../../types';
-import { generateItinerary } from '../../lib/api';
+import { generateItinerary, regenerateDay } from '../../lib/api';
 import { formatDateAU, addDaysISO, formatDayLabel, weekdayShort } from '../../lib/dateUtils';
 import { VIBE_LABELS } from '../../lib/constants';
 import { getDestinationPhoto } from '../../lib/imagery';
@@ -44,6 +44,42 @@ export default function ItineraryTab({ itinerary, config, hotels, onUpdate, flig
   const [reorderMode, setReorderMode] = useState(false);
   const [conflictsExpanded, setConflictsExpanded] = useState(false);
   const [nudgesExpanded, setNudgesExpanded] = useState(false);
+  const [regenDayNum, setRegenDayNum] = useState<number | null>(null);
+
+  // Regenerate ONE day, keeping its date/location fixed and avoiding repeats.
+  const regenerateOneDay = async (d: DayType) => {
+    setRegenDayNum(d.day);
+    setError('');
+    try {
+      const avoid = (d.timeline && d.timeline.length > 0)
+        ? d.timeline.map((ev) => ev.title)
+        : (d.activities || []);
+      const fresh = await regenerateDay(config, { day: d.day, location: d.location, vibe: d.vibe, avoid });
+      if (!fresh) { setError('Could not regenerate that day — please try again.'); return; }
+      // Preserve day/location; swap in the fresh content.
+      onUpdate(itinerary.map((x) => x.day === d.day ? { ...fresh, day: d.day, location: d.location } : x));
+    } catch {
+      setError('Could not regenerate that day — please try again.');
+    } finally {
+      setRegenDayNum(null);
+    }
+  };
+
+  // Remove one timeline stop from a day.
+  const removeTimelineStop = (dayNum: number, stopIdx: number) => {
+    onUpdate(itinerary.map((d) => {
+      if (d.day !== dayNum || !d.timeline) return d;
+      return { ...d, timeline: d.timeline.filter((_, i) => i !== stopIdx) };
+    }));
+  };
+
+  // Remove one bullet activity from a day (legacy / no-timeline days).
+  const removeActivity = (dayNum: number, actIdx: number) => {
+    onUpdate(itinerary.map((d) => {
+      if (d.day !== dayNum) return d;
+      return { ...d, activities: (d.activities || []).filter((_, i) => i !== actIdx) };
+    }));
+  };
 
   const conflicts = useMemo(
     () => findConflicts(config, itinerary, flights, hotels, transport),
@@ -306,15 +342,36 @@ export default function ItineraryTab({ itinerary, config, hotels, onUpdate, flig
             <div className="px-8 py-7">
               {selectedDayData.timeline && selectedDayData.timeline.length > 0 ? (
                 <>
-                  <div className="flex items-baseline justify-between mb-5">
+                  <div className="flex items-center justify-between mb-5 gap-3">
                     <p className="eyebrow">Hour by hour</p>
-                    <span className="text-[10px] tracking-wider uppercase text-[var(--text-dim)]">
-                      {selectedDayData.timeline.length} stops
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] tracking-wider uppercase text-[var(--text-dim)]">
+                        {selectedDayData.timeline.length} stops
+                      </span>
+                      <button
+                        onClick={() => regenerateOneDay(selectedDayData)}
+                        disabled={regenDayNum === selectedDayData.day}
+                        className="text-[10px] font-semibold tracking-wide uppercase px-3 py-1.5 rounded-full border border-[var(--terracotta)]/40 text-[var(--terracotta)] hover:bg-[var(--terracotta)]/10 transition-all disabled:opacity-50"
+                      >
+                        {regenDayNum === selectedDayData.day ? 'Reworking…' : '↻ Redo this day'}
+                      </button>
+                    </div>
                   </div>
                   <ol className="relative space-y-3 pl-1">
                     {selectedDayData.timeline.map((ev, i) => (
-                      <TimelineRow key={i} event={ev} isFirst={i === 0} isLast={i === selectedDayData.timeline!.length - 1} />
+                      <li key={i} className="group/stop relative flex items-start gap-2">
+                        <div className="flex-1 min-w-0">
+                          <TimelineRow event={ev} isFirst={i === 0} isLast={i === selectedDayData.timeline!.length - 1} />
+                        </div>
+                        <button
+                          onClick={() => removeTimelineStop(selectedDayData.day, i)}
+                          aria-label={`Remove ${ev.title}`}
+                          title="Remove this stop"
+                          className="mt-1 w-6 h-6 rounded-full flex items-center justify-center text-[var(--text-dim)] hover:text-[var(--terracotta)] hover:bg-[var(--terracotta)]/10 transition-colors text-xs leading-none flex-shrink-0"
+                        >
+                          ✕
+                        </button>
+                      </li>
                     ))}
                   </ol>
 
@@ -335,14 +392,31 @@ export default function ItineraryTab({ itinerary, config, hotels, onUpdate, flig
                 </>
               ) : (
                 <>
-                  <p className="eyebrow mb-5">What you'll do</p>
+                  <div className="flex items-center justify-between mb-5 gap-3">
+                    <p className="eyebrow">What you'll do</p>
+                    <button
+                      onClick={() => regenerateOneDay(selectedDayData)}
+                      disabled={regenDayNum === selectedDayData.day}
+                      className="text-[10px] font-semibold tracking-wide uppercase px-3 py-1.5 rounded-full border border-[var(--terracotta)]/40 text-[var(--terracotta)] hover:bg-[var(--terracotta)]/10 transition-all disabled:opacity-50"
+                    >
+                      {regenDayNum === selectedDayData.day ? 'Reworking…' : '↻ Redo this day'}
+                    </button>
+                  </div>
                   <ol className="space-y-4">
                     {selectedDayData.activities.map((activity, i) => (
-                      <li key={i} className="flex gap-5">
+                      <li key={i} className="flex gap-5 items-start">
                         <span className="font-display text-2xl text-[var(--gold)] leading-none w-8 flex-shrink-0">
                           {String(i + 1).padStart(2, '0')}
                         </span>
-                        <p className="text-[var(--text)] text-[15px] leading-relaxed pt-1">{activity}</p>
+                        <p className="text-[var(--text)] text-[15px] leading-relaxed pt-1 flex-1">{activity}</p>
+                        <button
+                          onClick={() => removeActivity(selectedDayData.day, i)}
+                          aria-label={`Remove ${activity}`}
+                          title="Remove"
+                          className="mt-1 w-6 h-6 rounded-full flex items-center justify-center text-[var(--text-dim)] hover:text-[var(--terracotta)] hover:bg-[var(--terracotta)]/10 transition-colors text-xs leading-none flex-shrink-0"
+                        >
+                          ✕
+                        </button>
                       </li>
                     ))}
                   </ol>

@@ -40,6 +40,15 @@ export async function generateItinerary(config: TravelConfig): Promise<Itinerary
   return postApi<ItineraryDay[]>('/api/itinerary', config);
 }
 
+/** Regenerate a single itinerary day, keeping its date/location fixed.
+ *  `avoid` = current activity titles, so the new day is genuinely different. */
+export async function regenerateDay(
+  config: TravelConfig,
+  opts: { day: number; location: string; vibe: string; avoid: string[] },
+): Promise<ItineraryDay | null> {
+  return postApi<ItineraryDay | null>('/api/regenerateDay', { ...config, ...opts });
+}
+
 export async function generateBudget(config: TravelConfig): Promise<BudgetItem[]> {
   return postApi<BudgetItem[]>('/api/budget', config);
 }
