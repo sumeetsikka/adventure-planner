@@ -1,4 +1,4 @@
-import type { Country, TravelConfig, Destination, FlightLeg, DestinationHotels, ItineraryDay, BudgetItem, Tip, PackingItem, WeatherInfo, VisaInfo, CurrencyInfo, NearbyPlace, TransportLeg, DestinationRestaurants, DestinationActivities, DestinationInfo } from '../types';
+import type { Country, TravelConfig, Destination, FlightLeg, DestinationHotels, HotelRec, ItineraryDay, BudgetItem, Tip, PackingItem, WeatherInfo, VisaInfo, CurrencyInfo, NearbyPlace, TransportLeg, DestinationRestaurants, DestinationActivities, DestinationInfo } from '../types';
 
 async function postApi<T>(endpoint: string, body: unknown): Promise<T> {
   const res = await fetch(endpoint, {
@@ -25,6 +25,15 @@ export async function searchFlights(config: TravelConfig): Promise<FlightLeg[]> 
 
 export async function searchHotels(config: TravelConfig): Promise<DestinationHotels[]> {
   return postApi<DestinationHotels[]>('/api/hotels', config);
+}
+
+/** Fetch fresh alternative hotels for a single destination + stay window.
+ *  Returns a flat list of HotelRec to merge into that destination's options. */
+export async function generateHotelAlternatives(
+  config: TravelConfig,
+  opts: { destination: string; check_in: string; check_out: string; nights: number; exclude: string[] },
+): Promise<HotelRec[]> {
+  return postApi<HotelRec[]>('/api/hotelAlternatives', { ...config, ...opts });
 }
 
 export async function generateItinerary(config: TravelConfig): Promise<ItineraryDay[]> {

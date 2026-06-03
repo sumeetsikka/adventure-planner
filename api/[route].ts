@@ -50,6 +50,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       case 'itinerary': return res.json(await handleItinerary(config));
       case 'flights': return res.json(await handleFlights(config));
       case 'hotels': return res.json(await handleHotels(config));
+      case 'hotelAlternatives': return res.json(await handleHotelAlternatives(config));
       case 'budget': return res.json(await handleBudget(config));
       case 'tips': return res.json(await handleTips(config));
       case 'packing': return res.json(await handlePacking(config));
@@ -213,6 +214,43 @@ async function handleHotels(config: any) {
   let hotels = parseResult(await callLLM(HOTELS_SYSTEM, userMessage));
   hotels = fixHotelDates(hotels, limitedSchedule);
   return hotels;
+}
+
+/**
+ * Fetch fresh hotel options for a SINGLE destination — used by the "More
+ * options" editing flow. The client sends the normal config plus:
+ *   - destination: the destination name to re-search
+ *   - check_in / check_out / nights: the exact stay dates to preserve
+ *   - exclude: names already shown (so we don't repeat them)
+ * Returns a flat array of HotelRec (not the per-destination wrapper).
+ */
+async function handleHotelAlternatives(config: any) {
+  const countryName = config.country?.name || 'the destination';
+  const destination = (config.destination || '').toString();
+  if (!destination) return [];
+  const vibeList = (config.vibes || ['mix']).join(', ');
+  const checkIn = config.check_in || config.departureDate;
+  const checkOut = config.check_out || config.returnDate;
+  const nights = Number(config.nights) || 1;
+  const exclude: string[] = Array.isArray(config.exclude) ? config.exclude.filter(Boolean) : [];
+  const excludeLine = exclude.length
+    ? `\nDo NOT suggest any of these already-shown hotels: ${exclude.join('; ')}.`
+    : '';
+
+  const userMessage = `Country: ${countryName}. Vibes: ${vibeList}. Travellers: ${config.travellers}, ages: ${(config.ages || []).join(', ')}.\n\nRecommend 3 DIFFERENT hotels in ${destination} for these EXACT dates: check-in ${checkIn}, check-out ${checkOut}, ${nights} nights.${excludeLine}${budgetHint(config)}${personalisationHint(config)}`;
+
+  const parsed = parseResult(await callLLM(HOTELS_SYSTEM, userMessage));
+  // The hotels prompt returns per-destination objects; flatten to the hotel
+  // list and stamp the preserved stay dates onto the wrapper the client merges.
+  let hotelList: any[] = [];
+  for (const block of parsed) {
+    if (Array.isArray(block?.hotels)) hotelList = hotelList.concat(block.hotels);
+    else if (block?.name) hotelList.push(block); // already a flat hotel object
+  }
+  // Drop any that duplicate an excluded name (defensive — LLMs ignore instructions ~5%).
+  const seen = new Set(exclude.map((e) => e.toLowerCase().trim()));
+  hotelList = hotelList.filter((h) => h?.name && !seen.has(String(h.name).toLowerCase().trim()));
+  return hotelList.slice(0, 3);
 }
 
 async function handleBudget(config: any) {
