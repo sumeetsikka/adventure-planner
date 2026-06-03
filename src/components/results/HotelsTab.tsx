@@ -6,6 +6,7 @@ import { getHotelLinks } from '../../lib/bookingLinks';
 import { getDestinationPhoto } from '../../lib/imagery';
 import { generateHotelAlternatives } from '../../lib/api';
 import { PlaceActions } from '../shared/PlaceLink';
+import { EstimateNote } from '../shared/EstimateBadge';
 
 const AMENITY_META: Record<HotelAmenity, { label: string; icon: string }> = {
   wifi: { label: 'Free Wi-Fi', icon: '⌁' },
@@ -392,6 +393,7 @@ export default function HotelsTab({ hotels, config, onUpdate }: Props) {
           );
         })}
       </div>
+      <EstimateNote what="rates and availability" />
     </motion.div>
   );
 }

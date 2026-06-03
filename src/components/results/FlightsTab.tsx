@@ -6,6 +6,7 @@ import { getFlightLinks } from '../../lib/bookingLinks';
 import { flightCO2kg, estimateLegDistance } from '../../lib/carbon';
 import { isWatched, toggleWatch, flightWatchId } from '../../lib/priceWatch';
 import { getActiveTripId } from '../../lib/tripStore';
+import { EstimateNote } from '../shared/EstimateBadge';
 
 interface Props {
   flights: FlightLeg[];
@@ -166,7 +167,7 @@ export default function FlightsTab({ flights, config }: Props) {
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="font-display text-3xl text-[var(--gold)] leading-none">{f.price_estimate_aud}</p>
-                  <p className="text-[var(--text-dim)] text-[10px] uppercase tracking-wider mt-1">per person</p>
+                  <p className="text-[var(--text-dim)] text-[10px] uppercase tracking-wider mt-1">per person · est.</p>
                 </div>
               </div>
 
@@ -221,6 +222,7 @@ export default function FlightsTab({ flights, config }: Props) {
           );
         })}
       </div>
+      <EstimateNote what="fares" />
     </motion.div>
   );
 }
