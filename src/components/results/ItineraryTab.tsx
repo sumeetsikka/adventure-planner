@@ -359,19 +359,13 @@ export default function ItineraryTab({ itinerary, config, hotels, onUpdate, flig
                   </div>
                   <ol className="relative space-y-3 pl-1">
                     {selectedDayData.timeline.map((ev, i) => (
-                      <li key={i} className="group/stop relative flex items-start gap-2">
-                        <div className="flex-1 min-w-0">
-                          <TimelineRow event={ev} isFirst={i === 0} isLast={i === selectedDayData.timeline!.length - 1} />
-                        </div>
-                        <button
-                          onClick={() => removeTimelineStop(selectedDayData.day, i)}
-                          aria-label={`Remove ${ev.title}`}
-                          title="Remove this stop"
-                          className="mt-1 w-6 h-6 rounded-full flex items-center justify-center text-[var(--text-dim)] hover:text-[var(--terracotta)] hover:bg-[var(--terracotta)]/10 transition-colors text-xs leading-none flex-shrink-0"
-                        >
-                          ✕
-                        </button>
-                      </li>
+                      <TimelineRow
+                        key={i}
+                        event={ev}
+                        isFirst={i === 0}
+                        isLast={i === selectedDayData.timeline!.length - 1}
+                        onRemove={() => removeTimelineStop(selectedDayData.day, i)}
+                      />
                     ))}
                   </ol>
 
@@ -645,11 +639,12 @@ const TYPE_META: Record<string, { icon: string; colour: string }> = {
 };
 
 function TimelineRow({
-  event, isFirst, isLast,
+  event, isFirst, isLast, onRemove,
 }: {
   event: import('../../types').TimelineEvent;
   isFirst: boolean;
   isLast: boolean;
+  onRemove?: () => void;
 }) {
   const meta = TYPE_META[event.type] || TYPE_META.activity;
   const endTime = computeEndTime(event.time, event.duration_min);
@@ -666,6 +661,18 @@ function TimelineRow({
         {isFirst ? '▶' : ''}
       </span>
 
+      {/* Remove button (editable mode) */}
+      {onRemove && (
+        <button
+          onClick={onRemove}
+          aria-label={`Remove ${event.title}`}
+          title="Remove this stop"
+          className="absolute right-0 top-1 w-6 h-6 rounded-full flex items-center justify-center text-[var(--text-dim)] hover:text-[var(--terracotta)] hover:bg-[var(--terracotta)]/10 transition-colors text-xs leading-none"
+        >
+          ✕
+        </button>
+      )}
+
       {/* Walk/transit time from previous event */}
       {!isFirst && (event.travel_from_prev_min ?? 0) > 0 && (
         <p className="text-[10px] uppercase tracking-wider text-[var(--text-dim)] mb-1 -mt-1">
@@ -680,7 +687,7 @@ function TimelineRow({
           {endTime && ` · ends ${endTime}`}
         </span>
       </div>
-      <div className="flex items-start gap-2 mb-0.5">
+      <div className="flex items-start gap-2 mb-0.5 pr-7">
         <span className="text-base leading-tight flex-shrink-0" style={{ filter: 'grayscale(0)' }}>{meta.icon}</span>
         <p className="text-[var(--cream)] text-[14px] leading-snug flex-1">{event.title}</p>
       </div>
