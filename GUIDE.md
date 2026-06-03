@@ -123,6 +123,7 @@ Results are split into 4 groups in the nav.
 | 👤 Traveller | 🛠️ Admin |
 |---|---|
 | Photo banner per destination shows the **stay range as Day N–M** + full dates (🗓️ Wed 1 Jul → Sat 4 Jul), matching exactly when the itinerary has you in that city. Tap to expand. Recommended hotels show stars, area, style, price range, amenities, "best for" tag, and **Booking.com / Agoda / Hotels.com** links pre-filled with your dates. | `HotelsTab.tsx`. Day range via `tripDayNumber()`, date labels via `formatDayLabel()`. The destination banner is a `<div role="button">` (not a `<button>`) because `PlaceActions` renders `<a>` tags inside — anchors-inside-buttons is invalid HTML. |
+| **✏️ Editable plan.** Tap **"Make this my pick"** on any hotel to set it as your choice — this instantly re-stitches the whole trip: the Itinerary's "Overnight: …", the per-day budget, and the PDF all read the recommended hotel, so they update together. Tap **"＋ More options in [city]"** to fetch 3 fresh alternatives for just that city (same dates, no repeats) and append them to choose from. | Editing is gated on the `onUpdate` prop (passed from `ResultsView`). `makePick()` flips the `recommended` flag and calls `onUpdate` → `onUpdateResults({ hotels })` → auto-saves. `fetchMore()` calls `generateHotelAlternatives()` (`src/lib/api.ts`) → `/api/hotelAlternatives` (`handleHotelAlternatives` in `api/[route].ts`), which re-runs the hotels prompt for ONE destination with an `exclude` list, dedupes, and returns ≤3 `HotelRec`. The re-stitch is automatic because `planStitch.buildDayPlans` derives "where you sleep" from the recommended hotel. |
 
 ### 3.6 Transport, Bookings tracker
 
@@ -277,7 +278,7 @@ A debounced auto-commit hook (`.claude/scripts/auto-commit.sh`) commits clean in
 
 **Build command:** `tsc -b && vite build` (in `package.json`). **Output:** `dist/`.
 
-**Functions:** the single catch-all `api/[route].ts` handles every API route (`/api/itinerary`, `/api/flights`, `/api/hotels`, `/api/budget`, `/api/tips`, `/api/packing`, `/api/weather`, `/api/visa`, `/api/currency`, `/api/nearby`, `/api/transport`, `/api/destinations`, `/api/chat`, `/api/restaurants`, `/api/activities`, `/api/parseBooking`, `/api/destinationInfo`). Runs on Vercel Functions (Fluid Compute, Node.js 24, 300 s timeout). Active-CPU pricing — chunked streaming reduces wait time but doesn't free CPU.
+**Functions:** the single catch-all `api/[route].ts` handles every API route (`/api/itinerary`, `/api/flights`, `/api/hotels`, `/api/hotelAlternatives`, `/api/budget`, `/api/tips`, `/api/packing`, `/api/weather`, `/api/visa`, `/api/currency`, `/api/nearby`, `/api/transport`, `/api/destinations`, `/api/chat`, `/api/restaurants`, `/api/activities`, `/api/parseBooking`, `/api/destinationInfo`). Runs on Vercel Functions (Fluid Compute, Node.js 24, 300 s timeout). Active-CPU pricing — chunked streaming reduces wait time but doesn't free CPU.
 
 > 💡 Vercel AI Gateway lets you point at multiple providers via `provider/model` strings with built-in fallback & observability. Worth migrating to when you have time — it'd shrink `server/lib/gemini.ts` significantly. See the Vercel AI SDK skill.
 
@@ -389,6 +390,12 @@ Future sessions: when you edit code that maps to a section here, also update `GU
 ## 15. Changelog
 
 > Add newest entries at the top. Date format: YYYY-MM-DD.
+
+### 2026-05-27 — Editable plan, part 1: Hotels
+- The plan is no longer read-only. **Hotels tab is now editable:** "Make this my pick" sets the recommended hotel for a destination, and because `planStitch.buildDayPlans` derives "where you sleep" from the recommended hotel, the change **re-stitches the whole trip** — Itinerary "Overnight", per-day budget, and PDF all update together (verified end-to-end at runtime: re-pick → Itinerary overnight flips).
+- "＋ More options in [city]" fetches 3 fresh alternatives for a single destination (same dates, with an `exclude` list so nothing repeats) and appends them.
+- New backend route `/api/hotelAlternatives` (`handleHotelAlternatives`) + API client `generateHotelAlternatives()`. HotelsTab gained an `onUpdate` prop (wired in `ResultsView` to `onUpdateResults({ hotels })`, which auto-saves).
+- This is the first slice of the broader "editable / conversational plan" direction (swap activities, cheaper/closer/higher-rated alternatives, chat-that-acts) — hotels first because the re-stitch payoff is biggest.
 
 ### 2026-05-27 — Stitched PDF export (5 of 5 stitch follow-ons done)
 - **`tripPdf.tsx` fully rebuilt.** The PDF is now a day-by-day stitched plan matching the app: the centrepiece "Day by day" pages render one card per day with the ordered move chips (Fly / Check out / Transfer / Check in), the hour-by-hour timeline or activity bullets, rainy/kids/mobility notes, an estimated per-day spend, and an "Overnight: [hotel]" / "Fly home" footer — built from the same `buildDayPlans`/`dayMoves`/`perDayCosts` helpers as the app.
