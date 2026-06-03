@@ -1,4 +1,4 @@
-import type { Country, TravelConfig, Destination, FlightLeg, DestinationHotels, HotelRec, ItineraryDay, BudgetItem, Tip, PackingItem, WeatherInfo, VisaInfo, CurrencyInfo, NearbyPlace, TransportLeg, DestinationRestaurants, DestinationActivities, DestinationInfo } from '../types';
+import type { Country, TravelConfig, Destination, FlightLeg, DestinationHotels, HotelRec, ItineraryDay, BudgetItem, Tip, PackingItem, WeatherInfo, VisaInfo, CurrencyInfo, NearbyPlace, TransportLeg, DestinationRestaurants, DestinationActivities, Activity, DestinationInfo } from '../types';
 
 async function postApi<T>(endpoint: string, body: unknown): Promise<T> {
   const res = await fetch(endpoint, {
@@ -79,6 +79,15 @@ export async function generateRestaurants(config: TravelConfig): Promise<Destina
 
 export async function generateActivities(config: TravelConfig): Promise<DestinationActivities[]> {
   return postApi<DestinationActivities[]>('/api/activities', config);
+}
+
+/** Fresh alternative activities for a single destination.
+ *  Returns a flat list of Activity to merge into that destination's options. */
+export async function generateActivityAlternatives(
+  config: TravelConfig,
+  opts: { destination: string; exclude: string[] },
+): Promise<Activity[]> {
+  return postApi<Activity[]>('/api/activityAlternatives', { ...config, ...opts });
 }
 
 export async function getDestinationInfo(name: string, country: string): Promise<DestinationInfo> {

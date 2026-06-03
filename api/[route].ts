@@ -63,6 +63,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       case 'chat': return res.json(await handleChat(config));
       case 'restaurants': return res.json(await handleRestaurants(config));
       case 'activities': return res.json(await handleActivities(config));
+      case 'activityAlternatives': return res.json(await handleActivityAlternatives(config));
       case 'parseBooking': return res.json(await handleParseBooking(req.body));
       case 'destinationInfo': return res.json(await handleDestinationInfo(req.body));
       default: return res.status(404).json({ error: `Unknown route: ${route}` });
@@ -416,8 +417,7 @@ Rules: REAL restaurants only — do not invent names. Mix price tiers (1 $, 2 $$
   return parseResult(await callLLM(RESTAURANTS_SYSTEM, userMessage));
 }
 
-async function handleActivities(config: any) {
-  const ACTIVITIES_SYSTEM = `You are a travel editor curating things to do. For each destination, recommend 6 activities ranging from free/walking-tour to paid/full-day. Return ONLY a valid JSON array, one object per destination:
+const ACTIVITIES_SYSTEM = `You are a travel editor curating things to do. For each destination, recommend 6 activities ranging from free/walking-tour to paid/full-day. Return ONLY a valid JSON array, one object per destination:
 [
   {
     "destination": "Kyoto",
@@ -436,6 +436,8 @@ async function handleActivities(config: any) {
   }
 ]
 Rules: REAL activities tied to the destination — temples, hikes, classes, tours, museums. Mix free and paid. Include at least one local/cultural experience and one outdoor/active option per destination. Do NOT invent. Omit booking_link if unsure.`;
+
+async function handleActivities(config: any) {
   const countryName = config.country?.name || 'the destination';
   const entryCity = determineEntryCity(config.destinations);
   const ordered = orderDestinations(config.destinations, entryCity);
@@ -443,6 +445,33 @@ Rules: REAL activities tied to the destination — temples, hikes, classes, tour
   const vibes = (config.vibes || []).join(', ');
   const userMessage = `Country: ${countryName}. Destinations: ${destNames}. Traveller vibes: ${vibes || 'general'}. Recommend things to do per destination — culture, nature, adventure, family-friendly mix.${personalisationHint(config)}`;
   return parseResult(await callLLM(ACTIVITIES_SYSTEM, userMessage));
+}
+
+/**
+ * Fresh activities for a SINGLE destination — the "More options" editing flow.
+ * Client sends config plus `destination` and `exclude` (names already shown).
+ * Returns a flat array of Activity objects.
+ */
+async function handleActivityAlternatives(config: any) {
+  const countryName = config.country?.name || 'the destination';
+  const destination = (config.destination || '').toString();
+  if (!destination) return [];
+  const vibes = (config.vibes || []).join(', ');
+  const exclude: string[] = Array.isArray(config.exclude) ? config.exclude.filter(Boolean) : [];
+  const excludeLine = exclude.length
+    ? `\nDo NOT suggest any of these already-shown activities: ${exclude.join('; ')}.`
+    : '';
+  const userMessage = `Country: ${countryName}. Destination: ${destination}. Traveller vibes: ${vibes || 'general'}.\n\nRecommend 4 DIFFERENT things to do in ${destination} — a mix of culture, nature, adventure, food and family-friendly.${excludeLine}${personalisationHint(config)}`;
+
+  const parsed = parseResult(await callLLM(ACTIVITIES_SYSTEM, userMessage));
+  let list: any[] = [];
+  for (const block of parsed) {
+    if (Array.isArray(block?.activities)) list = list.concat(block.activities);
+    else if (block?.name) list.push(block);
+  }
+  const seen = new Set(exclude.map((e) => e.toLowerCase().trim()));
+  list = list.filter((a) => a?.name && !seen.has(String(a.name).toLowerCase().trim()));
+  return list.slice(0, 4);
 }
 
 async function handleTransport(config: any) {
