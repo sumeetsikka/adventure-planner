@@ -3,12 +3,16 @@ import { motion } from 'framer-motion';
 import type { DestinationRestaurants, Restaurant, DietaryOption, TravelConfig, ItineraryDay } from '../../types';
 import { mapsUrl, directionsUrl } from '../../lib/deepLinks';
 import { buildDayPlans, destinationDayRanges, dayRangeForDestination } from '../../lib/planStitch';
+import { generateRestaurantAlternatives } from '../../lib/api';
 import DayRangeChip from '../shared/DayRangeChip';
 
 interface Props {
   restaurants: DestinationRestaurants[];
   config?: TravelConfig;
   itinerary?: ItineraryDay[];
+  /** When provided, the tab becomes editable: remove a restaurant, or fetch
+   *  more options per destination. */
+  onUpdate?: (restaurants: DestinationRestaurants[]) => void;
 }
 
 const EASE = [0.16, 1, 0.3, 1] as const;
@@ -23,12 +27,52 @@ const DIETARY_FILTERS: { id: DietaryFilter; label: string }[] = [
   { id: 'gluten-free', label: 'Gluten-free' },
 ];
 
-export default function TasteTab({ restaurants, config, itinerary = [] }: Props) {
+export default function TasteTab({ restaurants, config, itinerary = [], onUpdate }: Props) {
   const dayRanges = useMemo(
     () => (config ? destinationDayRanges(buildDayPlans(config, itinerary, [], [], [])) : new Map()),
     [config, itinerary]
   );
   const [dietFilter, setDietFilter] = useState<DietaryFilter>('all');
+  const [loadingMore, setLoadingMore] = useState<string | null>(null);
+  const [moreError, setMoreError] = useState<string>('');
+
+  // Remove a restaurant from a destination by name.
+  const removeRestaurant = (destination: string, name: string) => {
+    if (!onUpdate) return;
+    const next = restaurants.map((d) =>
+      d.destination === destination
+        ? { ...d, restaurants: (d.restaurants ?? []).filter((r) => r.name !== name) }
+        : d
+    );
+    onUpdate(next);
+  };
+
+  // Fetch fresh restaurants for one destination and append them.
+  const fetchMore = async (destination: string) => {
+    if (!onUpdate || !config) return;
+    const block = restaurants.find((d) => d.destination === destination);
+    if (!block) return;
+    setLoadingMore(destination);
+    setMoreError('');
+    try {
+      const fresh = await generateRestaurantAlternatives(config, {
+        destination,
+        exclude: (block.restaurants ?? []).map((r) => r.name).filter(Boolean),
+      });
+      if (!fresh || fresh.length === 0) { setMoreError('No new spots came back — try again.'); return; }
+      const have = new Set((block.restaurants ?? []).map((r) => (r.name || '').toLowerCase().trim()));
+      const added = fresh.filter((r) => r?.name && !have.has(r.name.toLowerCase().trim()));
+      if (added.length === 0) { setMoreError('No new spots came back — try again.'); return; }
+      const next = restaurants.map((d) =>
+        d.destination === destination ? { ...d, restaurants: [...(d.restaurants ?? []), ...added] } : d
+      );
+      onUpdate(next);
+    } catch {
+      setMoreError('Could not load more spots. Please try again.');
+    } finally {
+      setLoadingMore(null);
+    }
+  };
 
   const visibleByDest = useMemo(() => {
     return restaurants.map((dest) => ({
@@ -165,9 +209,30 @@ export default function TasteTab({ restaurants, config, itinerary = [] }: Props)
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {dest.list.map((r, ri) => (
-                  <RestaurantCard key={`${r.name}-${ri}`} restaurant={r} place={`${r.name}, ${dest.destination}`} />
+                  <RestaurantCard
+                    key={`${r.name}-${ri}`}
+                    restaurant={r}
+                    place={`${r.name}, ${dest.destination}`}
+                    onRemove={onUpdate ? () => removeRestaurant(dest.destination, r.name) : undefined}
+                  />
                 ))}
               </div>
+
+              {/* More options — fetch fresh restaurants for this destination */}
+              {onUpdate && (
+                <div className="mt-5 flex flex-col items-center gap-2">
+                  <button
+                    onClick={() => fetchMore(dest.destination)}
+                    disabled={loadingMore === dest.destination}
+                    className="px-5 py-2.5 rounded-full text-sm font-medium border border-[var(--line-strong)] text-[var(--cream)] hover:bg-[var(--ink-4)] transition-colors disabled:opacity-50"
+                  >
+                    {loadingMore === dest.destination ? 'Finding more…' : `＋ More places to eat in ${dest.destination}`}
+                  </button>
+                  {moreError && loadingMore === null && (
+                    <p className="text-[var(--terracotta)] text-xs">{moreError}</p>
+                  )}
+                </div>
+              )}
             </motion.section>
           )
         )}
@@ -176,7 +241,7 @@ export default function TasteTab({ restaurants, config, itinerary = [] }: Props)
   );
 }
 
-function RestaurantCard({ restaurant: r, place }: { restaurant: Restaurant; place: string }) {
+function RestaurantCard({ restaurant: r, place, onRemove }: { restaurant: Restaurant; place: string; onRemove?: () => void }) {
   const tierColor = {
     '$': 'var(--sage)',
     '$$': 'var(--gold-soft)',
@@ -195,13 +260,25 @@ function RestaurantCard({ restaurant: r, place }: { restaurant: Restaurant; plac
           <p className="eyebrow mb-1">{r.cuisine}</p>
           <h4 className="font-display text-xl text-[var(--cream)] leading-tight">{r.name}</h4>
         </div>
-        <span
-          className="font-display text-base shrink-0 tracking-wider"
-          style={{ color: tierColor }}
-          title={priceLabel(r.price_tier)}
-        >
-          {r.price_tier}
-        </span>
+        <div className="flex items-start gap-2 shrink-0">
+          <span
+            className="font-display text-base tracking-wider"
+            style={{ color: tierColor }}
+            title={priceLabel(r.price_tier)}
+          >
+            {r.price_tier}
+          </span>
+          {onRemove && (
+            <button
+              onClick={onRemove}
+              aria-label={`Remove ${r.name}`}
+              title="Remove from my plan"
+              className="w-7 h-7 rounded-full flex items-center justify-center text-[var(--text-dim)] hover:text-[var(--terracotta)] hover:bg-[var(--terracotta)]/10 transition-colors text-sm leading-none"
+            >
+              ✕
+            </button>
+          )}
+        </div>
       </div>
 
       <p className="text-[var(--text-dim)] text-[11px] tracking-wider uppercase mb-3">

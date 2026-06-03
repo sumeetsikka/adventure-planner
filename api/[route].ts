@@ -62,6 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       case 'destinations': return res.json(await handleDestinations(config));
       case 'chat': return res.json(await handleChat(config));
       case 'restaurants': return res.json(await handleRestaurants(config));
+      case 'restaurantAlternatives': return res.json(await handleRestaurantAlternatives(config));
       case 'activities': return res.json(await handleActivities(config));
       case 'activityAlternatives': return res.json(await handleActivityAlternatives(config));
       case 'parseBooking': return res.json(await handleParseBooking(req.body));
@@ -389,8 +390,7 @@ async function handleNearby(config: any) {
   return parseResult(await callLLM(NEARBY_SYSTEM, userMessage));
 }
 
-async function handleRestaurants(config: any) {
-  const RESTAURANTS_SYSTEM = `You are a food editor for a luxury travel magazine. For each destination, recommend 5 restaurants spanning street-food to fine dining. Return ONLY a valid JSON array of objects, one per destination, in this shape:
+const RESTAURANTS_SYSTEM = `You are a food editor for a luxury travel magazine. For each destination, recommend 5 restaurants spanning street-food to fine dining. Return ONLY a valid JSON array of objects, one per destination, in this shape:
 [
   {
     "destination": "Hanoi",
@@ -408,6 +408,8 @@ async function handleRestaurants(config: any) {
   }
 ]
 Rules: REAL restaurants only — do not invent names. Mix price tiers (1 $, 2 $$, 1 $$$, 1 $$$$ ideally). Use proper nouns. Do NOT include placeholder text. If unsure on reservation_link, omit the field entirely.`;
+
+async function handleRestaurants(config: any) {
   const countryName = config.country?.name || 'the destination';
   const entryCity = determineEntryCity(config.destinations);
   const ordered = orderDestinations(config.destinations, entryCity);
@@ -415,6 +417,33 @@ Rules: REAL restaurants only — do not invent names. Mix price tiers (1 $, 2 $$
   const vibes = (config.vibes || []).join(', ');
   const userMessage = `Country: ${countryName}. Destinations: ${destNames}. Traveller vibes: ${vibes || 'general'}. Recommend restaurants per destination, mixing street food, mid-range, and one fine-dining pick each.${personalisationHint(config)}`;
   return parseResult(await callLLM(RESTAURANTS_SYSTEM, userMessage));
+}
+
+/**
+ * Fresh restaurants for a SINGLE destination — the "More options" editing flow.
+ * Client sends config plus `destination` and `exclude` (names already shown).
+ * Returns a flat array of Restaurant objects.
+ */
+async function handleRestaurantAlternatives(config: any) {
+  const countryName = config.country?.name || 'the destination';
+  const destination = (config.destination || '').toString();
+  if (!destination) return [];
+  const vibes = (config.vibes || []).join(', ');
+  const exclude: string[] = Array.isArray(config.exclude) ? config.exclude.filter(Boolean) : [];
+  const excludeLine = exclude.length
+    ? `\nDo NOT suggest any of these already-shown restaurants: ${exclude.join('; ')}.`
+    : '';
+  const userMessage = `Country: ${countryName}. Destination: ${destination}. Traveller vibes: ${vibes || 'general'}.\n\nRecommend 4 DIFFERENT real restaurants in ${destination}, mixing street food, mid-range and one fine-dining pick.${excludeLine}${personalisationHint(config)}`;
+
+  const parsed = parseResult(await callLLM(RESTAURANTS_SYSTEM, userMessage));
+  let list: any[] = [];
+  for (const block of parsed) {
+    if (Array.isArray(block?.restaurants)) list = list.concat(block.restaurants);
+    else if (block?.name) list.push(block);
+  }
+  const seen = new Set(exclude.map((e) => e.toLowerCase().trim()));
+  list = list.filter((r) => r?.name && !seen.has(String(r.name).toLowerCase().trim()));
+  return list.slice(0, 4);
 }
 
 const ACTIVITIES_SYSTEM = `You are a travel editor curating things to do. For each destination, recommend 6 activities ranging from free/walking-tour to paid/full-day. Return ONLY a valid JSON array, one object per destination:
