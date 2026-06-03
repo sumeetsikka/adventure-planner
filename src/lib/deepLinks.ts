@@ -62,3 +62,26 @@ export function rideUrl(destination: string): string {
 export function telUrl(phone: string): string {
   return `tel:${phone.replace(/[^\d+]/g, '')}`;
 }
+
+/**
+ * Multi-stop walking-route URL for one day's stops, opened in Google/Apple Maps.
+ * `stops` are place names (each suffixed with the city for disambiguation by the
+ * caller). Returns null if fewer than 2 mappable stops. Google's dir API takes
+ * an origin, destination and `waypoints`; Apple Maps lacks multi-stop, so on iOS
+ * we fall back to a search for the first stop.
+ */
+export function dayRouteUrl(stops: string[]): string | null {
+  const clean = stops.map((s) => (s || '').trim()).filter(Boolean);
+  if (clean.length < 1) return null;
+  if (clean.length === 1) return mapsUrl(clean[0]);
+  if (isIOS()) {
+    // Apple Maps has no multi-waypoint URL scheme — route to the last stop.
+    return `https://maps.apple.com/?daddr=${encodeURIComponent(clean[clean.length - 1])}&dirflg=w`;
+  }
+  const origin = encodeURIComponent(clean[0]);
+  const destination = encodeURIComponent(clean[clean.length - 1]);
+  const waypoints = clean.slice(1, -1).map((s) => encodeURIComponent(s)).join('|');
+  let url = `https://www.google.com/maps/dir/?api=1&travelmode=walking&origin=${origin}&destination=${destination}`;
+  if (waypoints) url += `&waypoints=${waypoints}`;
+  return url;
+}
