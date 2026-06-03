@@ -3,7 +3,7 @@
 > **Living document.** Maintained alongside the code. When adding/changing a feature,
 > the entry in this file must change too — see § 14 *Self-maintenance protocol*.
 
-**Last updated:** 2026-05-27 (editable plan — Hotels/Do/Taste edits + chat-that-acts concierge)
+**Last updated:** 2026-05-27 (editable itinerary days, per-day maps, AI-estimate trust markers)
 **App version:** post-WOW build-out (Phases 1–12 shipped: per-traveller profiles, all-ages modes, hour-by-hour itinerary, pre-trip readiness, live-mode dashboard, cultural depth, price tracking, budget realism, memories recap, group splits, surprise-me inspiration, i18n scaffold) + QA hardening.
 
 ---
@@ -102,6 +102,8 @@ Results are split into 4 groups in the nav.
 | Each card shows a teaser of the first 3 activities. **Tap a day** to expand the full hour-by-hour timeline (`11:30 Flight → 21:00 Bun cha dinner`) with walking times between stops. | `ItineraryDay.timeline: TimelineEvent[]` (optional). If the LLM omits it, the card shows the bullet `activities` instead. The expand still uses the existing selected-day detail panel + `TimelineRow`. |
 | **If it rains / With kids / Mobility** banners surface when the day has a `rainy_backup`, `kids_tip`, or `accessibility_note`. | Optional fields on `ItineraryDay`. The LLM emits these when the trip mode and traveller profiles warrant it (family-mode → kids_tip; accessibility-mode → accessibility_note). |
 | **Reorder** + **Regenerate** at the top to nudge the AI for a different plan. | `ItineraryTab.tsx → regenerate()` calls `generateItinerary(config)` and replaces the array. Selection state resets. |
+| **Editable days.** Expand a day → **"↻ Redo this day"** regenerates just that day (keeps its date/location, avoids repeating what was there); **✕** on any timeline stop (or bullet activity) removes it. Edits persist and re-stitch like everywhere else. | `regenerateDay()` → `/api/regenerateDay` (`handleRegenerateDay`) returns one fresh `ItineraryDay`; the client swaps it in keeping `day`/`location`. `removeTimelineStop()` / `removeActivity()` filter via `onUpdate`. The ✕ lives inside `TimelineRow` (its own `<li>`) — do NOT wrap `TimelineRow` in another `<li>` (nested `<li>` is invalid HTML; this was caught & fixed). |
+| **🗺️ Map this day** opens the day's stops as a walking route in Google/Apple Maps. | `dayRouteUrl(stops)` in `src/lib/deepLinks.ts` builds a multi-waypoint Google directions URL (origin/destination/waypoints, `travelmode=walking`); Apple Maps lacks multi-stop so iOS routes to the last stop. Stops = timeline events excluding `travel`/`rest`, each suffixed with the city. Only shows when the day has a timeline. |
 
 > 🔗 **Date plumbing (how the stitch stays consistent).** The backend already stamps real dates: `computeSchedule` (in `server/lib/dateSchedule.ts`) derives a date-per-destination, then `fixFlightDates`/`fixHotelDates` overwrite whatever the LLM guessed with those exact dates. So flights, hotels, transport and itinerary all agree on dates by construction. `tripDayNumber(departureDate, date)` (in `dateUtils.ts`) converts any date back to a "Day N" label used across the Flights and Hotels tabs.
 
@@ -278,7 +280,7 @@ A debounced auto-commit hook (`.claude/scripts/auto-commit.sh`) commits clean in
 
 **Build command:** `tsc -b && vite build` (in `package.json`). **Output:** `dist/`.
 
-**Functions:** the single catch-all `api/[route].ts` handles every API route (`/api/itinerary`, `/api/flights`, `/api/hotels`, `/api/hotelAlternatives`, `/api/budget`, `/api/tips`, `/api/packing`, `/api/weather`, `/api/visa`, `/api/currency`, `/api/nearby`, `/api/transport`, `/api/destinations`, `/api/chat`, `/api/chatAction`, `/api/restaurants`, `/api/restaurantAlternatives`, `/api/activities`, `/api/activityAlternatives`, `/api/parseBooking`, `/api/destinationInfo`). Runs on Vercel Functions (Fluid Compute, Node.js 24, 300 s timeout). Active-CPU pricing — chunked streaming reduces wait time but doesn't free CPU.
+**Functions:** the single catch-all `api/[route].ts` handles every API route (`/api/itinerary`, `/api/regenerateDay`, `/api/flights`, `/api/hotels`, `/api/hotelAlternatives`, `/api/budget`, `/api/tips`, `/api/packing`, `/api/weather`, `/api/visa`, `/api/currency`, `/api/nearby`, `/api/transport`, `/api/destinations`, `/api/chat`, `/api/chatAction`, `/api/restaurants`, `/api/restaurantAlternatives`, `/api/activities`, `/api/activityAlternatives`, `/api/parseBooking`, `/api/destinationInfo`). Runs on Vercel Functions (Fluid Compute, Node.js 24, 300 s timeout). Active-CPU pricing — chunked streaming reduces wait time but doesn't free CPU.
 
 > 💡 Vercel AI Gateway lets you point at multiple providers via `provider/model` strings with built-in fallback & observability. Worth migrating to when you have time — it'd shrink `server/lib/gemini.ts` significantly. See the Vercel AI SDK skill.
 
@@ -300,6 +302,8 @@ A debounced auto-commit hook (`.claude/scripts/auto-commit.sh`) commits clean in
 | `src/lib/priceWatch.ts` | Watch-list lib. Wire new "Track" buttons by importing `{ isWatched, toggleWatch, *WatchId }`. |
 | `src/lib/planStitch.ts` | The plan-stitching layer. `buildDayPlans()` joins flights/hotels/transport/itinerary by date; `dayMoves()` builds the per-day move chips. Use this anywhere you need "what happens on day N". |
 | `src/lib/dateUtils.ts` | Date helpers. `tripDayNumber()`, `formatDayLabel()`, `isDateInStay()`, `parseLocalDate()` (timezone-safe). Use these instead of raw `new Date('YYYY-MM-DD')` (which parses as UTC and can be a day off). |
+| `src/lib/deepLinks.ts` | Map/navigation/ride/phone deep-links. `dayRouteUrl(stops)` = multi-stop walking route; `mapsUrl`/`directionsUrl` = single place. iOS → Apple Maps, else Google. |
+| `src/components/shared/EstimateBadge.tsx` | Trust-layer markers. `EstimateBadge` (inline pill) + `EstimateNote` (tab footnote) — surface that figures are AI estimates, not live quotes. Add to any new estimate-heavy surface. |
 
 ### How to safely update a prompt
 
@@ -390,6 +394,12 @@ Future sessions: when you edit code that maps to a section here, also update `GU
 ## 15. Changelog
 
 > Add newest entries at the top. Date format: YYYY-MM-DD.
+
+### 2026-05-27 — Editable itinerary days + Tier-1 (maps, trust)
+- **Editable itinerary days:** "↻ Redo this day" regenerates a single day (new `/api/regenerateDay` → `handleRegenerateDay`, keeps date/location, avoids repeats); ✕ removes individual timeline stops / bullet activities. New `regenerateDay()` API client.
+- **Per-day maps:** "🗺️ Map this day" on each timeline day opens its stops as a walking route in Google/Apple Maps (`dayRouteUrl` in `deepLinks.ts`).
+- **Trust layer:** new `src/components/shared/EstimateBadge.tsx` (`EstimateBadge` pill + `EstimateNote` footnote). Flights & Hotels tabs now carry an honest "AI-generated estimates, not live quotes — confirm before booking" note; flight price labels read "per person · est." (Budget already had its own footnote.)
+- **Bug caught & fixed in this pass:** wrapping `TimelineRow` (which renders its own `<li>`) in another `<li>` produced invalid nested-`<li>` HTML — moved the remove ✕ inside `TimelineRow`. Verified `nestedLi: 0` in the live DOM.
 
 ### 2026-05-27 — Editable plan, part 4: Chat-that-acts
 - **The Chat concierge can now edit the plan in plain language.** "Remove the War Museum in Hanoi", "show me more places to eat", "swap my Hanoi hotel for the Sofitel", "find more hotel options" — it confirms the change and it flows through to every tab + the PDF.
