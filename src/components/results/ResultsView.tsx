@@ -219,7 +219,7 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
             : <RetryButton label="flights" onRetry={async () => { const d = await searchFlights(config); onUpdateResults({ flights: d }); }} />
           )}
           {activeTab === 'hotels' && (results.hotels.length > 0
-            ? <HotelsTab hotels={results.hotels} destinations={config.destinations} config={config} />
+            ? <HotelsTab hotels={results.hotels} destinations={config.destinations} config={config} onUpdate={(hotels) => onUpdateResults({ hotels })} />
             : <RetryButton label="hotels" onRetry={async () => { const d = await searchHotels(config); onUpdateResults({ hotels: d }); }} />
           )}
           {activeTab === 'transport' && (results.transport.length > 0

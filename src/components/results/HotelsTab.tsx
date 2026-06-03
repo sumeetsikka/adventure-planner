@@ -4,6 +4,7 @@ import type { DestinationHotels, Destination, TravelConfig, HotelAmenity } from 
 import { formatDateAU, formatDayLabel, tripDayNumber } from '../../lib/dateUtils';
 import { getHotelLinks } from '../../lib/bookingLinks';
 import { getDestinationPhoto } from '../../lib/imagery';
+import { generateHotelAlternatives } from '../../lib/api';
 import { PlaceActions } from '../shared/PlaceLink';
 
 const AMENITY_META: Record<HotelAmenity, { label: string; icon: string }> = {
@@ -25,6 +26,10 @@ interface Props {
   hotels: DestinationHotels[];
   config?: TravelConfig;
   destinations?: Destination[];
+  /** When provided, the tab becomes editable: users can set the recommended
+   *  pick (which re-stitches the itinerary's "overnight" + budget + PDF) and
+   *  fetch more alternatives per destination. */
+  onUpdate?: (hotels: DestinationHotels[]) => void;
 }
 
 function estimateTotal(priceStr: string, nights: number): string {
@@ -36,9 +41,64 @@ function estimateTotal(priceStr: string, nights: number): string {
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
-export default function HotelsTab({ hotels, config }: Props) {
+export default function HotelsTab({ hotels, config, onUpdate }: Props) {
   const [expandedDest, setExpandedDest] = useState<number | null>(0);
   const [selectedHotel, setSelectedHotel] = useState<{ dest: number; hotel: number } | null>(null);
+  const [loadingMore, setLoadingMore] = useState<number | null>(null);
+  const [moreError, setMoreError] = useState<string>('');
+
+  // Set the recommended pick for a destination. This is the key "stitch" edit:
+  // the itinerary's "Overnight: X", the per-day budget, and the PDF all read the
+  // recommended hotel, so changing it here updates the whole plan instantly.
+  const makePick = (destIdx: number, hotelIdx: number) => {
+    if (!onUpdate) return;
+    const next = hotels.map((d, di) => {
+      if (di !== destIdx) return d;
+      return {
+        ...d,
+        hotels: d.hotels.map((h, hi) => ({ ...h, recommended: hi === hotelIdx })),
+      };
+    });
+    onUpdate(next);
+  };
+
+  // Fetch fresh alternatives for one destination and append them.
+  const fetchMore = async (destIdx: number) => {
+    if (!onUpdate || !config) return;
+    const dest = hotels[destIdx];
+    if (!dest) return;
+    setLoadingMore(destIdx);
+    setMoreError('');
+    try {
+      const fresh = await generateHotelAlternatives(config, {
+        destination: dest.destination,
+        check_in: dest.check_in,
+        check_out: dest.check_out,
+        nights: dest.nights,
+        exclude: dest.hotels.map((h) => h.name).filter(Boolean),
+      });
+      if (!fresh || fresh.length === 0) {
+        setMoreError('No new options came back — try again.');
+        return;
+      }
+      // Dedupe by name against what's already shown, then append.
+      const have = new Set(dest.hotels.map((h) => (h.name || '').toLowerCase().trim()));
+      const added = fresh.filter((h) => h?.name && !have.has(h.name.toLowerCase().trim()))
+        .map((h) => ({ ...h, recommended: false }));
+      if (added.length === 0) {
+        setMoreError('No new options came back — try again.');
+        return;
+      }
+      const next = hotels.map((d, di) =>
+        di === destIdx ? { ...d, hotels: [...d.hotels, ...added] } : d
+      );
+      onUpdate(next);
+    } catch {
+      setMoreError('Could not load more options. Please try again.');
+    } finally {
+      setLoadingMore(null);
+    }
+  };
 
   if (hotels.length === 0) {
     return (
@@ -291,10 +351,41 @@ export default function HotelsTab({ hotels, config }: Props) {
                               ));
                             })()}
                           </div>
+
+                          {/* Make this my pick — editable plan */}
+                          {onUpdate && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); makePick(di, hi); }}
+                              disabled={h.recommended}
+                              className={`mt-4 w-full rounded-full py-2 text-[11px] font-semibold tracking-wide uppercase transition-all ${
+                                h.recommended
+                                  ? 'bg-[var(--sage)]/12 text-[var(--sage)] cursor-default'
+                                  : 'bg-[var(--terracotta)] text-white hover:bg-[var(--terracotta-soft)]'
+                              }`}
+                            >
+                              {h.recommended ? '✓ Your pick — in the plan' : 'Make this my pick'}
+                            </button>
+                          )}
                         </motion.div>
                       );
                     })}
                   </div>
+
+                  {/* More options — fetch fresh alternatives for this destination */}
+                  {onUpdate && (
+                    <div className="mt-5 flex flex-col items-center gap-2">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); fetchMore(di); }}
+                        disabled={loadingMore === di}
+                        className="px-5 py-2.5 rounded-full text-sm font-medium border border-[var(--line-strong)] text-[var(--cream)] hover:bg-[var(--ink-4)] transition-colors disabled:opacity-50"
+                      >
+                        {loadingMore === di ? 'Finding more…' : `＋ More options in ${dest.destination}`}
+                      </button>
+                      {moreError && loadingMore === null && (
+                        <p className="text-[var(--terracotta)] text-xs">{moreError}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
