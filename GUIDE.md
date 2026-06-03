@@ -3,7 +3,7 @@
 > **Living document.** Maintained alongside the code. When adding/changing a feature,
 > the entry in this file must change too — see § 14 *Self-maintenance protocol*.
 
-**Last updated:** 2026-05-27 (editable plan — Hotels: change pick; Do & Taste: remove + more options)
+**Last updated:** 2026-05-27 (editable plan — Hotels/Do/Taste edits + chat-that-acts concierge)
 **App version:** post-WOW build-out (Phases 1–12 shipped: per-traveller profiles, all-ages modes, hour-by-hour itinerary, pre-trip readiness, live-mode dashboard, cultural depth, price tracking, budget realism, memories recap, group splits, surprise-me inspiration, i18n scaffold) + QA hardening.
 
 ---
@@ -160,7 +160,7 @@ Results are split into 4 groups in the nav.
 
 | 👤 Traveller | 🛠️ Admin |
 |---|---|
-| Free-form AI concierge that knows your trip context (country, destinations). Ask "best place to see sunset in Hoi An?" or "is Uber safe in Hanoi?" | `handleChat` in `api/[route].ts`. Streams the LLM's response. Context = country + destinations. |
+| Free-form AI concierge that knows your trip context (country, destinations). Ask "best place to see sunset in Hoi An?" or "is Uber safe in Hanoi?" **The concierge can also EDIT your plan in plain language** — "remove the War Museum in Hanoi", "show me more places to eat", "swap my Hanoi hotel for the Sofitel", "find me other hotel options". It confirms what it changed, and the edit flows through to every tab + the PDF. | Two routes: plain Q&A uses `handleChat`; when ChatTab is wired with `results` + `onUpdateResults` (the editable mode), it routes through **`/api/chatAction`** (`handleChatAction`) — an **intent parser** that's given a compact plan inventory and returns `{answer, action}` where `action` is a whitelisted `ChatAction` (`remove_activity` / `remove_restaurant` / `more_*` / `pick_hotel` / `none`). **The LLM only classifies intent; the client applies the change** via the same `onUpdateResults` plumbing + `*Alternatives` endpoints as the Hotels/Do/Taste tabs — the model never mutates the saved trip. Defensive: unknown action kinds fall back to `none`. |
 
 ### 3.12 Journal
 
@@ -278,7 +278,7 @@ A debounced auto-commit hook (`.claude/scripts/auto-commit.sh`) commits clean in
 
 **Build command:** `tsc -b && vite build` (in `package.json`). **Output:** `dist/`.
 
-**Functions:** the single catch-all `api/[route].ts` handles every API route (`/api/itinerary`, `/api/flights`, `/api/hotels`, `/api/hotelAlternatives`, `/api/budget`, `/api/tips`, `/api/packing`, `/api/weather`, `/api/visa`, `/api/currency`, `/api/nearby`, `/api/transport`, `/api/destinations`, `/api/chat`, `/api/restaurants`, `/api/restaurantAlternatives`, `/api/activities`, `/api/activityAlternatives`, `/api/parseBooking`, `/api/destinationInfo`). Runs on Vercel Functions (Fluid Compute, Node.js 24, 300 s timeout). Active-CPU pricing — chunked streaming reduces wait time but doesn't free CPU.
+**Functions:** the single catch-all `api/[route].ts` handles every API route (`/api/itinerary`, `/api/flights`, `/api/hotels`, `/api/hotelAlternatives`, `/api/budget`, `/api/tips`, `/api/packing`, `/api/weather`, `/api/visa`, `/api/currency`, `/api/nearby`, `/api/transport`, `/api/destinations`, `/api/chat`, `/api/chatAction`, `/api/restaurants`, `/api/restaurantAlternatives`, `/api/activities`, `/api/activityAlternatives`, `/api/parseBooking`, `/api/destinationInfo`). Runs on Vercel Functions (Fluid Compute, Node.js 24, 300 s timeout). Active-CPU pricing — chunked streaming reduces wait time but doesn't free CPU.
 
 > 💡 Vercel AI Gateway lets you point at multiple providers via `provider/model` strings with built-in fallback & observability. Worth migrating to when you have time — it'd shrink `server/lib/gemini.ts` significantly. See the Vercel AI SDK skill.
 
@@ -390,6 +390,12 @@ Future sessions: when you edit code that maps to a section here, also update `GU
 ## 15. Changelog
 
 > Add newest entries at the top. Date format: YYYY-MM-DD.
+
+### 2026-05-27 — Editable plan, part 4: Chat-that-acts
+- **The Chat concierge can now edit the plan in plain language.** "Remove the War Museum in Hanoi", "show me more places to eat", "swap my Hanoi hotel for the Sofitel", "find more hotel options" — it confirms the change and it flows through to every tab + the PDF.
+- Architecture: new `ChatAction` type + `/api/chatAction` route (`handleChatAction`) acts as an **intent parser** — given a compact plan inventory (destinations + the names in each hotel/activity/restaurant list), it returns `{answer, action}` with a whitelisted action kind. **The LLM only classifies; the client applies** the change via the same `onUpdateResults` plumbing + `*Alternatives` endpoints built in parts 1–3, so the model never mutates the saved trip and every edit stays consistent.
+- ChatTab gained `results` + `onUpdateResults` props (wired in `ResultsView`); falls back to plain `/api/chat` Q&A when not in editable mode. Action-aware intro copy + suggestion chips when editing is available.
+- Verified locally: client `applyAction` transforms correct (remove drops item; pick flips recommended), `canAct` wiring renders the action UI. The `/api/chatAction` round-trip itself only runs on the deployed Vercel app (dev server doesn't host `/api/*` — all routes 502 locally, a known environment fact).
 
 ### 2026-05-27 — Editable plan, part 3: Restaurants (Taste tab)
 - **Taste tab is now editable** (same pattern as Do): ✕ removes a restaurant; "＋ More places to eat in [city]" fetches fresh spots for one destination (with an `exclude` list) and appends them.
