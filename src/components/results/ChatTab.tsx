@@ -1,9 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { TravelConfig, ChatMessage } from '../../types';
+import type { TravelConfig, ChatMessage, ChatAction, GenerationResults } from '../../types';
+import { generateActivityAlternatives, generateRestaurantAlternatives, generateHotelAlternatives } from '../../lib/api';
 
 interface Props {
   config: TravelConfig;
+  /** When provided, the concierge can EDIT the plan (remove items, swap your
+   *  hotel pick, fetch more options) — applied through the same plumbing as the
+   *  Hotels/Do/Taste tabs. Without it, chat is answer-only. */
+  results?: GenerationResults;
+  onUpdateResults?: (partial: Partial<GenerationResults>) => void;
 }
 
 const EASE = [0.16, 1, 0.3, 1] as const;
@@ -19,12 +25,127 @@ const SUGGESTIONS = [
   'What should I wear to temples?',
 ];
 
-export default function ChatTab({ config }: Props) {
+// Suggestions that demonstrate the concierge can EDIT the plan.
+const ACTION_SUGGESTIONS = [
+  'Show me more places to eat',
+  'Find me more things to do',
+  'Show me other hotel options',
+];
+
+export default function ChatTab({ config, results, onUpdateResults }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  // The concierge can act on the plan only when wired with results + updater.
+  const canAct = !!(results && onUpdateResults);
+
+  // Build the compact inventory the intent parser needs to resolve fuzzy
+  // references ("the museum", "my Hanoi hotel") to exact names in the plan.
+  const buildInventory = () => {
+    if (!results) return undefined;
+    const destinations = (config.destinations || []).map((d) => d.name);
+    const hotels: Record<string, string[]> = {};
+    const activities: Record<string, string[]> = {};
+    const restaurants: Record<string, string[]> = {};
+    for (const h of results.hotels || []) hotels[h.destination] = (h.hotels || []).map((x) => x.name);
+    for (const a of results.activities || []) activities[a.destination] = (a.activities || []).map((x) => x.name);
+    for (const r of results.restaurants || []) restaurants[r.destination] = (r.restaurants || []).map((x) => x.name);
+    // Use the union of destination names that actually appear, so the parser
+    // sees every editable bucket even if the itinerary names differ slightly.
+    const allDest = Array.from(new Set([
+      ...destinations,
+      ...Object.keys(hotels), ...Object.keys(activities), ...Object.keys(restaurants),
+    ]));
+    return { destinations: allDest, hotels, activities, restaurants };
+  };
+
+  // Apply a classified action to the plan via the existing onUpdate plumbing.
+  // Returns a status string appended to the concierge's reply, or '' if nothing
+  // happened (e.g. kind 'none').
+  const applyAction = async (action: ChatAction): Promise<string> => {
+    if (!canAct || !results || !onUpdateResults) return '';
+    switch (action.kind) {
+      case 'remove_activity': {
+        const next = (results.activities || []).map((d) =>
+          d.destination === action.destination
+            ? { ...d, activities: (d.activities || []).filter((x) => x.name !== action.name) }
+            : d
+        );
+        onUpdateResults({ activities: next });
+        return '';
+      }
+      case 'remove_restaurant': {
+        const next = (results.restaurants || []).map((d) =>
+          d.destination === action.destination
+            ? { ...d, restaurants: (d.restaurants || []).filter((x) => x.name !== action.name) }
+            : d
+        );
+        onUpdateResults({ restaurants: next });
+        return '';
+      }
+      case 'pick_hotel': {
+        const next = (results.hotels || []).map((d) =>
+          d.destination === action.destination
+            ? { ...d, hotels: (d.hotels || []).map((h) => ({ ...h, recommended: h.name === action.name })) }
+            : d
+        );
+        onUpdateResults({ hotels: next });
+        return '';
+      }
+      case 'more_activities': {
+        const block = (results.activities || []).find((d) => d.destination === action.destination);
+        if (!block) return ' (Couldn\'t find that destination.)';
+        const fresh = await generateActivityAlternatives(config, {
+          destination: action.destination,
+          exclude: (block.activities || []).map((x) => x.name),
+        });
+        if (!fresh?.length) return ' (No new ideas came back.)';
+        const next = (results.activities || []).map((d) =>
+          d.destination === action.destination ? { ...d, activities: [...(d.activities || []), ...fresh] } : d
+        );
+        onUpdateResults({ activities: next });
+        return ` Added ${fresh.length} new ideas in ${action.destination}.`;
+      }
+      case 'more_restaurants': {
+        const block = (results.restaurants || []).find((d) => d.destination === action.destination);
+        if (!block) return ' (Couldn\'t find that destination.)';
+        const fresh = await generateRestaurantAlternatives(config, {
+          destination: action.destination,
+          exclude: (block.restaurants || []).map((x) => x.name),
+        });
+        if (!fresh?.length) return ' (No new spots came back.)';
+        const next = (results.restaurants || []).map((d) =>
+          d.destination === action.destination ? { ...d, restaurants: [...(d.restaurants || []), ...fresh] } : d
+        );
+        onUpdateResults({ restaurants: next });
+        return ` Added ${fresh.length} new places in ${action.destination}.`;
+      }
+      case 'more_hotels': {
+        const block = (results.hotels || []).find((d) => d.destination === action.destination);
+        if (!block) return ' (Couldn\'t find that destination.)';
+        const fresh = await generateHotelAlternatives(config, {
+          destination: action.destination,
+          check_in: block.check_in,
+          check_out: block.check_out,
+          nights: block.nights,
+          exclude: (block.hotels || []).map((x) => x.name),
+        });
+        if (!fresh?.length) return ' (No new options came back.)';
+        const next = (results.hotels || []).map((d) =>
+          d.destination === action.destination
+            ? { ...d, hotels: [...(d.hotels || []), ...fresh.map((h) => ({ ...h, recommended: false }))] }
+            : d
+        );
+        onUpdateResults({ hotels: next });
+        return ` Added ${fresh.length} more hotels in ${action.destination}.`;
+      }
+      default:
+        return '';
+    }
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -53,18 +174,33 @@ export default function ChatTab({ config }: Props) {
     abortRef.current = controller;
 
     try {
-      const res = await fetch('/api/chat', {
+      // When the concierge can act, route through the intent parser with the
+      // plan inventory; otherwise fall back to plain Q&A.
+      const endpoint = canAct ? '/api/chatAction' : '/api/chat';
+      const body = canAct
+        ? { question: question.trim(), country: config.country, inventory: buildInventory() }
+        : { question: question.trim(), country: config.country, destinations: config.destinations };
+
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          question: question.trim(),
-          country: config.country,
-          destinations: config.destinations,
-        }),
+        body: JSON.stringify(body),
         signal: controller.signal,
       });
       const data = await res.json();
-      const answer = data.answer || data.error || 'Sorry, I could not answer that right now.';
+      let answer = data.answer || data.error || 'Sorry, I could not answer that right now.';
+
+      // Apply any plan-editing action the concierge returned.
+      if (canAct && data.action && data.action.kind && data.action.kind !== 'none') {
+        try {
+          const status = await applyAction(data.action as ChatAction);
+          if (status) answer += status;
+        } catch {
+          answer += ' (I couldn\'t apply that change — please try from the tab.)';
+        }
+      }
+
+      if (controller.signal.aborted) return;
       setMessages((prev) => [...prev, { role: 'assistant', content: answer }]);
     } catch (err) {
       // Aborts are intentional — don't surface a fake error message.
@@ -105,7 +241,9 @@ export default function ChatTab({ config }: Props) {
         </h2>
         <div className="divider my-5 max-w-[120px]" />
         <p className="text-[var(--text-muted)] text-sm max-w-xl">
-          Anything about {countryName} — your destinations and dates already in hand.
+          {canAct
+            ? `Ask anything about ${countryName} — or tell me to change your plan: "remove the museum in Hanoi", "show me more places to eat", "swap my hotel".`
+            : `Anything about ${countryName} — your destinations and dates already in hand.`}
         </p>
       </div>
 
@@ -119,7 +257,7 @@ export default function ChatTab({ config }: Props) {
               what would you like to know?
             </p>
             <div className="flex flex-wrap justify-center gap-2">
-              {SUGGESTIONS.slice(0, 4).map((s) => (
+              {(canAct ? [...ACTION_SUGGESTIONS, SUGGESTIONS[0]] : SUGGESTIONS.slice(0, 4)).map((s) => (
                 <button
                   key={s}
                   onClick={() => sendMessage(s)}

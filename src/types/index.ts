@@ -353,4 +353,22 @@ export interface ChatMessage {
   content: string;
 }
 
+/** A plan-editing intent the chat concierge can return. The LLM only
+ *  CLASSIFIES intent; the client applies the change deterministically through
+ *  the same onUpdate plumbing the Hotels/Do/Taste tabs use — the model never
+ *  mutates the saved trip directly. `kind: 'none'` = a normal Q&A answer. */
+export type ChatAction =
+  | { kind: 'none' }
+  | { kind: 'remove_activity'; destination: string; name: string }
+  | { kind: 'remove_restaurant'; destination: string; name: string }
+  | { kind: 'more_activities'; destination: string }
+  | { kind: 'more_restaurants'; destination: string }
+  | { kind: 'more_hotels'; destination: string }
+  | { kind: 'pick_hotel'; destination: string; name: string };
+
+export interface ChatResponse {
+  answer: string;
+  action?: ChatAction;
+}
+
 export type ResultsTab = 'dashboard' | 'itinerary' | 'flights' | 'hotels' | 'transport' | 'bookings' | 'map' | 'budget' | 'tips' | 'packing' | 'weather' | 'visa' | 'currency' | 'nearby' | 'checklist' | 'photos' | 'chat' | 'events' | 'journal' | 'taste' | 'do' | 'prepare';

@@ -262,7 +262,7 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
           )}
           {activeTab === 'checklist' && <ChecklistTab config={config} />}
           {activeTab === 'photos' && <PhotosTab destinations={config.destinations} />}
-          {activeTab === 'chat' && <ChatTab config={config} />}
+          {activeTab === 'chat' && <ChatTab config={config} results={results} onUpdateResults={onUpdateResults} />}
           {activeTab === 'events' && <EventsTab config={config} />}
           {activeTab === 'journal' && <JournalTab config={config} results={results} />}
           {activeTab === 'taste' && (results.restaurants && results.restaurants.length > 0

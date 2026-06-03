@@ -61,6 +61,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       case 'transport': return res.json(await handleTransport(config));
       case 'destinations': return res.json(await handleDestinations(config));
       case 'chat': return res.json(await handleChat(config));
+      case 'chatAction': return res.json(await handleChatAction(config));
       case 'restaurants': return res.json(await handleRestaurants(config));
       case 'restaurantAlternatives': return res.json(await handleRestaurantAlternatives(config));
       case 'activities': return res.json(await handleActivities(config));
@@ -600,4 +601,62 @@ async function handleChat(config: any) {
   const userMessage = `Country: ${countryName}. Destinations: ${destNames || 'none'}.\n\nQuestion: ${question}`;
   const result = await callLLM(CHAT_SYSTEM, userMessage);
   return { answer: result?.answer || result?.text || (typeof result === 'string' ? result : JSON.stringify(result)) };
+}
+
+/**
+ * Chat-that-acts: classify the user's message into either a normal Q&A answer
+ * or ONE plan-editing action. The model only CLASSIFIES — the client applies
+ * the change. We pass a compact inventory so it can resolve fuzzy references
+ * ("the museum", "my Hanoi hotel") to exact names that exist in the plan.
+ */
+async function handleChatAction(config: any) {
+  const { question, country } = config;
+  if (!question) return { answer: 'Please ask a question.', action: { kind: 'none' } };
+  const countryName = country?.name || 'the destination';
+
+  // Inventory the client sends: destinations + the names currently in each list.
+  const inv = config.inventory || {};
+  const destinations: string[] = Array.isArray(inv.destinations) ? inv.destinations : [];
+  const hotels = inv.hotels || {};        // { dest: [names] }
+  const activities = inv.activities || {}; // { dest: [names] }
+  const restaurants = inv.restaurants || {}; // { dest: [names] }
+
+  const invText = destinations.map((d) => {
+    const h = (hotels[d] || []).join(' | ') || '—';
+    const a = (activities[d] || []).join(' | ') || '—';
+    const r = (restaurants[d] || []).join(' | ') || '—';
+    return `Destination "${d}":\n  hotels: ${h}\n  activities: ${a}\n  restaurants: ${r}`;
+  }).join('\n');
+
+  const CHAT_ACTION_SYSTEM = `You are a travel concierge that can EDIT a traveller's plan. Read their message and the plan inventory, then decide if they want a plan change or just an answer.
+
+Return ONLY JSON: {"answer": "<short friendly confirmation or answer, Australian English, 1-2 sentences>", "action": <action object>}
+
+The "action" must be EXACTLY ONE of:
+- {"kind":"none"} — they asked a question, not an edit. Put the answer in "answer".
+- {"kind":"remove_activity","destination":"<exact destination>","name":"<exact activity name from inventory>"}
+- {"kind":"remove_restaurant","destination":"<exact destination>","name":"<exact restaurant name from inventory>"}
+- {"kind":"more_activities","destination":"<exact destination>"}
+- {"kind":"more_restaurants","destination":"<exact destination>"}
+- {"kind":"more_hotels","destination":"<exact destination>"}
+- {"kind":"pick_hotel","destination":"<exact destination>","name":"<exact hotel name from inventory>"}
+
+CRITICAL rules:
+1. "destination" and "name" MUST be copied EXACTLY from the inventory below. If you cannot match the user's reference to a real item, use {"kind":"none"} and explain in "answer".
+2. Only ONE action per message. If they ask for multiple edits, do the first and mention the rest in "answer".
+3. For removals/picks, "answer" should confirm what you did (e.g. "Done — removed the War Museum from your Hanoi plans.").
+4. For "more_*", "answer" should say you're fetching options (e.g. "Finding a few more places to eat in Hanoi…").
+5. If it's a normal question, answer it concisely with kind "none".`;
+
+  const userMessage = `Country: ${countryName}.\n\nPLAN INVENTORY:\n${invText || '(empty)'}\n\nTraveller message: ${question}`;
+  const result = await callLLM(CHAT_ACTION_SYSTEM, userMessage);
+
+  const answer = result?.answer || (typeof result === 'string' ? result : 'Done.');
+  let action = result?.action;
+  // Defensive validation — never trust the model's shape blindly.
+  const VALID = new Set(['none', 'remove_activity', 'remove_restaurant', 'more_activities', 'more_restaurants', 'more_hotels', 'pick_hotel']);
+  if (!action || typeof action !== 'object' || !VALID.has(action.kind)) {
+    action = { kind: 'none' };
+  }
+  return { answer, action };
 }
