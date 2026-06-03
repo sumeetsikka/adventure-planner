@@ -3,7 +3,7 @@
 > **Living document.** Maintained alongside the code. When adding/changing a feature,
 > the entry in this file must change too — see § 14 *Self-maintenance protocol*.
 
-**Last updated:** 2026-05-27 (editable plan — Hotels tab: change your pick & fetch more options, re-stitched into the whole trip)
+**Last updated:** 2026-05-27 (editable plan — Hotels: change pick + more options; Do: remove + more options)
 **App version:** post-WOW build-out (Phases 1–12 shipped: per-traveller profiles, all-ages modes, hour-by-hour itinerary, pre-trip readiness, live-mode dashboard, cultural depth, price tracking, budget realism, memories recap, group splits, surprise-me inspiration, i18n scaffold) + QA hardening.
 
 ---
@@ -154,7 +154,7 @@ Results are split into 4 groups in the nav.
 
 | 👤 Traveller | 🛠️ Admin |
 |---|---|
-| **Taste** — restaurants per destination with dietary filter chips. **Do** — activities by category (Culture/Nature/Adventure/Family). **Nearby** — day-trip suggestions from each main destination. **Photos** — Wikipedia gallery of each destination. **Tips** — 12-15 destination-specific tips covering tipping, dress codes, photography etiquette, body language, queue norms, food, transport, health, scams. | `handleTips` in `api/[route].ts` uses the enriched TIPS_SYSTEM prompt that demands cultural depth. Photos from `useWikiImage` (`src/lib/useWikiImage.ts`). |
+| **Taste** — restaurants per destination with dietary filter chips. **Do** — activities by category (Culture/Nature/Adventure/Family); **editable** — ✕ to remove an activity you don't want, and "＋ More things to do in [city]" to fetch fresh ideas for that stop. **Nearby** — day-trip suggestions from each main destination. **Photos** — Wikipedia gallery of each destination. **Tips** — 12-15 destination-specific tips covering tipping, dress codes, photography etiquette, body language, queue norms, food, transport, health, scams. | `handleTips` uses the enriched TIPS_SYSTEM prompt. Photos from `useWikiImage`. **Do editing:** `DoTab` takes an `onUpdate` prop (wired in `ResultsView` → `onUpdateResults({ activities })`); `removeActivity()` filters by name, `fetchMore()` calls `generateActivityAlternatives()` → `/api/activityAlternatives` (`handleActivityAlternatives`, reusing the module-scope `ACTIVITIES_SYSTEM` prompt with an `exclude` list). Same edit pattern as Hotels. |
 
 ### 3.11 Chat
 
@@ -278,7 +278,7 @@ A debounced auto-commit hook (`.claude/scripts/auto-commit.sh`) commits clean in
 
 **Build command:** `tsc -b && vite build` (in `package.json`). **Output:** `dist/`.
 
-**Functions:** the single catch-all `api/[route].ts` handles every API route (`/api/itinerary`, `/api/flights`, `/api/hotels`, `/api/hotelAlternatives`, `/api/budget`, `/api/tips`, `/api/packing`, `/api/weather`, `/api/visa`, `/api/currency`, `/api/nearby`, `/api/transport`, `/api/destinations`, `/api/chat`, `/api/restaurants`, `/api/activities`, `/api/parseBooking`, `/api/destinationInfo`). Runs on Vercel Functions (Fluid Compute, Node.js 24, 300 s timeout). Active-CPU pricing — chunked streaming reduces wait time but doesn't free CPU.
+**Functions:** the single catch-all `api/[route].ts` handles every API route (`/api/itinerary`, `/api/flights`, `/api/hotels`, `/api/hotelAlternatives`, `/api/budget`, `/api/tips`, `/api/packing`, `/api/weather`, `/api/visa`, `/api/currency`, `/api/nearby`, `/api/transport`, `/api/destinations`, `/api/chat`, `/api/restaurants`, `/api/activities`, `/api/activityAlternatives`, `/api/parseBooking`, `/api/destinationInfo`). Runs on Vercel Functions (Fluid Compute, Node.js 24, 300 s timeout). Active-CPU pricing — chunked streaming reduces wait time but doesn't free CPU.
 
 > 💡 Vercel AI Gateway lets you point at multiple providers via `provider/model` strings with built-in fallback & observability. Worth migrating to when you have time — it'd shrink `server/lib/gemini.ts` significantly. See the Vercel AI SDK skill.
 
@@ -390,6 +390,11 @@ Future sessions: when you edit code that maps to a section here, also update `GU
 ## 15. Changelog
 
 > Add newest entries at the top. Date format: YYYY-MM-DD.
+
+### 2026-05-27 — Editable plan, part 2: Activities (Do tab)
+- **Do tab is now editable** (same pattern as Hotels): ✕ on any activity card removes it; "＋ More things to do in [city]" fetches fresh ideas for one destination (with an `exclude` list so nothing repeats) and appends them.
+- New backend route `/api/activityAlternatives` (`handleActivityAlternatives`); the `ACTIVITIES_SYSTEM` prompt was lifted to module scope so both the full-generate and single-destination handlers share it. New API client `generateActivityAlternatives()`. `DoTab` gained an `onUpdate` prop (wired in `ResultsView` → `onUpdateResults({ activities })`, auto-saves).
+- Verified end-to-end at runtime: removing an activity drops it from state + persistence + DOM; remove-button count updates.
 
 ### 2026-05-27 — Editable plan, part 1: Hotels
 - The plan is no longer read-only. **Hotels tab is now editable:** "Make this my pick" sets the recommended hotel for a destination, and because `planStitch.buildDayPlans` derives "where you sleep" from the recommended hotel, the change **re-stitches the whole trip** — Itinerary "Overnight", per-day budget, and PDF all update together (verified end-to-end at runtime: re-pick → Itinerary overnight flips).
