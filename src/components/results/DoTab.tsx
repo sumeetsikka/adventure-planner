@@ -3,12 +3,16 @@ import { motion } from 'framer-motion';
 import type { DestinationActivities, Activity, ActivityTimeFit, ActivityWeather, TravelConfig, ItineraryDay } from '../../types';
 import { mapsUrl, directionsUrl } from '../../lib/deepLinks';
 import { buildDayPlans, destinationDayRanges, dayRangeForDestination } from '../../lib/planStitch';
+import { generateActivityAlternatives } from '../../lib/api';
 import DayRangeChip from '../shared/DayRangeChip';
 
 interface Props {
   activities: DestinationActivities[];
   config?: TravelConfig;
   itinerary?: ItineraryDay[];
+  /** When provided, the tab becomes editable: remove an activity, or fetch
+   *  more options per destination. */
+  onUpdate?: (activities: DestinationActivities[]) => void;
 }
 
 const EASE = [0.16, 1, 0.3, 1] as const;
@@ -43,7 +47,7 @@ const WEATHER_FILTERS: { id: WeatherFilter; label: string }[] = [
   { id: 'all-weather', label: 'All-weather' },
 ];
 
-export default function DoTab({ activities, config, itinerary = [] }: Props) {
+export default function DoTab({ activities, config, itinerary = [], onUpdate }: Props) {
   const dayRanges = useMemo(
     () => (config ? destinationDayRanges(buildDayPlans(config, itinerary, [], [], [])) : new Map()),
     [config, itinerary]
@@ -51,6 +55,46 @@ export default function DoTab({ activities, config, itinerary = [] }: Props) {
   const [filter, setFilter] = useState<Activity['category'] | 'all'>('all');
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('any');
   const [weatherFilter, setWeatherFilter] = useState<WeatherFilter>('any');
+  const [loadingMore, setLoadingMore] = useState<string | null>(null);
+  const [moreError, setMoreError] = useState<string>('');
+
+  // Remove an activity from a destination by name.
+  const removeActivity = (destination: string, name: string) => {
+    if (!onUpdate) return;
+    const next = activities.map((d) =>
+      d.destination === destination
+        ? { ...d, activities: (d.activities ?? []).filter((a) => a.name !== name) }
+        : d
+    );
+    onUpdate(next);
+  };
+
+  // Fetch fresh activities for one destination and append them.
+  const fetchMore = async (destination: string) => {
+    if (!onUpdate || !config) return;
+    const block = activities.find((d) => d.destination === destination);
+    if (!block) return;
+    setLoadingMore(destination);
+    setMoreError('');
+    try {
+      const fresh = await generateActivityAlternatives(config, {
+        destination,
+        exclude: (block.activities ?? []).map((a) => a.name).filter(Boolean),
+      });
+      if (!fresh || fresh.length === 0) { setMoreError('No new ideas came back — try again.'); return; }
+      const have = new Set((block.activities ?? []).map((a) => (a.name || '').toLowerCase().trim()));
+      const added = fresh.filter((a) => a?.name && !have.has(a.name.toLowerCase().trim()));
+      if (added.length === 0) { setMoreError('No new ideas came back — try again.'); return; }
+      const next = activities.map((d) =>
+        d.destination === destination ? { ...d, activities: [...(d.activities ?? []), ...added] } : d
+      );
+      onUpdate(next);
+    } catch {
+      setMoreError('Could not load more ideas. Please try again.');
+    } finally {
+      setLoadingMore(null);
+    }
+  };
 
   const visibleByDest = useMemo(() => {
     return activities.map((dest) => ({
@@ -257,9 +301,30 @@ export default function DoTab({ activities, config, itinerary = [] }: Props) {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {dest.list.map((a, ai) => (
-                  <ActivityCard key={`${a.name}-${ai}`} activity={a} place={`${a.name}, ${dest.destination}`} />
+                  <ActivityCard
+                    key={`${a.name}-${ai}`}
+                    activity={a}
+                    place={`${a.name}, ${dest.destination}`}
+                    onRemove={onUpdate ? () => removeActivity(dest.destination, a.name) : undefined}
+                  />
                 ))}
               </div>
+
+              {/* More options — fetch fresh activities for this destination */}
+              {onUpdate && (
+                <div className="mt-5 flex flex-col items-center gap-2">
+                  <button
+                    onClick={() => fetchMore(dest.destination)}
+                    disabled={loadingMore === dest.destination}
+                    className="px-5 py-2.5 rounded-full text-sm font-medium border border-[var(--line-strong)] text-[var(--cream)] hover:bg-[var(--ink-4)] transition-colors disabled:opacity-50"
+                  >
+                    {loadingMore === dest.destination ? 'Finding more…' : `＋ More things to do in ${dest.destination}`}
+                  </button>
+                  {moreError && loadingMore === null && (
+                    <p className="text-[var(--terracotta)] text-xs">{moreError}</p>
+                  )}
+                </div>
+              )}
             </motion.section>
           )
         )}
@@ -285,7 +350,7 @@ function buildCountLabel(
   return `${count} ${qualifiers} ${noun}`.replace(/\s+/g, ' ').trim();
 }
 
-function ActivityCard({ activity: a, place }: { activity: Activity; place: string }) {
+function ActivityCard({ activity: a, place, onRemove }: { activity: Activity; place: string; onRemove?: () => void }) {
   const meta = CATEGORY_META[a.category] || CATEGORY_META.culture;
 
   return (
@@ -301,10 +366,22 @@ function ActivityCard({ activity: a, place }: { activity: Activity; place: strin
           </p>
           <h4 className="font-display text-xl text-[var(--cream)] leading-tight">{a.name}</h4>
         </div>
-        <div className="text-right shrink-0">
-          <p className="font-display text-base text-[var(--gold)] leading-none">{a.price_estimate_aud}</p>
-          {a.duration && (
-            <p className="text-[10px] tracking-wider uppercase text-[var(--text-dim)] mt-1">{a.duration}</p>
+        <div className="flex items-start gap-2 shrink-0">
+          <div className="text-right">
+            <p className="font-display text-base text-[var(--gold)] leading-none">{a.price_estimate_aud}</p>
+            {a.duration && (
+              <p className="text-[10px] tracking-wider uppercase text-[var(--text-dim)] mt-1">{a.duration}</p>
+            )}
+          </div>
+          {onRemove && (
+            <button
+              onClick={onRemove}
+              aria-label={`Remove ${a.name}`}
+              title="Remove from my plan"
+              className="w-7 h-7 rounded-full flex items-center justify-center text-[var(--text-dim)] hover:text-[var(--terracotta)] hover:bg-[var(--terracotta)]/10 transition-colors text-sm leading-none"
+            >
+              ✕
+            </button>
           )}
         </div>
       </div>
