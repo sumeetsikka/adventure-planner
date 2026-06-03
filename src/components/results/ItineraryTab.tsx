@@ -7,6 +7,7 @@ import { VIBE_LABELS } from '../../lib/constants';
 import { getDestinationPhoto } from '../../lib/imagery';
 import { findConflicts, findNudges } from '../../lib/conflicts';
 import { buildDayPlans, dayMoves, type DayPlan } from '../../lib/planStitch';
+import { dayRouteUrl } from '../../lib/deepLinks';
 import { PlaceActions } from '../shared/PlaceLink';
 
 interface Props {
@@ -495,6 +496,13 @@ function StitchedDayCard({
     tonight = { icon: '🛏️', text: `Overnight in ${plan.stayingTonight.dest.destination}` };
   }
 
+  // Map this day: build a walking route from the day's mappable stops, each
+  // suffixed with the city so Maps disambiguates ("Temple of Literature, Hanoi").
+  const mapStops = (day?.timeline || [])
+    .filter((ev) => ev.type !== 'travel' && ev.type !== 'rest')
+    .map((ev) => `${ev.location || ev.title}${location ? `, ${location}` : ''}`);
+  const dayMapUrl = mapStops.length >= 1 ? dayRouteUrl(mapStops) : null;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 14 }}
@@ -611,6 +619,21 @@ function StitchedDayCard({
             >
               ↓ Down
             </button>
+          </div>
+        )}
+
+        {/* Map this day — opens the day's stops as a walking route */}
+        {dayMapUrl && (
+          <div className="px-5 pb-4">
+            <a
+              href={dayMapUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-wide uppercase px-3 py-1.5 rounded-full border border-[var(--line-strong)] text-[var(--text-muted)] hover:text-[var(--cream)] hover:border-[var(--sage)]/50 transition-colors"
+            >
+              🗺️ Map this day{mapStops.length > 1 ? ` · ${mapStops.length} stops` : ''}
+            </a>
           </div>
         )}
 
