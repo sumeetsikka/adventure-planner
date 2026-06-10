@@ -4,7 +4,12 @@ import type { BudgetItem, TravelConfig, FlightLeg, TransportLeg, DestinationHote
 import { generateBudget } from '../../lib/api';
 import { fetchRate, CURRENCY_SYMBOLS } from '../../lib/fx';
 import { buildDayPlans, perDayCosts } from '../../lib/planStitch';
-import { formatDayLabel } from '../../lib/dateUtils';
+import { formatDayLabel, todayISO } from '../../lib/dateUtils';
+import { getActiveTripId } from '../../lib/tripStore';
+import {
+  listExpenses, addExpense, removeExpense, totalSpent, settleUp,
+  EXPENSE_CATEGORIES, type Expense, type ExpenseCategory,
+} from '../../lib/expenses';
 import {
   flightCO2kg,
   trainCO2kg,
@@ -295,6 +300,9 @@ export default function BudgetTab({ budget, config, onUpdate, flights = [], tran
           </motion.div>
         );
       })()}
+
+      {/* Spend tracker — log ACTUAL expenses vs the estimate */}
+      <SpendTracker config={config} estimateGroupTotal={groupTotal} formatMoney={formatMoney} />
 
       {/* Spend visualisation — stacked bar showing where the money lives */}
       {perPersonTotal > 0 && (() => {
@@ -677,6 +685,211 @@ function BillSplit({ travellers, formatMoney, effectiveRate, symbol }: { travell
           <p className="text-[10px] tracking-wider uppercase text-[var(--text-dim)] mt-1">across {safePeople} {safePeople === 1 ? 'person' : 'people'}</p>
         </div>
       </div>
+    </motion.div>
+  );
+}
+
+// ── Spend tracker — actuals vs estimate, with group settle-up ─────────────
+
+function SpendTracker({
+  config, estimateGroupTotal, formatMoney,
+}: {
+  config: TravelConfig;
+  estimateGroupTotal: number;
+  formatMoney: (audAmount: number) => string;
+}) {
+  const tripId = getActiveTripId() || 'default';
+  const [expenses, setExpenses] = useState<Expense[]>(() => listExpenses(tripId));
+  const [amount, setAmount] = useState('');
+  const [category, setCategory] = useState<ExpenseCategory>('food');
+  const [note, setNote] = useState('');
+  const [showAll, setShowAll] = useState(false);
+
+  // Traveller display names — profile names where given, else "Traveller N".
+  const payers = Array.from({ length: Math.max(1, config.travellers || 1) }, (_, i) =>
+    config.travellerProfiles?.[i]?.name?.trim() || `Traveller ${i + 1}`
+  );
+  const [paidBy, setPaidBy] = useState<string>(payers[0]);
+
+  const add = () => {
+    const amt = Math.round(Number(amount) * 100) / 100;
+    if (!Number.isFinite(amt) || amt <= 0) return;
+    addExpense(tripId, {
+      amount: amt,
+      category,
+      note: note.trim() || undefined,
+      date: todayISO(),
+      paidBy: payers.length > 1 ? paidBy : undefined,
+    });
+    setExpenses(listExpenses(tripId));
+    setAmount('');
+    setNote('');
+  };
+
+  const remove = (id: string) => {
+    removeExpense(tripId, id);
+    setExpenses(listExpenses(tripId));
+  };
+
+  const spent = totalSpent(expenses);
+  const pct = estimateGroupTotal > 0 ? spent / estimateGroupTotal : 0;
+  const over = pct > 1;
+  const transfers = payers.length > 1 ? settleUp(expenses, payers) : [];
+  const visible = showAll ? expenses : expenses.slice(0, 5);
+  const catMeta = (id: ExpenseCategory) => EXPENSE_CATEGORIES.find((c) => c.id === id) || EXPENSE_CATEGORIES[5];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: EASE }}
+      className="surface-card rounded-3xl p-7 mb-10"
+    >
+      <div className="flex items-baseline justify-between mb-1.5 gap-3 flex-wrap">
+        <p className="eyebrow">Spend tracker</p>
+        <span className="text-[10px] text-[var(--text-dim)] tracking-wider uppercase">Log it as you go · saves on this device</span>
+      </div>
+      <h3 className="font-display text-2xl text-[var(--cream)] leading-tight mb-6">
+        What you've <em className="italic text-[var(--gold)]">actually</em> spent.
+      </h3>
+
+      {/* Actual vs estimate */}
+      <div className="flex items-baseline justify-between gap-4 mb-2">
+        <p className="font-display text-4xl leading-none tabular-nums" style={{ color: over ? 'var(--terracotta)' : 'var(--sage)' }}>
+          {formatMoney(spent)}
+        </p>
+        <p className="text-[var(--text-dim)] text-xs">
+          of ~{formatMoney(estimateGroupTotal)} estimated{estimateGroupTotal > 0 ? ` · ${Math.round(pct * 100)}%` : ''}
+        </p>
+      </div>
+      <div className="w-full h-2.5 rounded-full bg-[var(--ink-4)] overflow-hidden mb-6">
+        <motion.div
+          className="h-full rounded-full"
+          style={{ background: over ? 'var(--terracotta)' : 'var(--sage)' }}
+          initial={{ width: 0 }}
+          animate={{ width: `${Math.min(100, Math.round(pct * 100))}%` }}
+          transition={{ duration: 0.7, ease: EASE }}
+        />
+      </div>
+
+      {/* Add-expense form */}
+      <div className="space-y-3 mb-5">
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">$</span>
+            <input
+              type="number" inputMode="decimal" min={0}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && add()}
+              placeholder="Amount"
+              className="w-full bg-[var(--ink-3)] border border-[var(--line)] rounded-xl pl-7 pr-3 py-2.5 text-[var(--cream)] text-sm focus:outline-none focus:border-[var(--terracotta)]"
+            />
+          </div>
+          <input
+            type="text"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && add()}
+            placeholder="What was it? (optional)"
+            className="flex-[2] bg-[var(--ink-3)] border border-[var(--line)] rounded-xl px-3.5 py-2.5 text-[var(--cream)] text-sm focus:outline-none focus:border-[var(--terracotta)] placeholder:text-[var(--text-dim)]"
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {EXPENSE_CATEGORIES.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => setCategory(c.id)}
+              className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] transition-all border ${
+                category === c.id
+                  ? 'border-[var(--terracotta)]/50 bg-[var(--terracotta)]/8 text-[var(--cream)]'
+                  : 'border-[var(--line)] text-[var(--text-muted)] hover:text-[var(--cream)]'
+              }`}
+            >
+              <span>{c.icon}</span>{c.label}
+            </button>
+          ))}
+        </div>
+        {payers.length > 1 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[10px] tracking-wider uppercase text-[var(--text-dim)] mr-1">Paid by</span>
+            {payers.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPaidBy(p)}
+                className={`px-2.5 py-1.5 rounded-full text-[11px] transition-all border ${
+                  paidBy === p
+                    ? 'border-[var(--sage)]/50 bg-[var(--sage)]/8 text-[var(--cream)]'
+                    : 'border-[var(--line)] text-[var(--text-muted)] hover:text-[var(--cream)]'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={add}
+          disabled={!(Number(amount) > 0)}
+          className="px-6 py-2.5 rounded-full text-sm font-medium bg-[var(--terracotta)] text-white hover:bg-[var(--terracotta-soft)] transition-colors disabled:opacity-40"
+        >
+          ＋ Log expense
+        </button>
+      </div>
+
+      {/* Expense list */}
+      {expenses.length > 0 && (
+        <ul className="divide-y divide-[var(--line)] border-t border-[var(--line)]">
+          {visible.map((e) => {
+            const meta = catMeta(e.category);
+            return (
+              <li key={e.id} className="py-2.5 flex items-center gap-3">
+                <span className="text-base leading-none flex-shrink-0" title={meta.label}>{meta.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[var(--cream)] text-[13px] leading-snug truncate">{e.note || meta.label}</p>
+                  <p className="text-[var(--text-dim)] text-[10px]">
+                    {formatDayLabel(e.date)}{e.paidBy ? ` · ${e.paidBy}` : ''}
+                  </p>
+                </div>
+                <span className="font-display text-base text-[var(--cream)] tabular-nums flex-shrink-0">{formatMoney(e.amount)}</span>
+                <button
+                  onClick={() => remove(e.id)}
+                  aria-label={`Remove expense ${e.note || meta.label}`}
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-[var(--text-dim)] hover:text-[var(--terracotta)] hover:bg-[var(--terracotta)]/10 transition-colors text-xs flex-shrink-0"
+                >
+                  ✕
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {expenses.length > 5 && (
+        <button
+          onClick={() => setShowAll(!showAll)}
+          className="mt-3 text-[11px] uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--cream)] transition-colors"
+        >
+          {showAll ? 'Show less ↑' : `Show all ${expenses.length} →`}
+        </button>
+      )}
+
+      {/* Settle-up */}
+      {transfers.length > 0 && (
+        <div className="mt-5 pt-4 border-t border-[var(--line)]">
+          <p className="eyebrow mb-2.5" style={{ color: 'var(--sage)' }}>Settle up · even split</p>
+          <ul className="space-y-1.5">
+            {transfers.map((t, i) => (
+              <li key={i} className="text-[13px] text-[var(--cream)]">
+                <span className="font-medium">{t.from}</span>
+                <span className="text-[var(--text-muted)]"> owes </span>
+                <span className="font-medium">{t.to}</span>
+                <span className="font-display text-[var(--sage)] ml-1.5">{formatMoney(t.amount)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </motion.div>
   );
 }
