@@ -100,6 +100,32 @@ export default function MyTrips({ onLoad, onNew, onInspire, onWishlist, onBack }
               ? 'Start your first adventure.'
               : `${trips.length} ${trips.length === 1 ? 'story' : 'stories'} saved on this device.`}
           </p>
+
+          {/* Travel stats — your journeys so far (Polarsteps-style lifetime strip) */}
+          {trips.length > 0 && (() => {
+            const countryIds = new Set(trips.map((t) => t.config.country?.id).filter(Boolean));
+            const totalDays = trips.reduce((s, t) => {
+              const ms = new Date(t.config.returnDate).getTime() - new Date(t.config.departureDate).getTime();
+              return s + (Number.isFinite(ms) && ms > 0 ? Math.round(ms / 86_400_000) : 0);
+            }, 0);
+            const flightLegs = trips.reduce((s, t) => s + (t.results.flights?.length || 0), 0);
+            const stats = [
+              { value: trips.length, label: trips.length === 1 ? 'Trip' : 'Trips' },
+              { value: countryIds.size, label: countryIds.size === 1 ? 'Country' : 'Countries' },
+              { value: totalDays, label: 'Days away' },
+              { value: flightLegs, label: flightLegs === 1 ? 'Flight leg' : 'Flight legs' },
+            ];
+            return (
+              <div className="flex flex-wrap gap-2.5 mt-5">
+                {stats.map((s) => (
+                  <div key={s.label} className="surface-soft rounded-2xl px-4 py-2.5 flex items-baseline gap-2">
+                    <span className="font-display text-2xl text-[var(--terracotta)] leading-none tabular-nums">{s.value}</span>
+                    <span className="text-[10px] tracking-wider uppercase text-[var(--text-dim)]">{s.label}</span>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </motion.div>
 
         {trips.length === 0 ? (
