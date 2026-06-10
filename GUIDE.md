@@ -158,7 +158,7 @@ Results are split into 4 groups in the nav.
 
 | 👤 Traveller | 🛠️ Admin |
 |---|---|
-| **Taste** — restaurants per destination with dietary filter chips; **editable** — ✕ to remove a restaurant, and "＋ More places to eat in [city]" to fetch fresh spots for that stop. **Do** — activities by category (Culture/Nature/Adventure/Family); **editable** — ✕ to remove an activity you don't want, and "＋ More things to do in [city]" to fetch fresh ideas for that stop. **Both tabs:** every card has **⭐ Reviews** (real ratings on Google/TripAdvisor, one tap) and **＋ Plan** — pick a day and the place lands in that day's hour-by-hour timeline (restaurants slot in at 19:00 dinner, activities at 14:00; days you're in that city are highlighted coral). The pool→plan loop. **Nearby** — day-trip suggestions from each main destination. **Photos** — Wikipedia gallery of each destination. **Tips** — 12-15 destination-specific tips covering tipping, dress codes, photography etiquette, body language, queue norms, food, transport, health, scams. | `handleTips` uses the enriched TIPS_SYSTEM prompt. Photos from `useWikiImage`. **Do editing:** `DoTab` takes an `onUpdate` prop (wired in `ResultsView` → `onUpdateResults({ activities })`); `removeActivity()` filters by name, `fetchMore()` calls `generateActivityAlternatives()` → `/api/activityAlternatives` (`handleActivityAlternatives`, reusing the module-scope `ACTIVITIES_SYSTEM` prompt with an `exclude` list). Same edit pattern as Hotels. |
+| **Taste** — restaurants per destination with dietary filter chips; **editable** — ✕ to remove a restaurant, and "＋ More places to eat in [city]" to fetch fresh spots for that stop. **Do** — activities by category (Culture/Nature/Adventure/Family); **editable** — ✕ to remove an activity you don't want, and "＋ More things to do in [city]" to fetch fresh ideas for that stop. **Both tabs:** every card has **⭐ Reviews** (real ratings on Google/TripAdvisor, one tap) and **＋ Plan** — pick a day and the place lands in that day's hour-by-hour timeline (restaurants slot in at 19:00 dinner, activities at 14:00; days you're in that city are highlighted coral). The pool→plan loop. **Nearby** — day-trip suggestions from each main destination. **Photos** — Wikipedia gallery of each destination. **Tips** — 12-15 destination-specific tips covering tipping, dress codes, photography etiquette, body language, queue norms, food, transport, health, scams. | `handleTips` uses the enriched TIPS_SYSTEM prompt. Photos from `useWikiImage`. **Do editing:** `DoTab` takes an `onUpdate` prop (wired in `ResultsView` → `onUpdateResults({ activities })`); `removeActivity()` filters by name, `fetchMore()` calls `generateActivityAlternatives()` → `/api/activityAlternatives` (`handleActivityAlternatives`, reusing the module-scope `ACTIVITIES_SYSTEM` prompt with an `exclude` list). Same edit pattern as Hotels. **＋ Plan:** shared `AddToDay` picker (`src/components/shared/AddToDay.tsx`) + `addStopToDay()` (`src/lib/planEdit.ts`) — inserts a `TimelineEvent` sorted by time, or appends to `activities` on no-timeline days; wired via `onUpdateItinerary` → `onUpdateResults({ itinerary })`. **⭐ Reviews:** `reviewsUrl()` in `deepLinks.ts` (Google search deep-link — real crowd ratings without a ratings API). |
 
 ### 3.11 Chat
 
@@ -178,7 +178,7 @@ Results are split into 4 groups in the nav.
 
 | 👤 Traveller | 🛠️ Admin |
 |---|---|
-| Tap **My trips** (top right) to see every trip on this device. Cards show country, dates, days, stops, status (`Drafting` / `Ready`), updated-time. | `MyTrips.tsx`. Sorted by `updatedAt` desc. Capped at 30 saved trips (`tripStore.saveTrip`). |
+| Tap **My trips** (top right) to see every trip on this device. Cards show country, dates, days, stops, status (`Drafting` / `Ready`), updated-time. **Travel stats strip** under the header totals your journeys: trips, countries, days away, flight legs (Polarsteps-style). | `MyTrips.tsx`. Sorted by `updatedAt` desc. Capped at 30 saved trips (`tripStore.saveTrip`). Stats computed inline from `listTrips()` — unique country ids, summed day-counts, flight-leg counts. |
 | **Tap a card** to open the trip. **✎** to rename (Enter to save, Esc to cancel). **×** then **Delete** to delete — two-tap confirm avoids accidental deletes and the ghost-click bug native dialogs caused. | Delete state stored in localStorage; the active-trip pointer is cleared on delete. The ✎/× wrapper has `stopPropagation` plus each button stops its own bubbling. |
 | **+ New trip** clears state and returns to the country picker. **★ Wishlist** opens saved-country list. **✦ Inspire me** opens discovery. | `newTrip()` in `App.tsx` resets ALL working state (selectedCountry, selectedDests, dates, ages, vibes, budget, profiles, mode, results) and calls `newTripId()`. |
 
@@ -300,7 +300,10 @@ A debounced auto-commit hook (`.claude/scripts/auto-commit.sh`) commits clean in
 | `api/[route].ts` | Route handlers. `personalisationHint()`, `budgetHint()`, `modeDirective()`, `profilesHint()` are appended to user messages to shape generation. `ORIGIN_CITY_BY_IATA` maps the user's chosen origin IATA to a city name for the prompts (so itinerary/flights actually use the chosen origin instead of hard-coding Melbourne). Add new origin airports here if you extend `originAirports.ts`. |
 | `server/lib/dateSchedule.ts` | The destination-by-destination schedule logic (`computeSchedule`, `fixFlightDates`, `fixHotelDates`). Adjust if you change trip-length semantics. |
 | `src/lib/i18n.ts` | i18n scaffold. To add a language: fill its block in `STRINGS`, add to `AVAILABLE_LANGUAGES`. |
-| `src/lib/readiness.ts` | The pre-trip readiness checklist. Add an item: append to `buildReadinessItems()` with a `daysBefore` deadline. |
+| `src/lib/readiness.ts` | The pre-trip readiness checklist (now includes an eSIM/connectivity item, T−7, linking to Airalo). Add an item: append to `buildReadinessItems()` with a `daysBefore` deadline + extend `ReadinessItemId`. |
+| `src/lib/expenses.ts` | Trip spend tracker storage + math (`addExpense`, `totalSpent`, `settleUp`). localStorage per trip. |
+| `src/lib/emergency.ts` | Offline emergency-numbers dataset per country + `embassySearchUrl()`. Keep in sync when adding countries. |
+| `src/lib/planEdit.ts` | Pure itinerary transforms — `addStopToDay()` powers the "＋ Plan" pool→plan loop. |
 | `src/lib/priceWatch.ts` | Watch-list lib. Wire new "Track" buttons by importing `{ isWatched, toggleWatch, *WatchId }`. |
 | `src/lib/planStitch.ts` | The plan-stitching layer. `buildDayPlans()` joins flights/hotels/transport/itinerary by date; `dayMoves()` builds the per-day move chips. Use this anywhere you need "what happens on day N". |
 | `src/lib/dateUtils.ts` | Date helpers. `tripDayNumber()`, `formatDayLabel()`, `isDateInStay()`, `parseLocalDate()` (timezone-safe). Use these instead of raw `new Date('YYYY-MM-DD')` (which parses as UTC and can be a day off). |
@@ -396,6 +399,16 @@ Future sessions: when you edit code that maps to a section here, also update `GU
 ## 15. Changelog
 
 > Add newest entries at the top. Date format: YYYY-MM-DD.
+
+### 2026-05-27 — Global-benchmark build (6 features from top travel apps)
+Benchmarked against TripIt, Wanderlog, TravelSpend/Splitwise, Polarsteps, TripAdvisor, PackPoint; built the gaps that need no external API keys:
+- **💸 Spend tracker** (`expenses.ts` + `SpendTracker` in BudgetTab) — log actual expenses with category/note/payer, actual-vs-estimate progress bar, per-trip persistence, and group **settle-up** via greedy creditor-debtor matching. (TravelSpend/Splitwise gap.)
+- **＋ Plan — the pool→plan loop** (`planEdit.ts` `addStopToDay` + shared `AddToDay` picker) — every Taste/Do card can be added to a chosen day; inserts into the hour-by-hour timeline time-sorted (19:00 dinner / 14:00 activity defaults, signature-dish tip carried), in-destination days highlighted. (Wanderlog gap.)
+- **🆘 Emergency card** (`emergency.ts` + `EmergencyCard` in Dashboard) — offline tap-to-call police/ambulance/fire/tourist-police for all 29 countries (112 fallback) + embassy search link. (TripIt-Pro-style safety gap.)
+- **⭐ Reviews links** (`reviewsUrl()` in deepLinks) on every hotel/restaurant/activity card — real crowd ratings via Google/TripAdvisor without a ratings API. (TripAdvisor trust gap.)
+- **Travel stats strip** in My Trips — trips / countries / days away / flight legs. (Polarsteps gap.)
+- **📶 eSIM readiness item** (T−7, Airalo link) in the Ready checklist. (Modern-connectivity gap.)
+All verified at runtime: expense add→persist→settle-up ("Sam owes Alex $50"), plan-to-day inserted "19:00 Bun Cha Huong Lien" sorted into Day 1's timeline, Vietnam SOS numbers tel:113/115/114, stats strip, eSIM item + airalo link. tsc/eslint/build clean.
 
 ### 2026-05-27 — Editable itinerary days + Tier-1 (maps, trust)
 - **Editable itinerary days:** "↻ Redo this day" regenerates a single day (new `/api/regenerateDay` → `handleRegenerateDay`, keeps date/location, avoids repeats); ✕ removes individual timeline stops / bullet activities. New `regenerateDay()` API client.
