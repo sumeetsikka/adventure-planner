@@ -3,7 +3,7 @@
 > **Living document.** Maintained alongside the code. When adding/changing a feature,
 > the entry in this file must change too — see § 14 *Self-maintenance protocol*.
 
-**Last updated:** 2026-05-27 (editable itinerary days, per-day maps, AI-estimate trust markers)
+**Last updated:** 2026-05-27 (global-benchmark build: spend tracker, add-to-day planning loop, emergency card, reviews links, travel stats, eSIM)
 **App version:** post-WOW build-out (Phases 1–12 shipped: per-traveller profiles, all-ages modes, hour-by-hour itinerary, pre-trip readiness, live-mode dashboard, cultural depth, price tracking, budget realism, memories recap, group splits, surprise-me inspiration, i18n scaffold) + QA hardening.
 
 ---
@@ -93,6 +93,7 @@ Results are split into 4 groups in the nav.
 |---|---|
 | **State banner** at top adapts to where you are in the trip lifecycle: *Pre-trip* shows a countdown + checklist CTA; *In-trip* shows today's stop + distance/ETA + weather; *Post-trip* shows a "welcome back" prompt to open the journal. | `DashboardTab.tsx`. State derived from `daysSinceDeparture` vs `totalDays`. The today-panel uses `useGeolocation()` (only when trip is underway — no permission prompt for future trips) and `geocodeDestination()` (cached). |
 | Editorial hero image, then 4 quick stats (Days / Flights / Hotels / Transfers) — each is a button to its tab. | Hero is `getCountryHero()` from `src/lib/imagery.ts` (Wikipedia main image, falls back to picsum). |
+| **🆘 Emergency card** at the bottom: tap-to-call police / ambulance / fire / tourist-police numbers for your destination, plus a "Find your embassy" link. Ships in the app bundle, so it works offline. Numbers carry a "verify locally" caveat. | `src/lib/emergency.ts` — static `EMERGENCY` map keyed by country id (all 29 prebuilt countries; unknown countries fall back to GSM-universal 112). `EmergencyCard` component in `DashboardTab.tsx`; calls via `telUrl()`. Update the dataset when adding countries. |
 
 ### 3.2 Itinerary — the stitched day-by-day plan
 
@@ -138,6 +139,7 @@ Results are split into 4 groups in the nav.
 | 👤 Traveller | 🛠️ Admin |
 |---|---|
 | Two big totals (per-person + group). **Show in** lets you switch display currency (ECB live FX). **Budget target panel** (when you set one) shows estimated vs target with a ±20% tolerance band + Within/Over/Under badge. **Where it goes** = stacked bar with each category's % share. **In context** compares to country average. **Footprint** = trip CO₂. **Quick split** at the bottom = bill-splitter for restaurant/taxi receipts (groups only). | `BudgetTab.tsx`. Budget breakdown comes from the LLM; FX live from ECB; CO₂ from `src/lib/carbon.ts`; benchmarks hard-coded in `BudgetTab.tsx → benchmarks`. Quick-split widget is `BillSplit` at the bottom of the file. |
+| **💸 Spend tracker** — log ACTUAL expenses as you travel: amount + category + optional note + who paid. Shows a running total vs the estimate (green under / coral over progress bar), a per-expense list with ✕, and — for groups — an even-split **settle-up** ("Sam owes Alex $50"). Saves on this device, per trip. | `src/lib/expenses.ts` (localStorage `adventure-planner:expenses:<tripId>`; `addExpense`/`removeExpense`/`totalSpent`/`settleUp` greedy creditor-debtor matching). UI is `SpendTracker` in `BudgetTab.tsx`; payer names come from `travellerProfiles[i].name` or "Traveller N". Amounts are home-currency, group-level. |
 
 ### 3.8 Packing, Weather, Visa, Currency, Checklist, Events
 
@@ -156,7 +158,7 @@ Results are split into 4 groups in the nav.
 
 | 👤 Traveller | 🛠️ Admin |
 |---|---|
-| **Taste** — restaurants per destination with dietary filter chips; **editable** — ✕ to remove a restaurant, and "＋ More places to eat in [city]" to fetch fresh spots for that stop. **Do** — activities by category (Culture/Nature/Adventure/Family); **editable** — ✕ to remove an activity you don't want, and "＋ More things to do in [city]" to fetch fresh ideas for that stop. **Nearby** — day-trip suggestions from each main destination. **Photos** — Wikipedia gallery of each destination. **Tips** — 12-15 destination-specific tips covering tipping, dress codes, photography etiquette, body language, queue norms, food, transport, health, scams. | `handleTips` uses the enriched TIPS_SYSTEM prompt. Photos from `useWikiImage`. **Do editing:** `DoTab` takes an `onUpdate` prop (wired in `ResultsView` → `onUpdateResults({ activities })`); `removeActivity()` filters by name, `fetchMore()` calls `generateActivityAlternatives()` → `/api/activityAlternatives` (`handleActivityAlternatives`, reusing the module-scope `ACTIVITIES_SYSTEM` prompt with an `exclude` list). Same edit pattern as Hotels. |
+| **Taste** — restaurants per destination with dietary filter chips; **editable** — ✕ to remove a restaurant, and "＋ More places to eat in [city]" to fetch fresh spots for that stop. **Do** — activities by category (Culture/Nature/Adventure/Family); **editable** — ✕ to remove an activity you don't want, and "＋ More things to do in [city]" to fetch fresh ideas for that stop. **Both tabs:** every card has **⭐ Reviews** (real ratings on Google/TripAdvisor, one tap) and **＋ Plan** — pick a day and the place lands in that day's hour-by-hour timeline (restaurants slot in at 19:00 dinner, activities at 14:00; days you're in that city are highlighted coral). The pool→plan loop. **Nearby** — day-trip suggestions from each main destination. **Photos** — Wikipedia gallery of each destination. **Tips** — 12-15 destination-specific tips covering tipping, dress codes, photography etiquette, body language, queue norms, food, transport, health, scams. | `handleTips` uses the enriched TIPS_SYSTEM prompt. Photos from `useWikiImage`. **Do editing:** `DoTab` takes an `onUpdate` prop (wired in `ResultsView` → `onUpdateResults({ activities })`); `removeActivity()` filters by name, `fetchMore()` calls `generateActivityAlternatives()` → `/api/activityAlternatives` (`handleActivityAlternatives`, reusing the module-scope `ACTIVITIES_SYSTEM` prompt with an `exclude` list). Same edit pattern as Hotels. |
 
 ### 3.11 Chat
 
