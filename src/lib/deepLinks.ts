@@ -64,6 +64,17 @@ export function telUrl(phone: string): string {
 }
 
 /**
+ * Reviews deep-link — the trust layer's "recognizable source" link. We have no
+ * ratings API, so instead of inventing scores we link straight to Google's
+ * results (which surface the Maps rating + review count + TripAdvisor) for the
+ * exact place. Zero API keys, real crowd data, one tap away.
+ */
+export function reviewsUrl(name: string, area?: string): string {
+  const q = encodeURIComponent(`${name}${area ? `, ${area}` : ''} reviews`);
+  return `https://www.google.com/search?q=${q}`;
+}
+
+/**
  * Multi-stop walking-route URL for one day's stops, opened in Google/Apple Maps.
  * `stops` are place names (each suffixed with the city for disambiguation by the
  * caller). Returns null if fewer than 2 mappable stops. Google's dir API takes

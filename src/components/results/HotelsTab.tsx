@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import type { DestinationHotels, Destination, TravelConfig, HotelAmenity } from '../../types';
 import { formatDateAU, formatDayLabel, tripDayNumber } from '../../lib/dateUtils';
 import { getHotelLinks } from '../../lib/bookingLinks';
+import { reviewsUrl } from '../../lib/deepLinks';
 import { getDestinationPhoto } from '../../lib/imagery';
 import { generateHotelAlternatives } from '../../lib/api';
 import { PlaceActions } from '../shared/PlaceLink';
@@ -351,6 +352,16 @@ export default function HotelsTab({ hotels, config, onUpdate }: Props) {
                                 </a>
                               ));
                             })()}
+                            <a
+                              href={reviewsUrl(h.name, dest.destination)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              title="See real ratings & reviews on Google / TripAdvisor"
+                              className="text-[10px] font-medium px-2.5 py-1 rounded-full border border-[var(--line-strong)] text-[var(--text-muted)] hover:text-[var(--cream)] hover:border-[var(--sage)]/50 transition-all"
+                            >
+                              ⭐ Reviews ↗
+                            </a>
                           </div>
 
                           {/* Make this my pick — editable plan */}
