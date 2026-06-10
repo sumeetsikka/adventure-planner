@@ -4,7 +4,8 @@ import type { TravelConfig, GenerationResults, ResultsTab } from '../../types';
 import { formatDateAU, todayISO, addDaysISO, weekdayShort } from '../../lib/dateUtils';
 import { getCountryHero, getDestinationPhoto } from '../../lib/imagery';
 import { useGeolocation, distanceKm } from '../../lib/useGeolocation';
-import { directionsUrl } from '../../lib/deepLinks';
+import { directionsUrl, telUrl } from '../../lib/deepLinks';
+import { getEmergencyNumbers, embassySearchUrl } from '../../lib/emergency';
 import { geocodeDestination } from '../../lib/geocode';
 import { buildDayPlans, dayMoves } from '../../lib/planStitch';
 import AnimatedNumber from '../shared/AnimatedNumber';
@@ -444,6 +445,61 @@ export default function DashboardTab({ config, results, onTabChange }: Props) {
           </button>
         ))}
       </div>
+
+      {/* Emergency card — offline-first SOS info for the destination */}
+      <EmergencyCard countryId={config.country?.id} countryName={config.country?.name || 'your destination'} />
     </div>
+  );
+}
+
+function EmergencyCard({ countryId, countryName }: { countryId?: string; countryName: string }) {
+  const nums = getEmergencyNumbers(countryId);
+  const entries: { label: string; icon: string; value?: string }[] = [
+    { label: 'Emergency', icon: '🆘', value: nums.general },
+    { label: 'Police', icon: '👮', value: nums.police },
+    { label: 'Ambulance', icon: '🚑', value: nums.ambulance },
+    { label: 'Fire', icon: '🚒', value: nums.fire },
+    { label: 'Tourist police', icon: '🛡️', value: nums.touristPolice },
+  ].filter((e) => !!e.value);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+      className="surface-card rounded-3xl p-6"
+      style={{ border: '1px solid color-mix(in srgb, var(--terracotta) 30%, transparent)' }}
+    >
+      <div className="flex items-baseline justify-between mb-1 gap-3 flex-wrap">
+        <p className="eyebrow" style={{ color: 'var(--terracotta)' }}>Emergency card · {countryName}</p>
+        <a
+          href={embassySearchUrl(countryName)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[10px] font-semibold tracking-wider uppercase text-[var(--text-muted)] hover:text-[var(--cream)] underline-offset-2 hover:underline"
+        >
+          Find your embassy ↗
+        </a>
+      </div>
+      <p className="text-[var(--text-muted)] text-xs mb-4">
+        Tap to call. Saved in the app, so it works offline.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {entries.map((e) => (
+          <a
+            key={e.label}
+            href={telUrl(e.value!)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[var(--ink-2)] border border-[var(--line)] hover:border-[var(--terracotta)]/50 transition-colors"
+          >
+            <span className="text-base leading-none" aria-hidden>{e.icon}</span>
+            <span className="text-[var(--text-muted)] text-[11px] uppercase tracking-wider">{e.label}</span>
+            <span className="font-display text-lg text-[var(--cream)] tabular-nums">{e.value}</span>
+          </a>
+        ))}
+      </div>
+      <p className="text-[var(--text-dim)] text-[10px] mt-3 leading-relaxed">
+        {nums.note ? `${nums.note} ` : ''}Numbers can change — verify locally on arrival. On most GSM networks, 112 redirects to emergency services even without a local SIM.
+      </p>
+    </motion.div>
   );
 }
