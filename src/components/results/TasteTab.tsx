@@ -4,7 +4,10 @@ import type { DestinationRestaurants, Restaurant, DietaryOption, TravelConfig, I
 import { mapsUrl, directionsUrl, reviewsUrl } from '../../lib/deepLinks';
 import { buildDayPlans, destinationDayRanges, dayRangeForDestination } from '../../lib/planStitch';
 import { generateRestaurantAlternatives } from '../../lib/api';
+import { addStopToDay } from '../../lib/planEdit';
+import { addDaysISO, formatDayLabel } from '../../lib/dateUtils';
 import DayRangeChip from '../shared/DayRangeChip';
+import AddToDay, { type DayOption } from '../shared/AddToDay';
 
 interface Props {
   restaurants: DestinationRestaurants[];
@@ -13,6 +16,9 @@ interface Props {
   /** When provided, the tab becomes editable: remove a restaurant, or fetch
    *  more options per destination. */
   onUpdate?: (restaurants: DestinationRestaurants[]) => void;
+  /** When provided, each card gets "＋ Plan" — add the restaurant to a day's
+   *  itinerary (dinner slot) via the same plumbing as every other edit. */
+  onUpdateItinerary?: (itinerary: ItineraryDay[]) => void;
 }
 
 const EASE = [0.16, 1, 0.3, 1] as const;
@@ -27,7 +33,7 @@ const DIETARY_FILTERS: { id: DietaryFilter; label: string }[] = [
   { id: 'gluten-free', label: 'Gluten-free' },
 ];
 
-export default function TasteTab({ restaurants, config, itinerary = [], onUpdate }: Props) {
+export default function TasteTab({ restaurants, config, itinerary = [], onUpdate, onUpdateItinerary }: Props) {
   const dayRanges = useMemo(
     () => (config ? destinationDayRanges(buildDayPlans(config, itinerary, [], [], [])) : new Map()),
     [config, itinerary]
@@ -45,6 +51,31 @@ export default function TasteTab({ restaurants, config, itinerary = [], onUpdate
         : d
     );
     onUpdate(next);
+  };
+
+  // "＋ Plan": day options for a destination's cards — every trip day, with the
+  // days you're actually in that destination highlighted.
+  const dayOptionsFor = (destination: string): DayOption[] => {
+    if (!config?.departureDate || itinerary.length === 0 || !onUpdateItinerary) return [];
+    const range = dayRangeForDestination(dayRanges, destination);
+    return itinerary.map((d) => ({
+      day: d.day,
+      label: formatDayLabel(addDaysISO(config.departureDate, d.day - 1)),
+      inDest: !!range && d.day >= range.firstDay && d.day <= range.lastDay,
+    }));
+  };
+
+  // Insert a restaurant into a day as a dinner stop (19:00, 90 min).
+  const planRestaurant = (r: Restaurant, destination: string, dayNum: number) => {
+    if (!onUpdateItinerary) return;
+    onUpdateItinerary(addStopToDay(itinerary, dayNum, {
+      title: r.name,
+      location: destination,
+      type: 'meal',
+      time: '19:00',
+      duration_min: 90,
+      tip: r.signature_dish ? `Order the ${r.signature_dish}` : undefined,
+    }));
   };
 
   // Fetch fresh restaurants for one destination and append them.
@@ -214,6 +245,8 @@ export default function TasteTab({ restaurants, config, itinerary = [], onUpdate
                     restaurant={r}
                     place={`${r.name}, ${dest.destination}`}
                     onRemove={onUpdate ? () => removeRestaurant(dest.destination, r.name) : undefined}
+                    planDays={dayOptionsFor(dest.destination)}
+                    onPlan={(dayNum) => planRestaurant(r, dest.destination, dayNum)}
                   />
                 ))}
               </div>
@@ -241,7 +274,7 @@ export default function TasteTab({ restaurants, config, itinerary = [], onUpdate
   );
 }
 
-function RestaurantCard({ restaurant: r, place, onRemove }: { restaurant: Restaurant; place: string; onRemove?: () => void }) {
+function RestaurantCard({ restaurant: r, place, onRemove, planDays = [], onPlan }: { restaurant: Restaurant; place: string; onRemove?: () => void; planDays?: DayOption[]; onPlan?: (day: number) => void }) {
   const tierColor = {
     '$': 'var(--sage)',
     '$$': 'var(--gold-soft)',
@@ -350,6 +383,9 @@ function RestaurantCard({ restaurant: r, place, onRemove }: { restaurant: Restau
         >
           ⭐ Reviews
         </a>
+        {onPlan && planDays.length > 0 && (
+          <AddToDay days={planDays} onAdd={onPlan} />
+        )}
       </div>
     </motion.article>
   );

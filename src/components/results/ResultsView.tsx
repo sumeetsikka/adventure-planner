@@ -266,11 +266,11 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
           {activeTab === 'events' && <EventsTab config={config} />}
           {activeTab === 'journal' && <JournalTab config={config} results={results} />}
           {activeTab === 'taste' && (results.restaurants && results.restaurants.length > 0
-            ? <TasteTab restaurants={results.restaurants} config={config} itinerary={results.itinerary} onUpdate={(restaurants) => onUpdateResults({ restaurants })} />
+            ? <TasteTab restaurants={results.restaurants} config={config} itinerary={results.itinerary} onUpdate={(restaurants) => onUpdateResults({ restaurants })} onUpdateItinerary={(itinerary) => onUpdateResults({ itinerary })} />
             : <RetryButton label="restaurants" onRetry={async () => { const d = await import('../../lib/api').then(m => m.generateRestaurants(config)); onUpdateResults({ restaurants: d }); }} />
           )}
           {activeTab === 'do' && (results.activities && results.activities.length > 0
-            ? <DoTab activities={results.activities} config={config} itinerary={results.itinerary} onUpdate={(activities) => onUpdateResults({ activities })} />
+            ? <DoTab activities={results.activities} config={config} itinerary={results.itinerary} onUpdate={(activities) => onUpdateResults({ activities })} onUpdateItinerary={(itinerary) => onUpdateResults({ itinerary })} />
             : <RetryButton label="activities" onRetry={async () => { const d = await import('../../lib/api').then(m => m.generateActivities(config)); onUpdateResults({ activities: d }); }} />
           )}
           </Suspense>

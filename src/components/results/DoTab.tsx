@@ -4,7 +4,10 @@ import type { DestinationActivities, Activity, ActivityTimeFit, ActivityWeather,
 import { mapsUrl, directionsUrl, reviewsUrl } from '../../lib/deepLinks';
 import { buildDayPlans, destinationDayRanges, dayRangeForDestination } from '../../lib/planStitch';
 import { generateActivityAlternatives } from '../../lib/api';
+import { addStopToDay } from '../../lib/planEdit';
+import { addDaysISO, formatDayLabel } from '../../lib/dateUtils';
 import DayRangeChip from '../shared/DayRangeChip';
+import AddToDay, { type DayOption } from '../shared/AddToDay';
 
 interface Props {
   activities: DestinationActivities[];
@@ -13,6 +16,9 @@ interface Props {
   /** When provided, the tab becomes editable: remove an activity, or fetch
    *  more options per destination. */
   onUpdate?: (activities: DestinationActivities[]) => void;
+  /** When provided, each card gets "＋ Plan" — add the activity to a day's
+   *  itinerary (afternoon slot) via the same plumbing as every other edit. */
+  onUpdateItinerary?: (itinerary: ItineraryDay[]) => void;
 }
 
 const EASE = [0.16, 1, 0.3, 1] as const;
@@ -47,7 +53,7 @@ const WEATHER_FILTERS: { id: WeatherFilter; label: string }[] = [
   { id: 'all-weather', label: 'All-weather' },
 ];
 
-export default function DoTab({ activities, config, itinerary = [], onUpdate }: Props) {
+export default function DoTab({ activities, config, itinerary = [], onUpdate, onUpdateItinerary }: Props) {
   const dayRanges = useMemo(
     () => (config ? destinationDayRanges(buildDayPlans(config, itinerary, [], [], [])) : new Map()),
     [config, itinerary]
@@ -67,6 +73,31 @@ export default function DoTab({ activities, config, itinerary = [], onUpdate }: 
         : d
     );
     onUpdate(next);
+  };
+
+  // "＋ Plan": day options for a destination's cards — every trip day, with the
+  // days you're actually in that destination highlighted.
+  const dayOptionsFor = (destination: string): DayOption[] => {
+    if (!config?.departureDate || itinerary.length === 0 || !onUpdateItinerary) return [];
+    const range = dayRangeForDestination(dayRanges, destination);
+    return itinerary.map((d) => ({
+      day: d.day,
+      label: formatDayLabel(addDaysISO(config.departureDate, d.day - 1)),
+      inDest: !!range && d.day >= range.firstDay && d.day <= range.lastDay,
+    }));
+  };
+
+  // Insert an activity into a day as an afternoon stop (14:00, 2 h).
+  const planActivity = (a: Activity, destination: string, dayNum: number) => {
+    if (!onUpdateItinerary) return;
+    onUpdateItinerary(addStopToDay(itinerary, dayNum, {
+      title: a.name,
+      location: destination,
+      type: 'activity',
+      time: '14:00',
+      duration_min: 120,
+      tip: a.best_time ? `Best time: ${a.best_time}` : undefined,
+    }));
   };
 
   // Fetch fresh activities for one destination and append them.
@@ -306,6 +337,8 @@ export default function DoTab({ activities, config, itinerary = [], onUpdate }: 
                     activity={a}
                     place={`${a.name}, ${dest.destination}`}
                     onRemove={onUpdate ? () => removeActivity(dest.destination, a.name) : undefined}
+                    planDays={dayOptionsFor(dest.destination)}
+                    onPlan={(dayNum) => planActivity(a, dest.destination, dayNum)}
                   />
                 ))}
               </div>
@@ -350,7 +383,7 @@ function buildCountLabel(
   return `${count} ${qualifiers} ${noun}`.replace(/\s+/g, ' ').trim();
 }
 
-function ActivityCard({ activity: a, place, onRemove }: { activity: Activity; place: string; onRemove?: () => void }) {
+function ActivityCard({ activity: a, place, onRemove, planDays = [], onPlan }: { activity: Activity; place: string; onRemove?: () => void; planDays?: DayOption[]; onPlan?: (day: number) => void }) {
   const meta = CATEGORY_META[a.category] || CATEGORY_META.culture;
 
   return (
@@ -471,6 +504,9 @@ function ActivityCard({ activity: a, place, onRemove }: { activity: Activity; pl
         >
           ⭐ Reviews
         </a>
+        {onPlan && planDays.length > 0 && (
+          <AddToDay days={planDays} onAdd={onPlan} />
+        )}
       </div>
     </motion.article>
   );
