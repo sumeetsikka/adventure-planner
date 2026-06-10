@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { DestinationRestaurants, Restaurant, DietaryOption, TravelConfig, ItineraryDay } from '../../types';
-import { mapsUrl, directionsUrl } from '../../lib/deepLinks';
+import { mapsUrl, directionsUrl, reviewsUrl } from '../../lib/deepLinks';
 import { buildDayPlans, destinationDayRanges, dayRangeForDestination } from '../../lib/planStitch';
 import { generateRestaurantAlternatives } from '../../lib/api';
 import DayRangeChip from '../shared/DayRangeChip';
@@ -340,6 +340,15 @@ function RestaurantCard({ restaurant: r, place, onRemove }: { restaurant: Restau
           className="text-[10px] tracking-[0.2em] uppercase text-[var(--text-muted)] hover:text-[var(--cream)] border border-[var(--line)] hover:border-[var(--line-strong)] rounded-full px-3 py-1.5 transition-colors"
         >
           🧭 Directions
+        </a>
+        <a
+          href={reviewsUrl(r.name, r.neighbourhood)}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="See real ratings & reviews"
+          className="text-[10px] tracking-[0.2em] uppercase text-[var(--text-muted)] hover:text-[var(--cream)] border border-[var(--line)] hover:border-[var(--sage)]/50 rounded-full px-3 py-1.5 transition-colors"
+        >
+          ⭐ Reviews
         </a>
       </div>
     </motion.article>
