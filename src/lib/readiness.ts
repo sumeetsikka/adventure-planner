@@ -19,6 +19,7 @@ export type ReadinessItemId =
   | 'driving-permit'
   | 'vaccinations'
   | 'packing-started'
+  | 'esim'
   | 'hotel-confirmations'
   | 'flight-checkin'
   | 'devices-charged'
@@ -121,6 +122,16 @@ export function buildReadinessItems(_config: TravelConfig, visa: VisaInfo | null
       detail: 'Reference your AI-generated packing list. Buy any missing essentials early.',
       daysBefore: 14,
       icon: '🧳',
+      category: 'logistics',
+      relevant: true,
+    },
+    {
+      id: 'esim',
+      label: 'Sort your data — eSIM or roaming',
+      detail: 'A travel eSIM (Airalo, Holafly, etc.) is usually far cheaper than roaming. Install and test it before you fly; activate on landing.',
+      daysBefore: 7,
+      icon: '📶',
+      link: 'https://www.airalo.com',
       category: 'logistics',
       relevant: true,
     },
