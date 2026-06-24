@@ -3,7 +3,7 @@
 > **Living document.** Maintained alongside the code. When adding/changing a feature,
 > the entry in this file must change too — see § 14 *Self-maintenance protocol*.
 
-**Last updated:** 2026-05-27 (global-benchmark build: spend tracker, add-to-day planning loop, emergency card, reviews links, travel stats, eSIM)
+**Last updated:** 2026-05-27 (travel wallet — offline document vault: passports, insurance, FF & confirmation numbers, masked + expiry-checked)
 **App version:** post-WOW build-out (Phases 1–12 shipped: per-traveller profiles, all-ages modes, hour-by-hour itinerary, pre-trip readiness, live-mode dashboard, cultural depth, price tracking, budget realism, memories recap, group splits, surprise-me inspiration, i18n scaffold) + QA hardening.
 
 ---
