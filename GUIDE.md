@@ -154,6 +154,12 @@ Results are split into 4 groups in the nav.
 | Countdown to departure + a checklist sorted into Documents / Money / Logistics / Health / House. Each item has a deadline (T-90, T-60, T-45 … T-1) and an urgency badge (Soon / Overdue). Tap to tick off — completion saves on this device. **Open link ↗** appears for items with an associated URL (visa application, etc.). | `src/lib/readiness.ts` defines the 12-item template; relevance flags filter (no visa = no visa item; no driving = no IDP). Visa item auto-extracts a URL from the LLM's `how_to_apply` text. Per-trip state in localStorage `adventure-planner:readiness:<tripId>`. |
 | Tab auto-hides after the trip ends — replaced with a "welcome back, open the journal" screen. | `PrepareTab.tsx` checks `daysUntilDeparture(...) < -1`. |
 
+### 3.9b 🪪 Wallet — travel document vault
+
+| 👤 Traveller | 🛠️ Admin |
+|---|---|
+| One offline place for the documents you scramble for at check-in: **passport** (number + expiry), **travel insurance** (policy + 24h emergency line), **frequent-flyer** numbers, **booking confirmations / PNRs**, and free **notes**. Add/reveal/remove each. Sensitive values (passport, insurance) show **masked** (`••••4821`) by default with a per-item Show/Hide. A **passport-expiry check** warns when validity is under 6 months past your return date (many countries refuse entry). | New `src/lib/travelWallet.ts` (localStorage `adventure-planner:wallet:<tripId>`; `addWalletItem`/`removeWalletItem`/`maskValue`/`passportExpiryWarning`). UI is `WalletTab.tsx` in the **Prepare** nav group. **Privacy: device-only — never sent to any server or the LLM; the UI states this plainly.** Don't add server sync without revisiting that promise. |
+
 ### 3.10 Taste, Do, Nearby, Photos, Tips
 
 | 👤 Traveller | 🛠️ Admin |
@@ -302,6 +308,7 @@ A debounced auto-commit hook (`.claude/scripts/auto-commit.sh`) commits clean in
 | `src/lib/i18n.ts` | i18n scaffold. To add a language: fill its block in `STRINGS`, add to `AVAILABLE_LANGUAGES`. |
 | `src/lib/readiness.ts` | The pre-trip readiness checklist (now includes an eSIM/connectivity item, T−7, linking to Airalo). Add an item: append to `buildReadinessItems()` with a `daysBefore` deadline + extend `ReadinessItemId`. |
 | `src/lib/expenses.ts` | Trip spend tracker storage + math (`addExpense`, `totalSpent`, `settleUp`). localStorage per trip. |
+| `src/lib/travelWallet.ts` | Travel-document vault storage + `maskValue` + `passportExpiryWarning`. localStorage per trip, **device-only — never transmitted**. |
 | `src/lib/emergency.ts` | Offline emergency-numbers dataset per country + `embassySearchUrl()`. Keep in sync when adding countries. |
 | `src/lib/planEdit.ts` | Pure itinerary transforms — `addStopToDay()` powers the "＋ Plan" pool→plan loop. |
 | `src/lib/priceWatch.ts` | Watch-list lib. Wire new "Track" buttons by importing `{ isWatched, toggleWatch, *WatchId }`. |
@@ -399,6 +406,13 @@ Future sessions: when you edit code that maps to a section here, also update `GU
 ## 15. Changelog
 
 > Add newest entries at the top. Date format: YYYY-MM-DD.
+
+### 2026-05-27 — Travel wallet (offline document vault)
+Closed the last universal gap vs TripIt / Wanderlog / Google Travel that needs no API key: a place to keep your travel documents.
+- New **Wallet** tab (`WalletTab.tsx` + `src/lib/travelWallet.ts`) — store passports (number + expiry), insurance (policy + emergency line), frequent-flyer & confirmation/PNR codes, and notes. Per-trip localStorage.
+- Sensitive values **masked by default** (`••••4821`) with per-item Show/Hide; **passport-expiry warning** vs the trip's return date (flags <6 months validity / already expired).
+- **Privacy by design:** device-only, never sent to a server or the LLM — the UI says so. Added `'wallet'` to `ResultsTab`, lazy-loaded in `ResultsView`, placed in the Prepare nav group (desktop + mobile).
+- Verified end-to-end at runtime: add passport → masked → expiry "Under 6 months" risk fired → Show reveals full → remove clears it. tsc/eslint/build clean, console clean.
 
 ### 2026-05-27 — Global-benchmark build (6 features from top travel apps)
 Benchmarked against TripIt, Wanderlog, TravelSpend/Splitwise, Polarsteps, TripAdvisor, PackPoint; built the gaps that need no external API keys:
