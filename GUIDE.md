@@ -242,19 +242,25 @@ npm run dev                # http://localhost:5199 (port set in .claude/launch.j
 
 ### Required environment variables
 
-The app fans out to 7 LLM providers in failover order. **At least one must be set** for generation to work:
+The app fans out across LLM providers in failover order. **At least one must be set** for generation to work. (See `.env.example` for the authoritative list.)
 
 | Variable | Provider | Get a key |
 |---|---|---|
 | `GEMINI_API_KEY` | Google Gemini | https://aistudio.google.com/apikey |
-| `OPENAI_API_KEY` | OpenAI | https://platform.openai.com/api-keys |
-| `ANTHROPIC_API_KEY` | Anthropic | https://console.anthropic.com/settings/keys |
 | `OPENROUTER_API_KEY` | OpenRouter (DeepSeek, Llama) | https://openrouter.ai/keys |
 | `GROQ_API_KEY` | Groq (fast Llama) | https://console.groq.com/keys |
-| `TOGETHER_API_KEY` | Together AI | https://api.together.xyz/settings/api-keys |
+| `MISTRAL_API_KEY` | Mistral | https://console.mistral.ai/api-keys |
+| `CEREBRAS_API_KEY` | Cerebras | https://cloud.cerebras.ai |
+| `GITHUB_MODELS_TOKEN` | GitHub Models | https://github.com/marketplace/models |
 | `OLLAMA_API_KEY` | Self-hosted Ollama (if applicable) | local |
 
 Failover order is defined in `server/lib/gemini.ts` (the file is named for the original primary; it now orchestrates all providers). Order chosen for cost + speed; tune as needed.
+
+**Optional — live place data:**
+
+| Variable | What it unlocks | Get a key |
+|---|---|---|
+| `GOOGLE_PLACES_API_KEY` | Real Google ratings, review counts, price level, open-now, wheelchair access on hotel/restaurant/activity cards (a "Live" badge). **Optional** — without it cards fall back to a plain "Reviews ↗" search link and nothing breaks. | Enable **Places API (New)** in Google Cloud → create an API key. |
 
 > ⚠️ **API keys must never be committed.** `.env` is git-ignored. If a key is ever pasted in a chat/PR/issue, rotate it immediately — assume it's compromised.
 
@@ -288,7 +294,7 @@ A debounced auto-commit hook (`.claude/scripts/auto-commit.sh`) commits clean in
 
 **Build command:** `tsc -b && vite build` (in `package.json`). **Output:** `dist/`.
 
-**Functions:** the single catch-all `api/[route].ts` handles every API route (`/api/itinerary`, `/api/regenerateDay`, `/api/flights`, `/api/hotels`, `/api/hotelAlternatives`, `/api/budget`, `/api/tips`, `/api/packing`, `/api/weather`, `/api/visa`, `/api/currency`, `/api/nearby`, `/api/transport`, `/api/destinations`, `/api/chat`, `/api/chatAction`, `/api/restaurants`, `/api/restaurantAlternatives`, `/api/activities`, `/api/activityAlternatives`, `/api/parseBooking`, `/api/destinationInfo`). Runs on Vercel Functions (Fluid Compute, Node.js 24, 300 s timeout). Active-CPU pricing — chunked streaming reduces wait time but doesn't free CPU.
+**Functions:** the single catch-all `api/[route].ts` handles every API route (`/api/itinerary`, `/api/regenerateDay`, `/api/flights`, `/api/hotels`, `/api/hotelAlternatives`, `/api/budget`, `/api/tips`, `/api/packing`, `/api/weather`, `/api/visa`, `/api/currency`, `/api/nearby`, `/api/transport`, `/api/destinations`, `/api/chat`, `/api/chatAction`, `/api/restaurants`, `/api/restaurantAlternatives`, `/api/activities`, `/api/activityAlternatives`, `/api/parseBooking`, `/api/destinationInfo`, `/api/placeDetails`). Runs on Vercel Functions (Fluid Compute, Node.js 24, 300 s timeout). Active-CPU pricing — chunked streaming reduces wait time but doesn't free CPU.
 
 > 💡 Vercel AI Gateway lets you point at multiple providers via `provider/model` strings with built-in fallback & observability. Worth migrating to when you have time — it'd shrink `server/lib/gemini.ts` significantly. See the Vercel AI SDK skill.
 
