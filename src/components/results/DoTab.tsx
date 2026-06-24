@@ -8,6 +8,7 @@ import { addStopToDay } from '../../lib/planEdit';
 import { addDaysISO, formatDayLabel } from '../../lib/dateUtils';
 import DayRangeChip from '../shared/DayRangeChip';
 import AddToDay, { type DayOption } from '../shared/AddToDay';
+import PlaceRating from '../shared/PlaceRating';
 
 interface Props {
   activities: DestinationActivities[];
@@ -398,6 +399,7 @@ function ActivityCard({ activity: a, place, onRemove, planDays = [], onPlan }: {
             {meta.icon} {meta.label}
           </p>
           <h4 className="font-display text-xl text-[var(--cream)] leading-tight">{a.name}</h4>
+          <PlaceRating query={place} />
         </div>
         <div className="flex items-start gap-2 shrink-0">
           <div className="text-right">
