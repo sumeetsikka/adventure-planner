@@ -84,6 +84,75 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 // Route Handlers
 // ═══════════════════════════════════════
 
+/**
+ * Live place details from Google Places API (New) — the real-data layer that
+ * turns AI guesses into verified facts (rating, review count, price level,
+ * open-now, wheelchair access, a real Maps link).
+ *
+ * KEY-OPTIONAL BY DESIGN: with no GOOGLE_PLACES_API_KEY (or any failure) this
+ * returns { available: false } and the UI silently falls back to its existing
+ * "Reviews ↗" search link. The feature lights up the moment the key is set on
+ * Vercel — nothing else changes. We never echo the key or upstream errors.
+ */
+async function handlePlaceDetails(body: any) {
+  const query = (body?.query || '').toString().trim();
+  if (!query) return { available: false };
+
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+  if (!apiKey) return { available: false, reason: 'no-key' };
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+    const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': apiKey,
+        // Field mask keeps the request to the cheap SKU tier + only what we render.
+        'X-Goog-FieldMask': [
+          'places.displayName',
+          'places.rating',
+          'places.userRatingCount',
+          'places.priceLevel',
+          'places.currentOpeningHours.openNow',
+          'places.googleMapsUri',
+          'places.accessibilityOptions.wheelchairAccessibleEntrance',
+        ].join(','),
+      },
+      body: JSON.stringify({ textQuery: query, maxResultCount: 1 }),
+    });
+    clearTimeout(timeout);
+    if (!res.ok) return { available: false, reason: 'upstream' };
+    const data = await res.json();
+    const place = Array.isArray(data?.places) ? data.places[0] : null;
+    if (!place) return { available: false, reason: 'no-match' };
+
+    // Map Google's PRICE_LEVEL_* enum to a 1–4 number ($–$$$$).
+    const PRICE: Record<string, number> = {
+      PRICE_LEVEL_INEXPENSIVE: 1,
+      PRICE_LEVEL_MODERATE: 2,
+      PRICE_LEVEL_EXPENSIVE: 3,
+      PRICE_LEVEL_VERY_EXPENSIVE: 4,
+    };
+
+    return {
+      available: true,
+      name: place.displayName?.text,
+      rating: typeof place.rating === 'number' ? place.rating : undefined,
+      reviews: typeof place.userRatingCount === 'number' ? place.userRatingCount : undefined,
+      priceLevel: place.priceLevel ? PRICE[place.priceLevel] : undefined,
+      openNow: place.currentOpeningHours?.openNow,
+      wheelchair: place.accessibilityOptions?.wheelchairAccessibleEntrance,
+      mapsUri: place.googleMapsUri,
+    };
+  } catch {
+    // Timeouts / network / parse failures all degrade to the link fallback.
+    return { available: false, reason: 'error' };
+  }
+}
+
 function parseResult(result: any): any[] {
   if (Array.isArray(result)) return result;
   if (result && typeof result === 'object') {
