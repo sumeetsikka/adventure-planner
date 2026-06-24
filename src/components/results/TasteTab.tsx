@@ -8,6 +8,7 @@ import { addStopToDay } from '../../lib/planEdit';
 import { addDaysISO, formatDayLabel } from '../../lib/dateUtils';
 import DayRangeChip from '../shared/DayRangeChip';
 import AddToDay, { type DayOption } from '../shared/AddToDay';
+import PlaceRating from '../shared/PlaceRating';
 
 interface Props {
   restaurants: DestinationRestaurants[];
@@ -292,6 +293,7 @@ function RestaurantCard({ restaurant: r, place, onRemove, planDays = [], onPlan 
         <div className="min-w-0 flex-1">
           <p className="eyebrow mb-1">{r.cuisine}</p>
           <h4 className="font-display text-xl text-[var(--cream)] leading-tight">{r.name}</h4>
+          <PlaceRating query={place} />
         </div>
         <div className="flex items-start gap-2 shrink-0">
           <span
