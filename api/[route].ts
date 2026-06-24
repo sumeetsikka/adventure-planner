@@ -69,6 +69,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       case 'activityAlternatives': return res.json(await handleActivityAlternatives(config));
       case 'parseBooking': return res.json(await handleParseBooking(req.body));
       case 'destinationInfo': return res.json(await handleDestinationInfo(req.body));
+      case 'placeDetails': return res.json(await handlePlaceDetails(req.body));
       default: return res.status(404).json({ error: `Unknown route: ${route}` });
     }
   } catch (err: any) {
