@@ -125,7 +125,7 @@ Results are split into 4 groups in the nav.
 
 | 👤 Traveller | 🛠️ Admin |
 |---|---|
-| Photo banner per destination shows the **stay range as Day N–M** + full dates (🗓️ Wed 1 Jul → Sat 4 Jul), matching exactly when the itinerary has you in that city. Tap to expand. Recommended hotels show stars, area, style, price range, amenities, "best for" tag, and **Booking.com / Agoda / Hotels.com** links pre-filled with your dates. | `HotelsTab.tsx`. Day range via `tripDayNumber()`, date labels via `formatDayLabel()`. The destination banner is a `<div role="button">` (not a `<button>`) because `PlaceActions` renders `<a>` tags inside — anchors-inside-buttons is invalid HTML. |
+| Photo banner per destination shows the **stay range as Day N–M** + full dates (🗓️ Wed 1 Jul → Sat 4 Jul), matching exactly when the itinerary has you in that city. Tap to expand. Recommended hotels show stars, area, style, price range, amenities, "best for" tag, a **live Google rating badge** (when the key is set), and **Booking.com / Agoda / Hotels.com** + **⭐ Reviews** links pre-filled with your dates. | `HotelsTab.tsx`. Day range via `tripDayNumber()`, date labels via `formatDayLabel()`. Live badge via `<PlaceRating query={`${h.name}, ${dest.destination}`} />`. The destination banner is a `<div role="button">` (not a `<button>`) because `PlaceActions` renders `<a>` tags inside — anchors-inside-buttons is invalid HTML. |
 | **✏️ Editable plan.** Tap **"Make this my pick"** on any hotel to set it as your choice — this instantly re-stitches the whole trip: the Itinerary's "Overnight: …", the per-day budget, and the PDF all read the recommended hotel, so they update together. Tap **"＋ More options in [city]"** to fetch 3 fresh alternatives for just that city (same dates, no repeats) and append them to choose from. | Editing is gated on the `onUpdate` prop (passed from `ResultsView`). `makePick()` flips the `recommended` flag and calls `onUpdate` → `onUpdateResults({ hotels })` → auto-saves. `fetchMore()` calls `generateHotelAlternatives()` (`src/lib/api.ts`) → `/api/hotelAlternatives` (`handleHotelAlternatives` in `api/[route].ts`), which re-runs the hotels prompt for ONE destination with an `exclude` list, dedupes, and returns ≤3 `HotelRec`. The re-stitch is automatic because `planStitch.buildDayPlans` derives "where you sleep" from the recommended hotel. |
 
 ### 3.6 Transport, Bookings tracker
@@ -315,6 +315,7 @@ A debounced auto-commit hook (`.claude/scripts/auto-commit.sh`) commits clean in
 | `src/lib/readiness.ts` | The pre-trip readiness checklist (now includes an eSIM/connectivity item, T−7, linking to Airalo). Add an item: append to `buildReadinessItems()` with a `daysBefore` deadline + extend `ReadinessItemId`. |
 | `src/lib/expenses.ts` | Trip spend tracker storage + math (`addExpense`, `totalSpent`, `settleUp`). localStorage per trip. |
 | `src/lib/travelWallet.ts` | Travel-document vault storage + `maskValue` + `passportExpiryWarning`. localStorage per trip, **device-only — never transmitted**. |
+| `src/lib/placeCache.ts` + `src/components/shared/PlaceRating.tsx` | Live Google-Places data layer. Cache dedupes/persists; `PlaceRating` is a drop-in badge that renders nothing when the key is absent. Backend = `handlePlaceDetails` in `api/[route].ts`. Add the badge to any card with `<PlaceRating query="Name, City" />`. |
 | `src/lib/emergency.ts` | Offline emergency-numbers dataset per country + `embassySearchUrl()`. Keep in sync when adding countries. |
 | `src/lib/planEdit.ts` | Pure itinerary transforms — `addStopToDay()` powers the "＋ Plan" pool→plan loop. |
 | `src/lib/priceWatch.ts` | Watch-list lib. Wire new "Track" buttons by importing `{ isWatched, toggleWatch, *WatchId }`. |
@@ -412,6 +413,14 @@ Future sessions: when you edit code that maps to a section here, also update `GU
 ## 15. Changelog
 
 > Add newest entries at the top. Date format: YYYY-MM-DD.
+
+### 2026-05-27 — Live place data (Google Places) — first real-data source
+The biggest credibility jump left: replace AI guesses with VERIFIED facts where it matters most.
+- New **`/api/placeDetails`** route (`handlePlaceDetails`) hits Google Places API (New) `searchText` with a tight field mask → returns rating, review count, price level, open-now, wheelchair access, real Maps link.
+- **Key-optional by design:** no `GOOGLE_PLACES_API_KEY` → returns `{available:false}` → cards silently keep the existing "⭐ Reviews ↗" link. The feature lights up the moment the key is set on Vercel; nothing else changes. Key/upstream errors never leak to the client.
+- Client: `fetchPlaceDetails` (api.ts) + `placeCache.ts` (dedupes concurrent calls, persists to sessionStorage, short-circuits after one "no-key" result) + `PlaceRating.tsx` (self-fetching inline badge marked "Live" to distinguish from AI estimates; renders nothing when unavailable). Wired into Hotels, Taste, Do cards.
+- Added `.env.example` (also corrected the provider list to match the real `.env`: Gemini/OpenRouter/Groq/Mistral/Cerebras/GitHub-Models/Ollama).
+- Verified at runtime: with no key (dev server 502s `/api/*`, same as no-key prod) all three tabs render cleanly, badges absent, Reviews-link fallback intact, cache holds one `{available:false}` per unique place, console clean. Populated-badge path needs the real key on a deployed build.
 
 ### 2026-05-27 — Travel wallet (offline document vault)
 Closed the last universal gap vs TripIt / Wanderlog / Google Travel that needs no API key: a place to keep your travel documents.
