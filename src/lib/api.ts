@@ -99,6 +99,29 @@ export async function generateActivities(config: TravelConfig): Promise<Destinat
   return postApi<DestinationActivities[]>('/api/activities', config);
 }
 
+/** Live place details (Google Places). `available:false` when the API key
+ *  isn't configured or the place can't be matched — callers fall back to a
+ *  plain reviews link. */
+export interface PlaceDetails {
+  available: boolean;
+  reason?: 'no-key' | 'upstream' | 'no-match' | 'error';
+  name?: string;
+  rating?: number;
+  reviews?: number;
+  priceLevel?: number;     // 1–4
+  openNow?: boolean;
+  wheelchair?: boolean;
+  mapsUri?: string;
+}
+
+export async function fetchPlaceDetails(query: string): Promise<PlaceDetails> {
+  try {
+    return await postApi<PlaceDetails>('/api/placeDetails', { query });
+  } catch {
+    return { available: false };
+  }
+}
+
 /** Fresh alternative activities for a single destination.
  *  Returns a flat list of Activity to merge into that destination's options. */
 export async function generateActivityAlternatives(
