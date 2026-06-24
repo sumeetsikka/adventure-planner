@@ -28,6 +28,7 @@ const TransportTab = lazy(() => import('./TransportTab'));
 const BookingTrackerTab = lazy(() => import('./BookingTrackerTab'));
 const RouteMapTab = lazy(() => import('./RouteMapTab'));
 const ChatTab = lazy(() => import('./ChatTab'));
+const WalletTab = lazy(() => import('./WalletTab'));
 const EventsTab = lazy(() => import('./EventsTab'));
 const JournalTab = lazy(() => import('./JournalTab'));
 const TasteTab = lazy(() => import('./TasteTab'));
@@ -261,6 +262,7 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
             : <RetryButton label="nearby" onRetry={async () => { const d = await generateNearby(config); onUpdateResults({ nearby: d }); }} />
           )}
           {activeTab === 'checklist' && <ChecklistTab config={config} />}
+          {activeTab === 'wallet' && <WalletTab config={config} />}
           {activeTab === 'photos' && <PhotosTab destinations={config.destinations} />}
           {activeTab === 'chat' && <ChatTab config={config} results={results} onUpdateResults={onUpdateResults} />}
           {activeTab === 'events' && <EventsTab config={config} />}

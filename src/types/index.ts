@@ -371,4 +371,4 @@ export interface ChatResponse {
   action?: ChatAction;
 }
 
-export type ResultsTab = 'dashboard' | 'itinerary' | 'flights' | 'hotels' | 'transport' | 'bookings' | 'map' | 'budget' | 'tips' | 'packing' | 'weather' | 'visa' | 'currency' | 'nearby' | 'checklist' | 'photos' | 'chat' | 'events' | 'journal' | 'taste' | 'do' | 'prepare';
+export type ResultsTab = 'dashboard' | 'itinerary' | 'flights' | 'hotels' | 'transport' | 'bookings' | 'map' | 'budget' | 'tips' | 'packing' | 'weather' | 'visa' | 'currency' | 'nearby' | 'checklist' | 'photos' | 'chat' | 'events' | 'journal' | 'taste' | 'do' | 'prepare' | 'wallet';
