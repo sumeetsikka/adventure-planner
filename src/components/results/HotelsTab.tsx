@@ -4,6 +4,7 @@ import type { DestinationHotels, Destination, TravelConfig, HotelAmenity } from 
 import { formatDateAU, formatDayLabel, tripDayNumber } from '../../lib/dateUtils';
 import { getHotelLinks } from '../../lib/bookingLinks';
 import { reviewsUrl } from '../../lib/deepLinks';
+import PlaceRating from '../shared/PlaceRating';
 import { getDestinationPhoto } from '../../lib/imagery';
 import { generateHotelAlternatives } from '../../lib/api';
 import { PlaceActions } from '../shared/PlaceLink';
@@ -305,7 +306,9 @@ export default function HotelsTab({ hotels, config, onUpdate }: Props) {
                           </div>
 
                           <h4 className="font-display text-lg text-[var(--cream)] mb-1 leading-snug">{h.name}</h4>
-                          <p className="text-[var(--text-dim)] text-[11px] mb-4">{h.area}</p>
+                          <p className="text-[var(--text-dim)] text-[11px]">{h.area}</p>
+                          <PlaceRating query={`${h.name}, ${dest.destination}`} />
+                          <div className="mb-2" />
 
                           <div className="flex items-baseline gap-2 mb-4 pb-4 border-b border-[var(--line)]">
                             <span className="font-display text-xl text-[var(--gold)]">{h.price_per_night_aud}</span>
