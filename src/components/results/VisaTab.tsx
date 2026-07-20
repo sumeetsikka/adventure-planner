@@ -132,7 +132,12 @@ export default function VisaTab({ visa, travellers = 1, departureDate }: Props) 
               Apply for e-visa
               <span aria-hidden>→</span>
             </a>
-            <p className="font-display-soft italic text-[var(--text-muted)] text-xs mt-3">Opens the <span className="text-[var(--cream)]">official</span> portal in a new tab.</p>
+            {/* Never call this link "official" — `evisa_url` is AI-generated and
+                unverified, and visa-scam sites are an active industry. Tell the
+                user to confirm the destination before entering any details. */}
+            <p className="font-display-soft italic text-[var(--text-muted)] text-xs mt-3">
+              AI-suggested link — check it's the government site before entering personal details or paying.
+            </p>
           </div>
         )}
       </div>

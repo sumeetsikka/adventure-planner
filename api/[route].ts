@@ -42,7 +42,7 @@ function safeConfig(c: any) {
 /** Trip length (same nights-based value the prompts have always used), but
  *  NaN-safe: missing/unparseable dates yield 1 instead of `Day NaN` / `Days 2
  *  to NaN` garbage in the generated prompt. */
-function tripDays(config: any): number {
+function tripDays(config: { departureDate?: string; returnDate?: string } | null | undefined): number {
   const dep = Date.parse(config?.departureDate);
   const ret = Date.parse(config?.returnDate);
   if (!Number.isFinite(dep) || !Number.isFinite(ret)) return 1;

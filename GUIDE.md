@@ -38,7 +38,7 @@
 | 👤 As a Traveller | 🛠️ As an Admin |
 |---|---|
 | Open the deployed app URL (the public Vercel domain). On first launch a 4-step onboarding tour explains the flow — tap *Begin* to walk through it, or *Skip*. | Verify the deployment is live: `vercel ls` → most recent deployment shows `Ready`. Public URL = first `Production` entry. Run `vercel inspect <url>` for build details. |
-| The app works offline — install it as a PWA from your browser's *Add to home screen* prompt and it survives no-signal moments mid-trip. | Service worker (`public/sw.js`) is network-only for HTML (always fresh) and cache-first for hashed assets. To force every client to refresh, bump the `__BUILD_VERSION__` in the SW (handled automatically by the Vite plugin). |
+| The app works offline — install it as a PWA from your browser's *Add to home screen* prompt and it survives no-signal moments mid-trip. Load it online once; after that it opens with no signal, and your saved trips, emergency numbers and wallet are all there. | Service worker (`public/sw.js`) is **network-first for HTML with the cached shell as fallback** (so deploys are never stale, but a no-signal load still boots the app) and cache-first for hashed assets. The install handler precaches `/index.html` plus the entry JS/CSS it references, so even the first offline load works. Cache reads use `ignoreVary` — hosts serve assets with `Vary: Origin` and Vite emits `<script crossorigin>`, so without it the precached entry never matches. To force every client to refresh, bump the `__BUILD_VERSION__` in the SW (handled automatically by the Vite plugin). |
 | All your trips, wishlist, journal entries, and readiness checklists are saved on your device only. Clear browser data = lose everything. There is no account. | No backend database. All persistence is `localStorage` per browser. If you ever add a sync backend, the keys to migrate are: `adventure-planner:trips`, `adventure-planner:active-trip`, `adventure-planner:wishlist`, `adventure-planner:readiness:<tripId>`, `adventure-planner:price-watch`, `adventure-planner:onboarded`, `adventure-planner:install-dismissed`, `adventure-planner:lang`. |
 
 ---
@@ -205,7 +205,7 @@ Results are split into 4 groups in the nav.
 |---|---|
 | Once `today` falls between `departureDate` and `returnDate`, the Dashboard switches to live mode automatically. The today-panel shows your current city, today's plan, weather right now, and (if you grant location) distance + ETA to your next stop. | `DashboardTab.tsx → tripUnderway`. Geolocation is requested ONLY when the trip is underway — `useGeolocation(tripUnderway)` short-circuits otherwise. |
 | Grant location when prompted to see distance/ETA. If you refuse, everything else still works. | Geo state: `pending` / `granted` / `denied`. Distance uses Haversine in `src/lib/geocode.ts → distanceKm`. ETA assumes ~30 km/h average — adjust in DashboardTab if needed. |
-| Offline behaviour: HTML loads from network (or the offline-fallback page); hashed JS/CSS load from cache. Trip data is in localStorage, so the app works fully offline once loaded. | `public/sw.js`. The offline fallback page is light-themed (matches the current design). |
+| Offline behaviour: HTML loads from the network when reachable and from the cached shell when it isn't; hashed JS/CSS load from cache. Trip data is in localStorage, so the app works fully offline once it has been loaded online once. | `public/sw.js`. The hardcoded offline stub is now only reached if even the precache failed. Verified at runtime: fresh profile → one online load → server killed → app boots from cache, all 12 entry assets 200, console clean. |
 
 ---
 
@@ -224,7 +224,7 @@ Results are split into 4 groups in the nav.
 |---|---|
 | **Theme toggle** (🌙 / ☀) at top right. Light theme is default. | `ThemeToggle.tsx` writes `data-theme="dark"` on `<html>` and toggles state. CSS tokens swap via `[data-theme="dark"]` in `src/index.css`. |
 | **Language** — English only today; scaffold ready for Spanish, Japanese, Mandarin, French, German. | `src/lib/i18n.ts`. To enable a language: populate its block in `STRINGS`, add it to `AVAILABLE_LANGUAGES`, and the user picker (once built) will surface it. |
-| **Install as app** — your browser will offer this. iOS Safari: Share → Add to Home Screen. Android Chrome: Install icon in URL bar. | PWA manifest in `public/manifest.webmanifest`. Install prompt UX in `InstallPrompt.tsx` (`adventure-planner:install-dismissed` localStorage flag). |
+| **Install as app** — your browser will offer this. iOS Safari: Share → Add to Home Screen. Android Chrome: Install icon in URL bar. | PWA manifest in `public/manifest.json` (not `.webmanifest` — the file has always been `.json`). Icons are real PNGs: `icon-192`/`icon-512` (`any`), `icon-maskable-512` (Android's 20% safe zone), and `apple-touch-icon.png` at 180px — iOS Safari ignores SVG here and falls back to a screenshot of the page. Install prompt UX in `InstallPrompt.tsx` (`adventure-planner:install-dismissed` localStorage flag). |
 
 ---
 
@@ -357,7 +357,7 @@ A debounced auto-commit hook (`.claude/scripts/auto-commit.sh`) commits clean in
 
 - **Rotate a leaked key.** Revoke in the provider dashboard. Generate a fresh key. Update via `vercel env rm <KEY> production && vercel env add <KEY> production`. Redeploy.
 - **Add a new country.** See § 11.
-- **Force-update all clients.** Push any change to main; SW is network-only for HTML so clients pick it up on next page load.
+- **Force-update all clients.** Push any change to main; SW is network-first for HTML so clients pick it up on next page load whenever they're online.
 - **Clear a user's local trips remotely.** Not possible — there's no backend. The user can do it via browser settings → site data → clear.
 
 ---
@@ -413,6 +413,20 @@ Future sessions: when you edit code that maps to a section here, also update `GU
 ## 15. Changelog
 
 > Add newest entries at the top. Date format: YYYY-MM-DD.
+
+### 2026-07-01 — Phase 1: the app now opens offline, and failure looks like failure
+Acting on a four-area product audit (tab depth, real-vs-AI data, trip lifecycle, mobile/offline/a11y). The two headline items were things the app already *claimed* to do:
+
+- **Offline actually works now.** The SW precached nothing and served HTML network-only, so an installed PWA opened with no signal showed a 503 stub while the user's itinerary, emergency numbers and wallet sat unreachable in localStorage. HTML is now **network-first with the cached shell as fallback** (deploys still never go stale), and `install` precaches `/index.html` plus the entry JS/CSS it references so even the first offline load boots.
+  - Cache reads needed `ignoreVary`: assets are served with `Vary: Origin` and Vite emits `<script crossorigin>`, so the page's request carried an `Origin` header the precached entry wasn't stored under — the file was in the cache and never matched. Caught only by running it; the first fix built and type-checked fine and still failed offline.
+  - Verified: fresh profile → one online load → server killed → app boots from cache, 12/12 entry assets 200, console clean.
+- **A total generation failure no longer looks like success.** Every one of the 13 API calls caught its error by marking the step *complete*, so with no LLM key all 13 progress ticks went green and the user landed on a fully-chromed 21-tab results view containing nothing. Failures are now tracked: all-failed returns to the wizard with an error toast, partial failure proceeds but says how many sections are missing.
+- **Visa liability removed.** The Visa tab described an LLM-invented `evisa_url` as "the official portal" — the only use of "official" in the codebase, on unverified content, in a category with an active scam industry. Now: "AI-suggested link — check it's the government site before entering personal details or paying."
+- **Generation is ~7s faster.** Twelve `stagger(800)` calls added 9.6s of dead time to every trip. Reduced to 250ms — kept, not deleted, because the spacing exists to avoid tripping free-tier rate limits (Groq is 30 RPM).
+- **Real PWA icons.** Added `icon-192`, `icon-512`, `icon-maskable-512` (Android 20% safe zone) and a 180px `apple-touch-icon.png`; iOS Safari ignores SVG for apple-touch-icon and was falling back to a screenshot of the page as the home-screen icon. `theme_color`/`background_color` corrected from near-black to `#FFFFFF` to match the light default, which was flashing a dark splash before the app painted white.
+- **Removed `user-scalable=no`** — a direct WCAG 1.4.4 failure, and the UI leans on 9–11px type some users need to zoom.
+
+*Gates: `tsc -b` and `eslint src/` both clean. `eslint .` reports 85 pre-existing `any` errors across `api/` and `server/` — untouched backend debt, not introduced here.*
 
 ### 2026-07-01 — Review pass: reconciled desync + further fixes
 A follow-up comprehensive review found that **the fixes described in the 2026-06-30 entry below had never actually landed in the code** — the changelog was committed but the matching source edits were not (a doc/code desync). Every bug listed for 2026-06-30 was still present. This pass genuinely applied all of them, then added:
