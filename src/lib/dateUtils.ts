@@ -6,9 +6,13 @@ export function formatDateAU(dateStr: string): string {
   return `${parts[2]}/${parts[1]}/${parts[0]}`;
 }
 
-/** Add days to a YYYY-MM-DD string, returns YYYY-MM-DD */
+/** Add days to a YYYY-MM-DD string, returns YYYY-MM-DD.
+ *  Parses as a LOCAL date (via parseLocalDate) so the local getters below stay
+ *  consistent — `new Date('2026-07-01')` parses as UTC midnight, which shifts a
+ *  day in negative-offset (Americas) zones. */
 export function addDaysISO(dateStr: string, days: number): string {
-  const d = new Date(dateStr);
+  const d = parseLocalDate(dateStr);
+  if (!d) return dateStr;
   d.setDate(d.getDate() + days);
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, '0');

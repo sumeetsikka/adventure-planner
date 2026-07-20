@@ -229,7 +229,9 @@ const FESTIVALS: FestivalEntry[] = [
   // Iceland
   { countryId: 'iceland', name: 'Northern Lights Season', type: 'observance',
     description: 'Aurora viewing peaks on dark, clear nights.',
-    resolve: (y) => range(y, 9, 1, 4, 15) },
+    // Aurora season spans the year boundary (Sep–Apr); `range` can't cross years
+    // (start > end yields an empty list), so build both halves of the year.
+    resolve: (y) => [...range(y, 9, 1, 12, 31), ...range(y, 1, 1, 4, 15)] },
   { countryId: 'iceland', name: 'Midnight Sun', type: 'observance',
     description: 'The sun barely sets.',
     resolve: (y) => range(y, 6, 1, 7, 15) },

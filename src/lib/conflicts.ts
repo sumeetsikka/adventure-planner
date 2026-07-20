@@ -57,14 +57,17 @@ export function findConflicts(
 ): Conflict[] {
   const conflicts: Conflict[] = [];
 
-  // Day count mismatch
+  // Day count mismatch. `dateDiffDays` returns nights; an N-night trip has N+1
+  // itinerary days, so compare against expected days (= nights + 1). Without the
+  // +1 this fired a false "Itinerary has 8 days but trip spans 7 days" warning
+  // on every correctly-planned trip.
   if (config.departureDate && config.returnDate && itinerary.length > 0) {
-    const expected = dateDiffDays(config.departureDate, config.returnDate);
-    if (expected > 0 && Math.abs(itinerary.length - expected) >= 1) {
+    const expectedDays = dateDiffDays(config.departureDate, config.returnDate) + 1;
+    if (expectedDays > 0 && Math.abs(itinerary.length - expectedDays) >= 1) {
       conflicts.push({
         severity: 'warning',
         day: 1,
-        message: `Itinerary has ${itinerary.length} days but trip spans ${expected} days.`,
+        message: `Itinerary has ${itinerary.length} days but trip spans ${expectedDays} days.`,
         hint: 'Adjust the itinerary length or your departure/return dates so they match.',
       });
     }

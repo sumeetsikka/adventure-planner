@@ -33,7 +33,8 @@ Return ONLY valid JSON array, no markdown.`;
 router.post('/', async (req, res) => {
   try {
     const { country } = req.body;
-    const userMessage = `Generate tourist destinations for ${country.name}. Origin city for travellers: Melbourne, Australia.`;
+    const countryName = country?.name || 'the destination';
+    const userMessage = `Generate tourist destinations for ${countryName}. Origin city for travellers: Melbourne, Australia.`;
 
     const result = await callLLM(DESTINATIONS_SYSTEM, userMessage);
 

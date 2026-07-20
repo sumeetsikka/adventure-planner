@@ -28,7 +28,7 @@
 - **Port for dev preview:** `5199` (not 5173 — that's another project's). Defined in `.claude/launch.json`.
 - **Build command:** `tsc -b && vite build`. Vercel uses this.
 - **State race fixed:** when wizard calls `onUpdate(data)` then `onGenerate()` synchronously, `handleGenerate` in `App.tsx` accepts a `data` override so it doesn't read stale state. Preserve this pattern when adding new wizard fields.
-- **LLM provider failover:** `server/lib/gemini.ts` tries Gemini → OpenAI → Anthropic → OpenRouter → Groq → Together → Ollama. Order is cost/speed-optimised, not capability-optimised.
+- **LLM provider failover:** `server/lib/gemini.ts` tries Groq → Cerebras → Mistral → OpenRouter → Gemini → GitHub Models → Ollama Cloud → Ollama (local). Order is cost/speed-optimised, not capability-optimised. (`.env.example` is the authoritative key list.)
 - **Saved trips cap:** 30 per device (`tripStore.saveTrip` slices). When you add fields to `TravelConfig`, make them optional (`field?:`) so old saved trips still load.
 
 ## Useful entry points

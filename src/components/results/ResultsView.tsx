@@ -57,7 +57,7 @@ function generateICS(results: GenerationResults, config: TravelConfig): string {
     lines.push('BEGIN:VEVENT');
     lines.push(`DTSTART;VALUE=DATE:${dateStr}`);
     lines.push(`SUMMARY:Day ${day.day}: ${day.title}`);
-    lines.push(`DESCRIPTION:${day.activities.join('\\n')}`);
+    lines.push(`DESCRIPTION:${(day.activities || []).join('\\n')}`);
     lines.push(`LOCATION:${day.location}`);
     lines.push('END:VEVENT');
   }

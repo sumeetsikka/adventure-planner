@@ -93,7 +93,7 @@ export default function TipsTab({ tips }: Props) {
               <div className="flex items-start justify-between mb-5 gap-4">
                 <div>
                   <p className="eyebrow mb-3">
-                    {selected.category ? CATEGORY_META[selected.category].label : 'Expanded'}
+                    {(selected.category && CATEGORY_META[selected.category]?.label) || 'Expanded'}
                   </p>
                   <h3 className="font-display italic text-3xl text-[var(--cream)] leading-tight">{selected.title}</h3>
                 </div>
@@ -129,7 +129,7 @@ export default function TipsTab({ tips }: Props) {
             >
               <div className="flex items-center justify-between mb-3">
                 <p className="eyebrow">{String(i + 1).padStart(2, '0')}</p>
-                {tip.category && (
+                {tip.category && CATEGORY_META[tip.category] && (
                   <span className="text-[9px] tracking-[0.18em] uppercase text-[var(--text-dim)]">
                     {CATEGORY_META[tip.category].icon} {CATEGORY_META[tip.category].label}
                   </span>

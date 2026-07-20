@@ -112,7 +112,7 @@ export default function EventsTab({ config }: Props) {
       ) : (
         <ul className="space-y-3">
           {events.map((e, i) => {
-            const badge = TYPE_BADGE[e.type];
+            const badge = TYPE_BADGE[e.type] || TYPE_BADGE.observance;
             return (
               <motion.li
                 key={`${e.date}-${e.name}-${i}`}

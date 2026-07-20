@@ -157,7 +157,7 @@ export default function NearbyTab({ nearby, config, itinerary = [] }: Props) {
                       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
                       {(place.category || place.trip_length) && (
                         <div className="absolute top-3 left-3 flex gap-1.5">
-                          {place.category && (
+                          {place.category && CATEGORY_META[place.category] && (
                             <span className="text-[9px] tracking-[0.18em] uppercase px-2.5 py-1 rounded-full bg-black/55 backdrop-blur text-white border border-white/20">
                               {CATEGORY_META[place.category].icon} {CATEGORY_META[place.category].label}
                             </span>

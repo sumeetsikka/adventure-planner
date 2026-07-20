@@ -14,6 +14,11 @@
 // cache bucket and the activate handler purges every older bucket.
 
 const CACHE = 'adventure-planner-__BUILD_VERSION__';
+// Cross-origin imagery lives in its own bucket so it (a) survives deploys
+// instead of being re-downloaded every build, and (b) can be size-capped
+// independently without evicting the hashed JS/CSS in CACHE.
+const IMG_CACHE = 'adventure-planner-img';
+const IMG_CACHE_MAX = 120;
 
 self.addEventListener('install', () => {
   // Take over as soon as possible — don't wait for old tabs to close.
@@ -23,10 +28,22 @@ self.addEventListener('install', () => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(
+        keys.filter((k) => k !== CACHE && k !== IMG_CACHE).map((k) => caches.delete(k))
+      ))
       .then(() => self.clients.claim())
   );
 });
+
+// Best-effort LRU trim: Cache API keys() preserves insertion order, so the
+// oldest entries are at the front. Keeps the image cache from growing forever.
+async function trimCache(cacheName, max) {
+  try {
+    const cache = await caches.open(cacheName);
+    const keys = await cache.keys();
+    for (let i = 0; i < keys.length - max; i++) await cache.delete(keys[i]);
+  } catch { /* cache trim is best-effort */ }
+}
 
 function isHashedAsset(url) {
   // Vite output: /assets/index-A1b2C3d4.js , /assets/Foo-X9y8.css
@@ -82,14 +99,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 4. Cross-origin imagery — stale-while-revalidate.
+  // 4. Cross-origin imagery — stale-while-revalidate, in the capped IMG_CACHE.
   if (url.origin !== self.location.origin) {
     event.respondWith(
-      caches.open(CACHE).then(async (cache) => {
+      caches.open(IMG_CACHE).then(async (cache) => {
         const cached = await cache.match(req);
         const fetchPromise = fetch(req)
           .then((res) => {
-            if (res.ok) cache.put(req, res.clone()).catch(() => {});
+            if (res.ok) {
+              cache.put(req, res.clone())
+                .then(() => trimCache(IMG_CACHE, IMG_CACHE_MAX))
+                .catch(() => {});
+            }
             return res;
           })
           .catch(() => cached);

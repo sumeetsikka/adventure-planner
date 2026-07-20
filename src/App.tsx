@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import type { Country, Destination, VibeOption, TravelConfig, GenerationResults, AppView, WizardStep, TravellerProfile, TripMode } from './types';
 import { searchFlights, searchHotels, generateItinerary, generateBudget, generateTips, generateDestinations, generatePacking, generateWeather, generateVisa, generateCurrency, generateNearby, generateTransport, generateRestaurants, generateActivities } from './lib/api';
 import { getDestinationsForCountry } from './data/destinations';
@@ -130,6 +130,9 @@ function AppInner() {
   const [countryDestinations, setCountryDestinations] = useState<Destination[]>([]);
   const [loadingDestinations, setLoadingDestinations] = useState(false);
   const [selectedDests, setSelectedDests] = useState<Destination[]>([]);
+  // Stable identity for the LoadingScreen prop — otherwise a fresh array on
+  // every `progress` re-render restarts its typewriter effect mid-word.
+  const selectedDestNames = useMemo(() => selectedDests.map((d) => d.name), [selectedDests]);
   const [departureDate, setDepartureDate] = useState('');
   const [returnDate, setReturnDate] = useState('');
   const [travellers, setTravellers] = useState(2);
@@ -412,7 +415,7 @@ function AppInner() {
     return (
       <div className={`min-h-screen ${bg}`}>{themeToggle}
         <Inspiration
-          onSelectCountry={(c) => { newTripId(); handleCountrySelect(c); }}
+          onSelectCountry={handleCountrySelect}
           onClose={() => setView('country')}
         />
       </div>
@@ -423,7 +426,7 @@ function AppInner() {
     return (
       <div className={`min-h-screen ${bg}`}>{themeToggle}
         <Wishlist
-          onPlanTrip={(c) => { newTripId(); handleCountrySelect(c); }}
+          onPlanTrip={handleCountrySelect}
           onBack={() => setView('country')}
         />
       </div>
@@ -445,7 +448,7 @@ function AppInner() {
   }
 
   if (view === 'loading') {
-    return <div className={`min-h-screen ${bg}`}>{themeToggle}<LoadingScreen destinations={selectedDests.map((d) => d.name)} progress={progress} /></div>;
+    return <div className={`min-h-screen ${bg}`}>{themeToggle}<LoadingScreen destinations={selectedDestNames} progress={progress} /></div>;
   }
 
   if (view === 'results') {

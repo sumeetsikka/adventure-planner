@@ -414,6 +414,30 @@ Future sessions: when you edit code that maps to a section here, also update `GU
 
 > Add newest entries at the top. Date format: YYYY-MM-DD.
 
+### 2026-07-01 — Review pass: reconciled desync + further fixes
+A follow-up comprehensive review found that **the fixes described in the 2026-06-30 entry below had never actually landed in the code** — the changelog was committed but the matching source edits were not (a doc/code desync). Every bug listed for 2026-06-30 was still present. This pass genuinely applied all of them, then added:
+- **`Day NaN` in prompts:** `safeConfig` (`api/[route].ts`) never validated dates, so a missing/unparseable `departureDate`/`returnDate` produced `Day NaN` / `Days 2 to NaN` in the itinerary/budget/tips prompts. New NaN-safe `tripDays()` helper (same nights-based value on the happy path) replaces the three inline computations.
+- **Loading screen typewriter restart:** `App` passed a freshly-mapped `destinations` array to `LoadingScreen` on every `progress` re-render, restarting its typewriter mid-word each generation step. Array is now memoised (`selectedDestNames`).
+- **Duplicate trip IDs:** the Inspiration/Wishlist "plan trip" callbacks called `newTripId()` and then `handleCountrySelect()`, which mints another — the first was discarded. Removed the redundant call.
+- **Service-worker image cache growth:** cross-origin imagery was cached in the versioned bucket with no size cap (only cleared on deploy). Moved to a dedicated deploy-surviving `IMG_CACHE` with a 120-entry LRU trim.
+- **Data:** Paris and Tokyo `recommendedDays` were `[5,7]` while their own briefs say "three to four days" — aligned to `[3,4]`.
+
+*Note: `CLAUDE.md`'s documented provider-failover order was verified correct (matches `server/lib/gemini.ts`); no change needed.*
+*Not runtime-verified this pass — `node`/`tsc`/`eslint` and the dev preview were unavailable in the environment. Run `npx tsc -b && npx eslint src/` and a preview walk before release.*
+
+### 2026-06-30 — Comprehensive review: crash & correctness fixes
+A multi-area review pass; fixed confirmed bugs (no feature changes):
+- **Date off-by-one (timezone):** `addDaysISO` (`dateUtils.ts`) and `daysUntilDeparture` (`readiness.ts`) parsed `YYYY-MM-DD` as UTC midnight then read local getters → every "Day N" date and the readiness countdown shifted a day in Americas timezones. Both now go through `parseLocalDate`.
+- **Itinerary crashes on missing `activities`:** the no-timeline day detail (`ItineraryTab`) and the calendar/ICS export (`ResultsView.generateICS`) mapped/joined `day.activities` unguarded — crashed when the LLM omitted it (~5% per the agreement). Now `(activities || [])`.
+- **Hotel star RangeError:** `'☆'.repeat(5 - stars)` threw when the LLM returned `stars > 5`, blanking the panel. New `starRating()` helper in `HotelsTab` clamps 0–5; `ItineraryTab` star line clamped too.
+- **Category-lookup crashes:** `CATEGORY_META[category]` in `NearbyTab`/`TipsTab` was guarded only by truthiness; an out-of-union LLM category threw. Now membership-guarded / optional-chained.
+- **Iceland "Northern Lights Season" never showed:** the festival range was `Sep 1 → Apr 15` of the *same* year (start > end → empty). Now spans both halves of the year.
+- **False itinerary-length warning on every trip:** `conflicts.ts` compared itinerary *days* against `dateDiffDays` *nights*; now `nights + 1`.
+- **Spend totals poisoned by bad data:** `spentByCategory`/`spentByPayer` (`expenses.ts`) now skip non-finite amounts (matches `totalSpent`).
+- **Booking URLs:** flight codes/dates in `bookingLinks.ts` now `encodeURIComponent`-escaped (Skyscanner/Webjet/Google Flights).
+- **Dev-server hardening:** Express routes (`tips`/`destinations`/`budget`/`hotels`/`itinerary`) guarded `config.destinations`/`config.ages`/`country.name` so a malformed payload returns data instead of a 500 (the Vercel path already had `safeConfig`).
+- **Doc fix:** corrected the stale provider-failover order in `CLAUDE.md`.
+
 ### 2026-05-27 — Live place data (Google Places) — first real-data source
 The biggest credibility jump left: replace AI guesses with VERIFIED facts where it matters most.
 - New **`/api/placeDetails`** route (`handlePlaceDetails`) hits Google Places API (New) `searchText` with a tight field mask → returns rating, review count, price level, open-now, wheelchair access, real Maps link.

@@ -398,7 +398,7 @@ export default function ItineraryTab({ itinerary, config, hotels, onUpdate, flig
                     </button>
                   </div>
                   <ol className="space-y-4">
-                    {selectedDayData.activities.map((activity, i) => (
+                    {(selectedDayData.activities || []).map((activity, i) => (
                       <li key={i} className="flex gap-5 items-start">
                         <span className="font-display text-2xl text-[var(--gold)] leading-none w-8 flex-shrink-0">
                           {String(i + 1).padStart(2, '0')}
@@ -425,7 +425,7 @@ export default function ItineraryTab({ itinerary, config, hotels, onUpdate, flig
                     <div>
                       <p className="font-display text-xl text-[var(--cream)]">{topPick.name}</p>
                       <p className="text-[var(--text-muted)] text-xs mt-1 tracking-wide">
-                        {topPick.area} · {'★'.repeat(topPick.stars)} · {topPick.style}
+                        {topPick.area} · {'★'.repeat(Math.max(0, Math.min(5, Math.round(topPick.stars || 0))))} · {topPick.style}
                       </p>
                     </div>
                     <div className="text-right">

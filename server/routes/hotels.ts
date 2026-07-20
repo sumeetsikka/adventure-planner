@@ -10,8 +10,9 @@ router.post('/', async (req, res) => {
   try {
     const config = req.body;
     const countryName = config.country?.name || 'the destination';
-    const entryCity = determineEntryCity(config.destinations);
-    const ordered = orderDestinations(config.destinations, entryCity);
+    const destinations = config.destinations || [];
+    const entryCity = determineEntryCity(destinations);
+    const ordered = orderDestinations(destinations, entryCity);
     const vibeList = (config.vibes || ['mix']).join(', ');
 
     const schedule = computeSchedule(ordered, config.departureDate, config.returnDate);
@@ -24,7 +25,7 @@ router.post('/', async (req, res) => {
       `${i + 1}. ${s.destination}: check-in ${s.arrival}, check-out ${s.departure}, ${s.nights} nights`
     ).join('\n');
 
-    const userMessage = `Country: ${countryName}. Vibes: ${vibeList}. Travellers: ${config.travellers}, ages: ${config.ages.join(', ')}.
+    const userMessage = `Country: ${countryName}. Vibes: ${vibeList}. Travellers: ${config.travellers}, ages: ${(config.ages || []).join(', ')}.
 
 Recommend 3 hotels per destination for these EXACT dates:
 ${hotelSchedule}
