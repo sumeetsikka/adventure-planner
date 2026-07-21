@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import type { VisaInfo } from '../../types';
 import { mapsUrl, telUrl } from '../../lib/deepLinks';
+import { EstimateNote } from '../shared/EstimateBadge';
 
 interface Props {
   visa: VisaInfo | null;
@@ -320,6 +321,10 @@ export default function VisaTab({ visa, travellers = 1, departureDate }: Props) 
           </div>
         )}
       </div>
+
+      {/* Entry rules are the highest-consequence thing the model guesses at —
+          getting this wrong means being refused boarding. */}
+      <EstimateNote what="visa and entry requirements" />
     </motion.div>
   );
 }

@@ -23,6 +23,7 @@ import {
   setActiveTripId,
   newTripId,
   listTrips,
+  STORAGE_FULL_EVENT,
   type SavedTrip,
 } from './lib/tripStore';
 
@@ -52,6 +53,54 @@ function AppInner() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
+
+  // Browser history integration. Without this, all navigation is React state and
+  // the Android system back gesture closes the PWA instead of going back a view.
+  const historyReady = useRef(false);
+  useEffect(() => {
+    // The loading screen is transient — backing into a half-finished generation
+    // isn't a state the user can return to, so it gets no history entry.
+    if (view === 'loading') return;
+    const entry = { apView: view, apStep: step };
+    if (!historyReady.current) {
+      historyReady.current = true;
+      window.history.replaceState(entry, '');
+      return;
+    }
+    // A popstate-driven change already matches the current entry — re-pushing
+    // it here would trap the user (back would land on the same view forever).
+    const cur = window.history.state as { apView?: string; apStep?: number } | null;
+    if (cur && cur.apView === view && cur.apStep === step) return;
+    window.history.pushState(entry, '');
+  }, [view, step]);
+
+  useEffect(() => {
+    const onPop = (e: PopStateEvent) => {
+      const s = e.state as { apView?: AppView; apStep?: WizardStep } | null;
+      if (s?.apView) {
+        setView(s.apView);
+        if (typeof s.apStep === 'number') setStep(s.apStep);
+      } else {
+        setView('country');
+      }
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
+  // Device storage is full — the trip did NOT save. Tell the user, because the
+  // alternative is silently losing their work.
+  useEffect(() => {
+    let lastWarned = 0;
+    const onFull = () => {
+      // Autosave can fire repeatedly; don't stack identical toasts.
+      if (Date.now() - lastWarned < 10_000) return;
+      lastWarned = Date.now();
+      toast('Device storage is full — this trip did not save. Delete an old trip or some journal photos.', 'error');
+    };
+    window.addEventListener(STORAGE_FULL_EVENT, onFull);
+    return () => window.removeEventListener(STORAGE_FULL_EVENT, onFull);
+  }, [toast]);
 
   // Restore the most recent trip on mount (unless a shared URL trip is incoming)
   const restoreAttempted = useRef(false);

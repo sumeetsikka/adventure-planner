@@ -5,6 +5,7 @@ import { getDestinationPhoto } from '../../lib/imagery';
 import { buildDayPlans, destinationDayRanges, dayRangeForDestination } from '../../lib/planStitch';
 import { PlaceActions } from '../shared/PlaceLink';
 import DayRangeChip from '../shared/DayRangeChip';
+import { EstimateNote } from '../shared/EstimateBadge';
 
 interface Props {
   nearby: NearbyPlace[];
@@ -192,6 +193,8 @@ export default function NearbyTab({ nearby, config, itinerary = [] }: Props) {
           ))}
         </div>
       )}
+
+      <EstimateNote what="travel times and trip lengths" />
     </motion.div>
   );
 }

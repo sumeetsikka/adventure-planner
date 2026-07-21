@@ -9,6 +9,7 @@ import { addDaysISO, formatDayLabel } from '../../lib/dateUtils';
 import DayRangeChip from '../shared/DayRangeChip';
 import AddToDay, { type DayOption } from '../shared/AddToDay';
 import PlaceRating from '../shared/PlaceRating';
+import { EstimateNote } from '../shared/EstimateBadge';
 
 interface Props {
   activities: DestinationActivities[];
@@ -363,6 +364,8 @@ export default function DoTab({ activities, config, itinerary = [], onUpdate, on
           )
         )}
       </div>
+
+      <EstimateNote what="prices, times and availability" />
     </motion.div>
   );
 }

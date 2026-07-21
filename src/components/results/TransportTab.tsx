@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import type { TransportLeg } from '../../types';
 import { formatDateAU } from '../../lib/dateUtils';
+import { EstimateNote } from '../shared/EstimateBadge';
 
 interface Props {
   transport: TransportLeg[];
@@ -86,7 +87,9 @@ export default function TransportTab({ transport }: Props) {
               <p className="font-display text-lg text-[var(--cream)]">{selected.duration}</p>
             </div>
             <div>
-              <p className="eyebrow mb-2">From</p>
+              {/* Not "From" — that's a booking-industry term implying a real
+                  floor price, and this figure is an LLM guess. */}
+              <p className="eyebrow mb-2">Est. price</p>
               <p className="font-display text-2xl text-[var(--gold)]">{selected.price_estimate_aud}</p>
             </div>
           </div>
@@ -183,6 +186,8 @@ export default function TransportTab({ transport }: Props) {
           })}
         </div>
       </div>
+
+      <EstimateNote what="routes, times and fares" />
     </motion.div>
   );
 }

@@ -39,7 +39,7 @@
 |---|---|
 | Open the deployed app URL (the public Vercel domain). On first launch a 4-step onboarding tour explains the flow — tap *Begin* to walk through it, or *Skip*. | Verify the deployment is live: `vercel ls` → most recent deployment shows `Ready`. Public URL = first `Production` entry. Run `vercel inspect <url>` for build details. |
 | The app works offline — install it as a PWA from your browser's *Add to home screen* prompt and it survives no-signal moments mid-trip. Load it online once; after that it opens with no signal, and your saved trips, emergency numbers and wallet are all there. | Service worker (`public/sw.js`) is **network-first for HTML with the cached shell as fallback** (so deploys are never stale, but a no-signal load still boots the app) and cache-first for hashed assets. The install handler precaches `/index.html` plus the entry JS/CSS it references, so even the first offline load works. Cache reads use `ignoreVary` — hosts serve assets with `Vary: Origin` and Vite emits `<script crossorigin>`, so without it the precached entry never matches. To force every client to refresh, bump the `__BUILD_VERSION__` in the SW (handled automatically by the Vite plugin). |
-| All your trips, wishlist, journal entries, and readiness checklists are saved on your device only. Clear browser data = lose everything. There is no account. | No backend database. All persistence is `localStorage` per browser. If you ever add a sync backend, the keys to migrate are: `adventure-planner:trips`, `adventure-planner:active-trip`, `adventure-planner:wishlist`, `adventure-planner:readiness:<tripId>`, `adventure-planner:price-watch`, `adventure-planner:onboarded`, `adventure-planner:install-dismissed`, `adventure-planner:lang`. |
+| All your trips, wishlist, journal entries, and readiness checklists are saved on your device only. Clear browser data = lose everything. There is no account. **If the device runs out of storage you'll now get a warning** — previously the save just failed silently. | No backend database. All persistence is `localStorage` per browser. **Full key list** (the old list here was incomplete — anything built from it would have silently dropped journal, wallet and spend data): global — `adventure-planner:trips`, `:active-trip`, `:wishlist`, `:price-watch`, `:onboarded`, `:install-dismissed`, `:lang`, `:place-cache`; per-trip — `:readiness:<id>`, `:wallet:<id>`, `:expenses:<id>`, `:packing:<id>`, `:booked:<id>`, `:booking-notes:<id>`, `:chat:<id>`; and the un-namespaced `journal:<countryId>-<departureDate>:day<n>`. `perTripKeys()` in `tripStore.ts` is the authoritative per-trip list — keep it in sync when adding a key. A rejected write raises `STORAGE_FULL_EVENT`, which `App` surfaces as a toast. |
 
 ---
 
@@ -132,7 +132,7 @@ Results are split into 4 groups in the nav.
 
 | 👤 Traveller | 🛠️ Admin |
 |---|---|
-| **Transport** = intercity legs (trains, buses, ferries, cars) with operators, durations, prices, booking sites. **Bookings** = paste a flight/hotel/activity confirmation email and the AI parses it into a tracker. Each line confirms or mismatches against the AI plan. | `parseBookingEmail()` in `src/lib/api.ts` → `api/[route].ts → handleParseBooking`. Confidence levels: high/medium/low. |
+| **Transport** = intercity legs (trains, buses, ferries, cars) with operators, durations, prices, booking sites. **Bookings** = paste a flight/hotel/activity confirmation email and the AI parses it into a tracker. Each line confirms or mismatches against the AI plan. **What you tick off, and any parsed notes, now persist** — they used to vanish on a tab switch. | `parseBookingEmail()` in `src/lib/api.ts` → `api/[route].ts → handleParseBooking`. Confidence levels: high/medium/low. Checkboxes are `adventure-planner:booked:<tripId>`, parsed notes `adventure-planner:booking-notes:<tripId>`, both via `usePersistentSet`/`usePersistentState`. |
 
 ### 3.7 Budget
 
@@ -145,7 +145,7 @@ Results are split into 4 groups in the nav.
 
 | 👤 Traveller | 🛠️ Admin |
 |---|---|
-| **Packing** — grouped list with check-off (saves locally). **Weather** — per-destination averages + multi-day forecast when available. **Visa** — requirements for AU passport holders, cost, processing time, application link, passport-validity-by date, group cost. **Currency** — live FX, converter, common phrases (greetings, food, emergencies), tipping culture, cash vs card. **Checklist** — pre-departure todos (deprecated — superseded by 🎯 Ready, but still in the nav). **Events** — public holidays + festivals during your dates. | Open-Meteo (`api/[route].ts → handleWeather`) for forecast; falls back to historical year-ago data when the trip is >180 days out. Phrases pack from `src/lib/phrases.ts`. Events from `src/lib/events.ts`. |
+| **Packing** — grouped list with check-off (saves locally, per trip, and survives tab switches). **Weather** — per-destination averages + multi-day forecast when available. **Visa** — requirements for AU passport holders, cost, processing time, application link, passport-validity-by date, group cost. **Currency** — live FX, converter, common phrases (greetings, food, emergencies), tipping culture, cash vs card. **Checklist** — pre-departure todos (deprecated — superseded by 🎯 Ready, but still in the nav). **Events** — public holidays + festivals during your dates. | Open-Meteo (`api/[route].ts → handleWeather`) for forecast; falls back to historical year-ago data when the trip is >180 days out. Phrases pack from `src/lib/phrases.ts`. Events from `src/lib/events.ts`. |
 
 ### 3.9 🎯 Ready — Pre-trip readiness
 
@@ -170,7 +170,7 @@ Results are split into 4 groups in the nav.
 
 | 👤 Traveller | 🛠️ Admin |
 |---|---|
-| Free-form AI concierge that knows your trip context (country, destinations). Ask "best place to see sunset in Hoi An?" or "is Uber safe in Hanoi?" **The concierge can also EDIT your plan in plain language** — "remove the War Museum in Hanoi", "show me more places to eat", "swap my Hanoi hotel for the Sofitel", "find me other hotel options". It confirms what it changed, and the edit flows through to every tab + the PDF. | Two routes: plain Q&A uses `handleChat`; when ChatTab is wired with `results` + `onUpdateResults` (the editable mode), it routes through **`/api/chatAction`** (`handleChatAction`) — an **intent parser** that's given a compact plan inventory and returns `{answer, action}` where `action` is a whitelisted `ChatAction` (`remove_activity` / `remove_restaurant` / `more_*` / `pick_hotel` / `none`). **The LLM only classifies intent; the client applies the change** via the same `onUpdateResults` plumbing + `*Alternatives` endpoints as the Hotels/Do/Taste tabs — the model never mutates the saved trip. Defensive: unknown action kinds fall back to `none`. |
+| Free-form AI concierge that knows your trip context (country, destinations). Ask "best place to see sunset in Hoi An?" or "is Uber safe in Hanoi?" **The concierge can also EDIT your plan in plain language** — "remove the War Museum in Hanoi", "show me more places to eat", "swap my Hanoi hotel for the Sofitel", "find me other hotel options". It confirms what it changed, and the edit flows through to every tab + the PDF. | Two routes: plain Q&A uses `handleChat`; when ChatTab is wired with `results` + `onUpdateResults` (the editable mode), it routes through **`/api/chatAction`** (`handleChatAction`) — an **intent parser** that's given a compact plan inventory and returns `{answer, action}` where `action` is a whitelisted `ChatAction` (`remove_activity` / `remove_restaurant` / `more_*` / `pick_hotel` / `none`). **The LLM only classifies intent; the client applies the change** via the same `onUpdateResults` plumbing + `*Alternatives` endpoints as the Hotels/Do/Taste tabs — the model never mutates the saved trip. Defensive: unknown action kinds fall back to `none`. **Chat history persists per trip** (`adventure-planner:chat:<tripId>`) — it was previously plain `useState` and was wiped every time the user switched tabs to check an answer. |
 
 ### 3.12 Journal
 
@@ -185,7 +185,7 @@ Results are split into 4 groups in the nav.
 | 👤 Traveller | 🛠️ Admin |
 |---|---|
 | Tap **My trips** (top right) to see every trip on this device. Cards show country, dates, days, stops, status (`Drafting` / `Ready`), updated-time. **Travel stats strip** under the header totals your journeys: trips, countries, days away, flight legs (Polarsteps-style). | `MyTrips.tsx`. Sorted by `updatedAt` desc. Capped at 30 saved trips (`tripStore.saveTrip`). Stats computed inline from `listTrips()` — unique country ids, summed day-counts, flight-leg counts. |
-| **Tap a card** to open the trip. **✎** to rename (Enter to save, Esc to cancel). **×** then **Delete** to delete — two-tap confirm avoids accidental deletes and the ghost-click bug native dialogs caused. | Delete state stored in localStorage; the active-trip pointer is cleared on delete. The ✎/× wrapper has `stopPropagation` plus each button stops its own bubbling. |
+| **Tap a card** to open the trip. **✎** to rename (Enter to save, Esc to cancel). **×** then **Delete** to delete — two-tap confirm avoids accidental deletes and the ghost-click bug native dialogs caused. **Deleting now removes everything belonging to that trip**, including the travel wallet. | `deleteTrip` purges every per-trip key via `perTripKeys()` — wallet, expenses, readiness, packing, booked, booking-notes, chat, and the trip's `journal:<countryId>-<departureDate>:day*` entries (the journal predates the trip-id scheme and keys differently, so it derives from the config — resolve the trip *before* removing its record). Previously only the trip record was deleted, leaving passport and insurance numbers on the device indefinitely. The active-trip pointer is cleared on delete. The ✎/× wrapper has `stopPropagation` plus each button stops its own bubbling. |
 | **+ New trip** clears state and returns to the country picker. **★ Wishlist** opens saved-country list. **✦ Inspire me** opens discovery. | `newTrip()` in `App.tsx` resets ALL working state (selectedCountry, selectedDests, dates, ages, vibes, budget, profiles, mode, results) and calls `newTripId()`. |
 
 ---
@@ -413,6 +413,20 @@ Future sessions: when you edit code that maps to a section here, also update `GU
 ## 15. Changelog
 
 > Add newest entries at the top. Date format: YYYY-MM-DD.
+
+### 2026-07-01 — Phase 2: state that survives, data that leaves when you delete it, honest exports
+Second pass on the product audit. Theme: things the app appeared to remember but didn't, and things it remembered that it shouldn't have.
+
+- **Tab state now persists.** `ResultsView` unmounts every tab on navigation, so the three tabs whose entire job is remembering things held that memory in plain `useState` and lost it on every tab switch: Packing checkboxes, the **Bookings** tracker (checkboxes *and* parsed email notes), and **Chat** history. New `usePersistentState` / `usePersistentSet` hooks (`src/lib/usePersistentState.ts`) mirror state to per-trip localStorage — the pattern Prepare/Wallet/Budget already used, now applied where it was missing.
+- **Deleting a trip deletes its data.** `deleteTrip` only removed the trip record, so the travel wallet — passport and insurance numbers — survived indefinitely, invisible to a user who believed it was gone. It now purges every per-trip key via `perTripKeys()`, including the journal (which keys off `<countryId>-<departureDate>`, so the trip must be resolved *before* its record is removed). Verified through the real UI: 5 seeded keys → 0 after delete.
+- **Storage-full is no longer silent.** `safeWrite` swallowed `QuotaExceededError`, so users lost saved trips with no signal. It now raises `STORAGE_FULL_EVENT` and `App` shows a toast (throttled — autosave fires often).
+- **Android back button works.** All navigation was React state with no history integration, so the system back gesture closed the PWA. `view`/`step` now sync to `history.pushState` with a `popstate` listener; the transient loading screen is deliberately excluded. Verified: My Trips → back → country picker.
+- **Disclosure went from 2 tabs to 7.** `EstimateNote` added to **Visa** (highest consequence — wrong entry rules mean refused boarding), **Transport**, **Taste**, **Do** and **Nearby**. Transport's price label changed from "From" — a booking-industry term implying a real floor price — to "Est. price".
+- **The exports carry the caveat now.** The PDF cover and the email body are what people actually travel with, and both listed prices with no disclaimer at all.
+
+*Still open from the audit: the inline `EstimateBadge` pill remains unused (the tab-level note is what shipped); no undo primitive yet; tabs within Results aren't history entries.*
+
+*Gates: `tsc -b`, `eslint src/`, `vite build` all clean. Runtime-verified in a production build.*
 
 ### 2026-07-01 — Phase 1: the app now opens offline, and failure looks like failure
 Acting on a four-area product audit (tab depth, real-vs-AI data, trip lifecycle, mobile/offline/a11y). The two headline items were things the app already *claimed* to do:

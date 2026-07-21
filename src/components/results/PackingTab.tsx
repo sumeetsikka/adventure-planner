@@ -1,7 +1,8 @@
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import type { PackingItem, TravelConfig } from '../../types';
 import { tapHaptic } from '../../lib/haptics';
+import { getActiveTripId } from '../../lib/tripStore';
+import { usePersistentSet } from '../../lib/usePersistentState';
 
 interface Props {
   packing: PackingItem[];
@@ -30,7 +31,10 @@ function classifyItem(item: string | undefined): 'shoes' | 'clothing' | 'electro
 }
 
 export default function PackingTab({ packing, config: _config }: Props) {
-  const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
+  // Persisted per trip — tabs unmount on navigation, so plain useState meant
+  // every tick was lost the moment you looked at another tab.
+  const tripId = getActiveTripId() || 'default';
+  const [checkedItems, setCheckedItems] = usePersistentSet(`adventure-planner:packing:${tripId}`);
 
   if (packing.length === 0) {
     return (
