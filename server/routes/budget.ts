@@ -10,8 +10,9 @@ router.post('/', async (req, res) => {
   try {
     const config = req.body;
     const countryName = config.country?.name || 'the destination';
-    const entryCity = determineEntryCity(config.destinations);
-    const ordered = orderDestinations(config.destinations, entryCity);
+    const destinations = config.destinations || [];
+    const entryCity = determineEntryCity(destinations);
+    const ordered = orderDestinations(destinations, entryCity);
     const vibeList = (config.vibes || ['mix']).join(', ');
 
     const totalDays = Math.round(
@@ -21,7 +22,7 @@ router.post('/', async (req, res) => {
     const schedule = computeSchedule(ordered, config.departureDate, config.returnDate);
     const scheduleText = formatScheduleForPrompt(schedule);
 
-    const userMessage = `Country: ${countryName}. Trip: ${config.departureDate} to ${config.returnDate} (${totalDays} days). Travellers: ${config.travellers}, ages: ${config.ages.join(', ')}. Vibes: ${vibeList}.
+    const userMessage = `Country: ${countryName}. Trip: ${config.departureDate} to ${config.returnDate} (${totalDays} days). Travellers: ${config.travellers}, ages: ${(config.ages || []).join(', ')}. Vibes: ${vibeList}.
 
 Destination schedule:
 ${scheduleText}

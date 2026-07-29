@@ -39,6 +39,16 @@ function safeConfig(c: any) {
   };
 }
 
+/** Trip length (same nights-based value the prompts have always used), but
+ *  NaN-safe: missing/unparseable dates yield 1 instead of `Day NaN` / `Days 2
+ *  to NaN` garbage in the generated prompt. */
+function tripDays(config: { departureDate?: string; returnDate?: string } | null | undefined): number {
+  const dep = Date.parse(config?.departureDate);
+  const ret = Date.parse(config?.returnDate);
+  if (!Number.isFinite(dep) || !Number.isFinite(ret)) return 1;
+  return Math.max(1, Math.round((ret - dep) / (1000 * 60 * 60 * 24)));
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -236,7 +246,7 @@ async function handleItinerary(config: any) {
   const entryCity = determineEntryCity(config.destinations);
   const ordered = orderDestinations(config.destinations, entryCity);
   const vibeList = (config.vibes || ['mix']).join(', ');
-  const totalDays = Math.round((new Date(config.returnDate).getTime() - new Date(config.departureDate).getTime()) / (1000 * 60 * 60 * 24));
+  const totalDays = tripDays(config);
   const schedule = computeSchedule(ordered, config.departureDate, config.returnDate);
   const scheduleText = formatScheduleForPrompt(schedule);
 
@@ -371,7 +381,7 @@ async function handleBudget(config: any) {
   const entryCity = determineEntryCity(config.destinations);
   const ordered = orderDestinations(config.destinations, entryCity);
   const vibeList = (config.vibes || ['mix']).join(', ');
-  const totalDays = Math.round((new Date(config.returnDate).getTime() - new Date(config.departureDate).getTime()) / (1000 * 60 * 60 * 24));
+  const totalDays = tripDays(config);
   const schedule = computeSchedule(ordered, config.departureDate, config.returnDate);
   const scheduleText = formatScheduleForPrompt(schedule);
 
@@ -393,7 +403,7 @@ async function handlePacking(config: any) {
   const ordered = orderDestinations(config.destinations, entryCity);
   const travelMonth = new Date(config.departureDate).toLocaleString('en-AU', { month: 'long' });
   const vibeList = (config.vibes || ['mix']).join(', ');
-  const totalDays = Math.round((new Date(config.returnDate).getTime() - new Date(config.departureDate).getTime()) / (1000 * 60 * 60 * 24));
+  const totalDays = tripDays(config);
   const schedule = computeSchedule(ordered, config.departureDate, config.returnDate);
   const scheduleText = formatScheduleForPrompt(schedule);
 

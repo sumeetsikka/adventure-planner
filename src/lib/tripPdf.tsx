@@ -99,6 +99,12 @@ const styles = StyleSheet.create({
     fontFamily: SANS, fontWeight: 600, fontSize: 7, letterSpacing: 2.5,
     color: DIM, textTransform: 'uppercase',
   },
+  /* The printed plan travels with the user, so the estimate caveat has to be on
+     it — the in-app disclosure never makes it into the bag. */
+  coverDisclaimer: {
+    position: 'absolute', bottom: 48, left: 46, right: 46,
+    fontFamily: SANS, fontSize: 7.5, lineHeight: 1.5, color: DIM,
+  },
   h1: {
     fontFamily: SANS, fontWeight: 700, fontSize: 28, color: INK,
     marginBottom: 6, lineHeight: 1.1, letterSpacing: -0.6,
@@ -307,6 +313,11 @@ function CoverPage({ config, totalDays, tripIdShort, heroUrl }: CoverProps) {
           {config.travellers} traveller{config.travellers > 1 ? 's' : ''}  ·  {totalDays} days
         </Text>
       </View>
+      <Text style={styles.coverDisclaimer}>
+        Prices, times and availability in this plan are AI-generated estimates to help you plan,
+        not live quotes. Confirm details on the booking site before you book, and check visa and
+        entry rules with the official government source for your passport.
+      </Text>
       <Text style={styles.credit}>Adventure Planner  ·  {tripIdShort}</Text>
     </Page>
   );

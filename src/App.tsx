@@ -1,7 +1,7 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import type { Country, Destination, VibeOption, TravelConfig, GenerationResults, AppView, WizardStep, TravellerProfile, TripMode } from './types';
 import { searchFlights, searchHotels, generateItinerary, generateBudget, generateTips, generateDestinations, generatePacking, generateWeather, generateVisa, generateCurrency, generateNearby, generateTransport, generateRestaurants, generateActivities } from './lib/api';
-import { getDestinationsForCountry } from './data/destinations';
+import { loadDestinationsForCountry } from './data/destinations';
 import CountryPicker from './components/wizard/CountryPicker';
 import DestinationPicker from './components/wizard/DestinationPicker';
 import TravelDetails from './components/wizard/TravelDetails';
@@ -10,7 +10,7 @@ import ResultsView from './components/results/ResultsView';
 import ThemeToggle from './components/shared/ThemeToggle';
 import InstallPrompt from './components/shared/InstallPrompt';
 import OnboardingTour from './components/shared/OnboardingTour';
-import { ToastProvider } from './components/shared/Toast';
+import { ToastProvider, useToast } from './components/shared/Toast';
 import MyTrips from './components/wizard/MyTrips';
 import Inspiration from './components/wizard/Inspiration';
 import Wishlist from './components/wizard/Wishlist';
@@ -23,6 +23,7 @@ import {
   setActiveTripId,
   newTripId,
   listTrips,
+  STORAGE_FULL_EVENT,
   type SavedTrip,
 } from './lib/tripStore';
 
@@ -41,6 +42,7 @@ export default function App() {
 }
 
 function AppInner() {
+  const toast = useToast();
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
   // Always land on the country picker — a fresh "start a new trip" entry.
   // Saved trips are one tap away via the "My trips" button in the header.
@@ -51,6 +53,54 @@ function AppInner() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
+
+  // Browser history integration. Without this, all navigation is React state and
+  // the Android system back gesture closes the PWA instead of going back a view.
+  const historyReady = useRef(false);
+  useEffect(() => {
+    // The loading screen is transient — backing into a half-finished generation
+    // isn't a state the user can return to, so it gets no history entry.
+    if (view === 'loading') return;
+    const entry = { apView: view, apStep: step };
+    if (!historyReady.current) {
+      historyReady.current = true;
+      window.history.replaceState(entry, '');
+      return;
+    }
+    // A popstate-driven change already matches the current entry — re-pushing
+    // it here would trap the user (back would land on the same view forever).
+    const cur = window.history.state as { apView?: string; apStep?: number } | null;
+    if (cur && cur.apView === view && cur.apStep === step) return;
+    window.history.pushState(entry, '');
+  }, [view, step]);
+
+  useEffect(() => {
+    const onPop = (e: PopStateEvent) => {
+      const s = e.state as { apView?: AppView; apStep?: WizardStep } | null;
+      if (s?.apView) {
+        setView(s.apView);
+        if (typeof s.apStep === 'number') setStep(s.apStep);
+      } else {
+        setView('country');
+      }
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
+  // Device storage is full — the trip did NOT save. Tell the user, because the
+  // alternative is silently losing their work.
+  useEffect(() => {
+    let lastWarned = 0;
+    const onFull = () => {
+      // Autosave can fire repeatedly; don't stack identical toasts.
+      if (Date.now() - lastWarned < 10_000) return;
+      lastWarned = Date.now();
+      toast('Device storage is full — this trip did not save. Delete an old trip or some journal photos.', 'error');
+    };
+    window.addEventListener(STORAGE_FULL_EVENT, onFull);
+    return () => window.removeEventListener(STORAGE_FULL_EVENT, onFull);
+  }, [toast]);
 
   // Restore the most recent trip on mount (unless a shared URL trip is incoming)
   const restoreAttempted = useRef(false);
@@ -63,8 +113,13 @@ function AppInner() {
     const trip = getTrip(id);
     if (!trip) return;
     setSelectedCountry(trip.config.country);
-    const dests = getDestinationsForCountry(trip.config.country.id) ?? trip.config.destinations;
-    setCountryDestinations(dests);
+    // Use the trip's saved destinations immediately, then upgrade to the full
+    // curated list once its chunk loads. The landing view is My Trips, not the
+    // picker, so the async upgrade is never visibly late.
+    setCountryDestinations(trip.config.destinations);
+    loadDestinationsForCountry(trip.config.country.id).then((full) => {
+      if (full) setCountryDestinations(full);
+    });
     setSelectedDests(trip.config.destinations);
     setDepartureDate(trip.config.departureDate);
     setReturnDate(trip.config.returnDate);
@@ -95,8 +150,10 @@ function AppInner() {
     const country = countries.find(c => c.id === trip.c);
     if (!country) return;
 
-    // Load destinations
-    const dests = getDestinationsForCountry(country.id);
+    // The shared link carries only destination IDs, so we must resolve the
+    // country's data (now an async chunk) before we can match them.
+    (async () => {
+    const dests = await loadDestinationsForCountry(country.id);
     if (!dests) return;
 
     // Match destination IDs
@@ -124,12 +181,16 @@ function AppInner() {
       setView('wizard');
       setStep(2);
     }, 100);
+    })();
   }, []);
 
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [countryDestinations, setCountryDestinations] = useState<Destination[]>([]);
   const [loadingDestinations, setLoadingDestinations] = useState(false);
   const [selectedDests, setSelectedDests] = useState<Destination[]>([]);
+  // Stable identity for the LoadingScreen prop — otherwise a fresh array on
+  // every `progress` re-render restarts its typewriter effect mid-word.
+  const selectedDestNames = useMemo(() => selectedDests.map((d) => d.name), [selectedDests]);
   const [departureDate, setDepartureDate] = useState('');
   const [returnDate, setReturnDate] = useState('');
   const [travellers, setTravellers] = useState(2);
@@ -170,8 +231,12 @@ function AppInner() {
   const loadTrip = (trip: SavedTrip) => {
     setActiveTripId(trip.id);
     setSelectedCountry(trip.config.country);
-    const dests = getDestinationsForCountry(trip.config.country.id) ?? trip.config.destinations;
-    setCountryDestinations(dests);
+    // Saved destinations render immediately; the full curated list upgrades in
+    // when its chunk arrives (see the restore effect above for the rationale).
+    setCountryDestinations(trip.config.destinations);
+    loadDestinationsForCountry(trip.config.country.id).then((full) => {
+      if (full) setCountryDestinations(full);
+    });
     setSelectedDests(trip.config.destinations);
     setDepartureDate(trip.config.departureDate);
     setReturnDate(trip.config.returnDate);
@@ -220,19 +285,21 @@ function AppInner() {
     setTripMode(undefined);
     setStep(1);
     setSelectedCountry(country);
-    const prebuilt = getDestinationsForCountry(country.id);
-    if (prebuilt) {
-      setCountryDestinations(prebuilt);
-      setView('wizard');
-      return;
-    }
+    // Country data is now a per-country chunk. Show the wizard's loading state
+    // while it fetches (usually a few ms) so the picker doesn't render empty.
     setLoadingDestinations(true);
     setView('wizard');
     try {
+      const prebuilt = await loadDestinationsForCountry(country.id);
+      if (prebuilt) {
+        setCountryDestinations(prebuilt);
+        return;
+      }
+      // Not a country we ship — generate destinations via the LLM.
       const generated = await generateDestinations(country);
       setCountryDestinations(generated);
     } catch (err) {
-      console.error('Failed to generate destinations:', err);
+      console.error('Failed to load destinations:', err);
       setCountryDestinations([]);
     } finally {
       setLoadingDestinations(false);
@@ -285,88 +352,109 @@ function AppInner() {
     setProgress((p) => ({ ...p, route: true }));
 
     const stagger = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    // Requests are spaced out so 13 simultaneous calls don't trip the free-tier
+    // rate limits (Groq is 30 RPM). 800ms each added ~9.6s of dead time to every
+    // generation; 250ms keeps the spacing but gives most of that back.
+    const STAGGER_MS = 250;
+
+    // Steps that fail are recorded here rather than being silently marked done —
+    // otherwise a total outage looks identical to a successful generation.
+    const failed: string[] = [];
 
     // Batch 1: core content
     const p1 = generateItinerary(config)
       .then((d) => { setResults((r) => ({ ...r, itinerary: d })); setProgress((p) => ({ ...p, itinerary: true })); })
-      .catch(() => setProgress((p) => ({ ...p, itinerary: true })));
+      .catch(() => { failed.push('itinerary'); setProgress((p) => ({ ...p, itinerary: true })); });
 
-    await stagger(800);
+    await stagger(STAGGER_MS);
 
     const p2 = searchFlights(config)
       .then((d) => { setResults((r) => ({ ...r, flights: d })); setProgress((p) => ({ ...p, flights: true })); })
-      .catch(() => setProgress((p) => ({ ...p, flights: true })));
+      .catch(() => { failed.push('flights'); setProgress((p) => ({ ...p, flights: true })); });
 
-    await stagger(800);
+    await stagger(STAGGER_MS);
 
     const p3 = searchHotels(config)
       .then((d) => { setResults((r) => ({ ...r, hotels: d })); setProgress((p) => ({ ...p, hotels: true })); })
-      .catch(() => setProgress((p) => ({ ...p, hotels: true })));
+      .catch(() => { failed.push('hotels'); setProgress((p) => ({ ...p, hotels: true })); });
 
-    await stagger(800);
+    await stagger(STAGGER_MS);
 
     const p4 = generateBudget(config)
       .then((d) => { setResults((r) => ({ ...r, budget: d })); setProgress((p) => ({ ...p, budget: true })); })
-      .catch(() => setProgress((p) => ({ ...p, budget: true })));
+      .catch(() => { failed.push('budget'); setProgress((p) => ({ ...p, budget: true })); });
 
-    await stagger(800);
+    await stagger(STAGGER_MS);
 
     const p5 = generateTips(config)
       .then((d) => { setResults((r) => ({ ...r, tips: d })); setProgress((p) => ({ ...p, tips: true })); })
-      .catch(() => setProgress((p) => ({ ...p, tips: true })));
+      .catch(() => { failed.push('tips'); setProgress((p) => ({ ...p, tips: true })); });
 
-    await stagger(800);
+    await stagger(STAGGER_MS);
 
     // Batch 2: new features
     const p6 = generatePacking(config)
       .then((d) => { setResults((r) => ({ ...r, packing: d })); setProgress((p) => ({ ...p, packing: true })); })
-      .catch(() => setProgress((p) => ({ ...p, packing: true })));
+      .catch(() => { failed.push('packing'); setProgress((p) => ({ ...p, packing: true })); });
 
-    await stagger(800);
+    await stagger(STAGGER_MS);
 
     const p7 = generateWeather(config)
       .then((d) => { setResults((r) => ({ ...r, weather: d })); setProgress((p) => ({ ...p, weather: true })); })
-      .catch(() => setProgress((p) => ({ ...p, weather: true })));
+      .catch(() => { failed.push('weather'); setProgress((p) => ({ ...p, weather: true })); });
 
-    await stagger(800);
+    await stagger(STAGGER_MS);
 
     const p8 = generateVisa(config)
       .then((d) => { setResults((r) => ({ ...r, visa: d })); setProgress((p) => ({ ...p, visa: true })); })
-      .catch(() => setProgress((p) => ({ ...p, visa: true })));
+      .catch(() => { failed.push('visa'); setProgress((p) => ({ ...p, visa: true })); });
 
-    await stagger(800);
+    await stagger(STAGGER_MS);
 
     const p9 = generateCurrency(config)
       .then((d) => { setResults((r) => ({ ...r, currency: d })); setProgress((p) => ({ ...p, currency: true })); })
-      .catch(() => setProgress((p) => ({ ...p, currency: true })));
+      .catch(() => { failed.push('currency'); setProgress((p) => ({ ...p, currency: true })); });
 
-    await stagger(800);
+    await stagger(STAGGER_MS);
 
     const p10 = generateNearby(config)
       .then((d) => { setResults((r) => ({ ...r, nearby: d })); setProgress((p) => ({ ...p, nearby: true })); })
-      .catch(() => setProgress((p) => ({ ...p, nearby: true })));
+      .catch(() => { failed.push('nearby'); setProgress((p) => ({ ...p, nearby: true })); });
 
-    await stagger(800);
+    await stagger(STAGGER_MS);
 
     const p11 = generateTransport(config)
       .then((d) => { setResults((r) => ({ ...r, transport: d })); setProgress((p) => ({ ...p, transport: true })); })
-      .catch(() => setProgress((p) => ({ ...p, transport: true })));
+      .catch(() => { failed.push('transport'); setProgress((p) => ({ ...p, transport: true })); });
 
-    await stagger(800);
+    await stagger(STAGGER_MS);
 
     const p12 = generateRestaurants(config)
       .then((d) => { setResults((r) => ({ ...r, restaurants: d })); setProgress((p) => ({ ...p, restaurants: true })); })
-      .catch(() => setProgress((p) => ({ ...p, restaurants: true })));
+      .catch(() => { failed.push('restaurants'); setProgress((p) => ({ ...p, restaurants: true })); });
 
-    await stagger(800);
+    await stagger(STAGGER_MS);
 
     const p13 = generateActivities(config)
       .then((d) => { setResults((r) => ({ ...r, activities: d })); setProgress((p) => ({ ...p, activities: true })); })
-      .catch(() => setProgress((p) => ({ ...p, activities: true })));
+      .catch(() => { failed.push('activities'); setProgress((p) => ({ ...p, activities: true })); });
 
-    await Promise.all([p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13]);
+    const tasks = [p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13];
+    await Promise.all(tasks);
+
+    // Every section failed — almost always a missing LLM key or no connection.
+    // Navigating to results here would present a fully-chromed but entirely
+    // empty trip, making total failure look exactly like success.
+    if (failed.length === tasks.length) {
+      setView('wizard');
+      toast("Couldn't reach the planner. Check your connection and try again.", 'error');
+      return;
+    }
+    if (failed.length > 0) {
+      toast(`${failed.length} section${failed.length > 1 ? 's' : ''} couldn't be generated.`, 'error');
+    }
     setView('results');
-  }, [selectedDests, departureDate, returnDate, travellers, ages, vibes, selectedCountry, origin, homeCurrency, budgetPerPerson, travellerProfiles, tripMode]);
+  }, [selectedDests, departureDate, returnDate, travellers, ages, vibes, selectedCountry, origin, homeCurrency, budgetPerPerson, travellerProfiles, tripMode, toast]);
 
   const handleStartOver = () => {
     // "Start Over" now means "go to My Trips" rather than wiping state.
@@ -412,7 +500,7 @@ function AppInner() {
     return (
       <div className={`min-h-screen ${bg}`}>{themeToggle}
         <Inspiration
-          onSelectCountry={(c) => { newTripId(); handleCountrySelect(c); }}
+          onSelectCountry={handleCountrySelect}
           onClose={() => setView('country')}
         />
       </div>
@@ -423,7 +511,7 @@ function AppInner() {
     return (
       <div className={`min-h-screen ${bg}`}>{themeToggle}
         <Wishlist
-          onPlanTrip={(c) => { newTripId(); handleCountrySelect(c); }}
+          onPlanTrip={handleCountrySelect}
           onBack={() => setView('country')}
         />
       </div>
@@ -445,7 +533,7 @@ function AppInner() {
   }
 
   if (view === 'loading') {
-    return <div className={`min-h-screen ${bg}`}>{themeToggle}<LoadingScreen destinations={selectedDests.map((d) => d.name)} progress={progress} /></div>;
+    return <div className={`min-h-screen ${bg}`}>{themeToggle}<LoadingScreen destinations={selectedDestNames} progress={progress} /></div>;
   }
 
   if (view === 'results') {

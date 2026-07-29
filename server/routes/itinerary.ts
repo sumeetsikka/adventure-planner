@@ -10,8 +10,9 @@ router.post('/', async (req, res) => {
   try {
     const config = req.body;
     const countryName = config.country?.name || 'the destination';
-    const entryCity = determineEntryCity(config.destinations);
-    const ordered = orderDestinations(config.destinations, entryCity);
+    const destinations = config.destinations || [];
+    const entryCity = determineEntryCity(destinations);
+    const ordered = orderDestinations(destinations, entryCity);
     const vibeList = (config.vibes || ['mix']).join(', ');
 
     const totalDays = Math.round(
@@ -30,7 +31,7 @@ Days 2 to ${totalDays - 1}: Follow this EXACT schedule:
 ${scheduleText}
 Day ${totalDays} (${config.returnDate}): Fly home to Melbourne.
 
-Travellers: ${config.travellers} people, ages: ${config.ages.join(', ')}. Travel vibes: ${vibeList}.
+Travellers: ${config.travellers} people, ages: ${(config.ages || []).join(', ')}. Travel vibes: ${vibeList}.
 
 IMPORTANT: Use the EXACT dates shown above for each destination. Do NOT change the dates.`;
 

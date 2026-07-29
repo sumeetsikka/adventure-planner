@@ -8,10 +8,10 @@ router.post('/', async (req, res) => {
   try {
     const config = req.body;
     const countryName = config.country?.name || 'the destination';
-    const destNames = config.destinations.map((d: any) => d.name).join(', ');
+    const destNames = (config.destinations || []).map((d: any) => d?.name).filter(Boolean).join(', ');
     const travelMonth = new Date(config.departureDate).toLocaleString('en-AU', { month: 'long' });
 
-    const userMessage = `Country: ${countryName}. Destinations: ${destNames}. Travel month: ${travelMonth}. Traveller ages: ${config.ages.join(', ')}.`;
+    const userMessage = `Country: ${countryName}. Destinations: ${destNames}. Travel month: ${travelMonth}. Traveller ages: ${(config.ages || []).join(', ')}.`;
 
     const result = await callLLM(TIPS_SYSTEM, userMessage);
     res.json(Array.isArray(result) ? result : []);

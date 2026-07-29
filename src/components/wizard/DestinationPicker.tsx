@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import type { Country, Destination } from '../../types';
 import { countries } from '../../data/countries';
-import { getDestinationsForCountry } from '../../data/destinations';
+import { loadDestinationsForCountry } from '../../data/destinations';
 import { generateDestinations } from '../../lib/api';
 import { useWikiImage } from '../../lib/useWikiImage';
 import DestinationCard from './DestinationCard';
@@ -27,7 +27,7 @@ export default function DestinationPicker({ selected, onSelect, onNext, country,
     if (!onAddDestinations) return;
     setAddingCountry(true);
     try {
-      const prebuilt = getDestinationsForCountry(c.id);
+      const prebuilt = await loadDestinationsForCountry(c.id);
       if (prebuilt) {
         onAddDestinations(prebuilt);
       } else {

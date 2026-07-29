@@ -25,6 +25,14 @@ const AMENITY_META: Record<HotelAmenity, { label: string; icon: string }> = {
   'airport-shuttle': { label: 'Airport shuttle', icon: '✈' },
 };
 
+/** Render a 5-star rating, clamping the LLM-returned `stars` to 0..5 so
+ *  `String.repeat` never receives a negative count (a RangeError that blanks
+ *  the panel) when the model returns an out-of-range or missing value. */
+function starRating(stars: number, filledOnly = false): string {
+  const s = Math.max(0, Math.min(5, Math.round(stars || 0)));
+  return filledOnly ? '★'.repeat(s) : '★'.repeat(s) + '☆'.repeat(5 - s);
+}
+
 interface Props {
   hotels: DestinationHotels[];
   config?: TravelConfig;
@@ -141,7 +149,7 @@ export default function HotelsTab({ hotels, config, onUpdate }: Props) {
                   <span className="eyebrow text-[var(--gold)]">Our pick</span>
                 )}
                 <span className="text-[var(--gold)] text-xs tracking-widest">
-                  {'★'.repeat(selHotel.stars)}{'☆'.repeat(5 - selHotel.stars)}
+                  {starRating(selHotel.stars)}
                 </span>
                 <span className="text-[var(--text-muted)] text-[11px] uppercase tracking-wider">{selHotel.style}</span>
               </div>
@@ -290,7 +298,7 @@ export default function HotelsTab({ hotels, config, onUpdate }: Props) {
                         >
                           <div className="flex items-start justify-between mb-3">
                             <div>
-                              <p className="text-[var(--gold)] text-[11px] tracking-widest">{'★'.repeat(h.stars)}</p>
+                              <p className="text-[var(--gold)] text-[11px] tracking-widest">{starRating(h.stars, true)}</p>
                               <p className="text-[var(--text-dim)] text-[10px] uppercase tracking-wider mt-0.5">{h.style}</p>
                             </div>
                             <div className="flex flex-col items-end gap-1">

@@ -7,6 +7,7 @@
  */
 
 import type { TravelConfig, VisaInfo } from '../types';
+import { parseLocalDate } from './dateUtils';
 
 const STORAGE_KEY_PREFIX = 'adventure-planner:readiness:';
 
@@ -186,8 +187,11 @@ export function buildReadinessItems(_config: TravelConfig, visa: VisaInfo | null
 
 /** Compute days until departure (positive = future, negative = past). */
 export function daysUntilDeparture(departureDate: string): number {
-  if (!departureDate) return NaN;
-  const dep = new Date(departureDate);
+  // Parse departure as a LOCAL midnight (parseLocalDate) so it's compared on the
+  // same footing as `now`'s local midnight below — `new Date('YYYY-MM-DD')` is
+  // UTC midnight and skewed the count by a day in non-UTC zones.
+  const dep = parseLocalDate(departureDate);
+  if (!dep) return NaN;
   const now = new Date();
   // Use midnight for both to ignore time-of-day.
   const ms = dep.getTime() - new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();

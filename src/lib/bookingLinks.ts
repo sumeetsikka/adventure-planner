@@ -25,8 +25,11 @@ export function getFlightLinks(
   adults: number = 2,
   children: number = 0,
 ): Record<string, string> {
-  const from = fromCode.toLowerCase();
-  const to = toCode.toLowerCase();
+  // Encode codes — they're LLM-returned and an unexpected space/char would break the URL.
+  const from = encodeURIComponent(fromCode.toLowerCase());
+  const to = encodeURIComponent(toCode.toLowerCase());
+  const fromEnc = encodeURIComponent(fromCode);
+  const toEnc = encodeURIComponent(toCode);
   const outDate = formatDateSky(date);
   const retDate = returnDate ? formatDateSky(returnDate) : '';
 
@@ -37,11 +40,11 @@ export function getFlightLinks(
     : `${skyBase}/?adults=${adults}&children=${children}`;
 
   // Google Flights
-  const gfDate = date;
-  const gfUrl = `https://www.google.com/travel/flights?q=flights+from+${fromCode}+to+${toCode}+on+${gfDate}&curr=AUD`;
+  const gfQuery = encodeURIComponent(`flights from ${fromCode} to ${toCode} on ${date}`);
+  const gfUrl = `https://www.google.com/travel/flights?q=${gfQuery}&curr=AUD`;
 
   // Webjet (Australian)
-  const wjUrl = `https://www.webjet.com.au/flights/${fromCode}-to-${toCode}/${date}/`;
+  const wjUrl = `https://www.webjet.com.au/flights/${fromEnc}-to-${toEnc}/${encodeURIComponent(date)}/`;
 
   return {
     'Skyscanner': skyUrl,

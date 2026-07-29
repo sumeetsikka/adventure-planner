@@ -38,7 +38,7 @@ export const destinations: Destination[] = [
     brief:
       "Japan's vast capital earns every one of its three to four days. Spend a day crossing the timelines from ancient Senso-ji Temple in Asakusa to the neon-drenched scramble crossing at Shibuya and the robot-filled arcades of Akihabara. Devote another to the neighbourhoods: vintage shopping in Shimokitazawa, teamLab Borderless digital art, and a towering view from the Tokyo Skytree. A third day can take in the serene Meiji Shrine and Harajuku, followed by the Michelin-dense izakaya alleys of Shinjuku's Golden Gai at night. A fourth day fits a teamLab Planets visit, the Tsukiji Outer Market at dawn, and a sake-fuelled boat cruise on Tokyo Bay.",
     tags: ['Temples', 'Nightlife', 'Street Food', 'Digital Art', 'Shopping'],
-    recommendedDays: [5, 7],
+    recommendedDays: [3, 4],
     mustVisit: true,
   },
   {

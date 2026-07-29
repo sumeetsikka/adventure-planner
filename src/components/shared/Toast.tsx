@@ -15,13 +15,20 @@ import { motion, AnimatePresence } from 'framer-motion';
  */
 
 type ToastTone = 'default' | 'success' | 'error';
+/** An optional single action, e.g. Undo. Given an action, the toast lingers
+ *  longer (a plain toast is a notice; an actionable one has to be reachable). */
+interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
 interface ToastItem {
   id: number;
   message: string;
   tone: ToastTone;
+  action?: ToastAction;
 }
 
-type ToastFn = (message: string, tone?: ToastTone) => void;
+type ToastFn = (message: string, tone?: ToastTone, action?: ToastAction) => void;
 
 const ToastContext = createContext<ToastFn | null>(null);
 
@@ -37,12 +44,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const nextId = useRef(0);
 
-  const push = useCallback<ToastFn>((message, tone = 'default') => {
+  const push = useCallback<ToastFn>((message, tone = 'default', action) => {
     const id = nextId.current++;
-    setToasts((prev) => [...prev, { id, message, tone }]);
+    setToasts((prev) => [...prev, { id, message, tone, action }]);
+    // Actionable toasts need reach time; a plain notice can go sooner.
     window.setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 2400);
+    }, action ? 6000 : 2400);
+  }, []);
+
+  const dismiss = useCallback((id: number) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
   return (
@@ -61,7 +73,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.96 }}
               transition={{ duration: 0.35, ease: EASE }}
-              className="pointer-events-auto surface-card rounded-full px-5 py-2.5 flex items-center gap-2.5 shadow-2xl backdrop-blur-md border border-[var(--line-strong)]"
+              className="pointer-events-auto surface-card rounded-full pl-5 pr-2.5 py-2.5 flex items-center gap-2.5 shadow-2xl backdrop-blur-md border border-[var(--line-strong)]"
             >
               <span
                 className="w-1.5 h-1.5 rounded-full shrink-0"
@@ -72,7 +84,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                     : 'var(--gold)',
                 }}
               />
-              <span className="text-[var(--cream)] text-[13px] font-light tracking-wide">{t.message}</span>
+              <span className="text-[var(--cream)] text-[13px] font-light tracking-wide pr-0.5">{t.message}</span>
+              {t.action && (
+                <button
+                  onClick={() => { t.action!.onClick(); dismiss(t.id); }}
+                  className="shrink-0 text-[12px] font-semibold uppercase tracking-wider text-[var(--gold)] hover:text-[var(--cream)] rounded-full px-3 py-1 border border-[var(--gold)]/40 hover:border-[var(--cream)]/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)] transition-colors"
+                >
+                  {t.action.label}
+                </button>
+              )}
             </motion.div>
           ))}
         </AnimatePresence>

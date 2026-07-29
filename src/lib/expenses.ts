@@ -72,7 +72,10 @@ export function totalSpent(expenses: Expense[]): number {
 
 export function spentByCategory(expenses: Expense[]): Map<ExpenseCategory, number> {
   const m = new Map<ExpenseCategory, number>();
-  for (const e of expenses) m.set(e.category, (m.get(e.category) || 0) + e.amount);
+  for (const e of expenses) {
+    const amt = Number.isFinite(e.amount) ? e.amount : 0;
+    m.set(e.category, (m.get(e.category) || 0) + amt);
+  }
   return m;
 }
 
@@ -80,7 +83,8 @@ export function spentByPayer(expenses: Expense[]): Map<string, number> {
   const m = new Map<string, number>();
   for (const e of expenses) {
     const who = e.paidBy || 'Someone';
-    m.set(who, (m.get(who) || 0) + e.amount);
+    const amt = Number.isFinite(e.amount) ? e.amount : 0;
+    m.set(who, (m.get(who) || 0) + amt);
   }
   return m;
 }

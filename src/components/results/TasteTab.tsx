@@ -9,6 +9,7 @@ import { addDaysISO, formatDayLabel } from '../../lib/dateUtils';
 import DayRangeChip from '../shared/DayRangeChip';
 import AddToDay, { type DayOption } from '../shared/AddToDay';
 import PlaceRating from '../shared/PlaceRating';
+import { EstimateNote } from '../shared/EstimateBadge';
 
 interface Props {
   restaurants: DestinationRestaurants[];
@@ -271,6 +272,8 @@ export default function TasteTab({ restaurants, config, itinerary = [], onUpdate
           )
         )}
       </div>
+
+      <EstimateNote what="menus, prices and opening hours" />
     </motion.div>
   );
 }

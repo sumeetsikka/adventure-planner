@@ -1,10 +1,13 @@
 // Adventure Planner service worker
 //
 // Strategy (chosen to make "stale deploy" impossible):
-//   - Navigations / HTML  : NETWORK-ONLY. The document is never served from
-//                           cache, so a new deploy is always picked up on the
-//                           next load. (No offline app-shell — acceptable for
-//                           a travel planner that needs the network anyway.)
+//   - Navigations / HTML  : NETWORK-FIRST, falling back to the cached shell.
+//                           Network always wins when it's reachable, so a new
+//                           deploy is still picked up on the next load — but a
+//                           traveller with no signal now gets the real app
+//                           instead of a dead-end stub. Their trip, emergency
+//                           numbers and wallet all live in localStorage and are
+//                           useless if the shell never boots.
 //   - Hashed JS/CSS assets: cache-first. Vite fingerprints these (index-AbC1.js),
 //                           so a new build = a new filename = no staleness.
 //   - Cross-origin images : stale-while-revalidate (Wikipedia/Loremflickr/Picsum).
@@ -14,8 +17,32 @@
 // cache bucket and the activate handler purges every older bucket.
 
 const CACHE = 'adventure-planner-__BUILD_VERSION__';
+// Cross-origin imagery lives in its own bucket so it (a) survives deploys
+// instead of being re-downloaded every build, and (b) can be size-capped
+// independently without evicting the hashed JS/CSS in CACHE.
+const IMG_CACHE = 'adventure-planner-img';
+const IMG_CACHE_MAX = 120;
 
-self.addEventListener('install', () => {
+// The app shell. Cached on install so the app can boot with no connection;
+// `index.html` is unhashed, so it's re-fetched from the network on every online
+// navigation and only ever read from cache as a fallback.
+const SHELL = '/index.html';
+
+self.addEventListener('install', (event) => {
+  event.waitUntil((async () => {
+    try {
+      const cache = await caches.open(CACHE);
+      const res = await fetch(new Request(SHELL, { cache: 'reload' }));
+      if (!res.ok) return;
+      await cache.put(SHELL, res.clone());
+      // Also precache the entry JS/CSS the shell references. Without this the
+      // hashed assets only land in the cache on the *second* navigation, so a
+      // user who installs and immediately loses signal gets a shell with no app.
+      const html = await res.text();
+      const urls = [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+\.(?:js|css))"/g)].map((m) => m[1]);
+      await Promise.all(urls.map((u) => cache.add(u).catch(() => {})));
+    } catch { /* precache is best-effort; never block activation */ }
+  })());
   // Take over as soon as possible — don't wait for old tabs to close.
   self.skipWaiting();
 });
@@ -23,10 +50,22 @@ self.addEventListener('install', () => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(
+        keys.filter((k) => k !== CACHE && k !== IMG_CACHE).map((k) => caches.delete(k))
+      ))
       .then(() => self.clients.claim())
   );
 });
+
+// Best-effort LRU trim: Cache API keys() preserves insertion order, so the
+// oldest entries are at the front. Keeps the image cache from growing forever.
+async function trimCache(cacheName, max) {
+  try {
+    const cache = await caches.open(cacheName);
+    const keys = await cache.keys();
+    for (let i = 0; i < keys.length - max; i++) await cache.delete(keys[i]);
+  } catch { /* cache trim is best-effort */ }
+}
 
 function isHashedAsset(url) {
   // Vite output: /assets/index-A1b2C3d4.js , /assets/Foo-X9y8.css
@@ -39,12 +78,27 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(req.url);
 
-  // 1. Navigations / HTML documents — NETWORK ONLY. Never stale.
+  // 1. Navigations / HTML documents — NETWORK FIRST, cached shell as fallback.
+  //    Online behaviour is unchanged (the network response always wins, so
+  //    deploys are never stale); offline now boots the real app instead of a stub.
   if (req.mode === 'navigate' || req.destination === 'document') {
     event.respondWith(
-      fetch(req).catch(
-        () =>
-          new Response(
+      fetch(req)
+        .then((res) => {
+          // Refresh the stored shell so the offline copy tracks the latest deploy.
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(SHELL, copy)).catch(() => {});
+          }
+          return res;
+        })
+        .catch(async () => {
+          // ignoreVary: hosts serve these with `Vary: Origin`, and a crossorigin
+          // request carries an Origin header the cached entry was not stored
+          // under — without this the entry is present but never matches.
+          const cached = await caches.match(SHELL, { ignoreVary: true });
+          if (cached) return cached;
+          return new Response(
             '<!doctype html><meta charset="utf-8"><title>Offline</title>' +
             '<body style="background:#FFFFFF;color:#1B1B1B;' +
             'font-family:Inter,system-ui,-apple-system,sans-serif;' +
@@ -52,8 +106,8 @@ self.addEventListener('fetch', (event) => {
             '<div><p style="font-size:1.5rem;font-weight:700">You\'re offline.</p>' +
             '<p style="opacity:.55">Reconnect to plan your adventure.</p></div>',
             { headers: { 'Content-Type': 'text/html' }, status: 503 }
-          )
-      )
+          );
+        })
     );
     return;
   }
@@ -72,7 +126,11 @@ self.addEventListener('fetch', (event) => {
   if (url.origin === self.location.origin && isHashedAsset(url)) {
     event.respondWith(
       caches.open(CACHE).then(async (cache) => {
-        const cached = await cache.match(req);
+        // ignoreVary is required here: these are served with `Vary: Origin`, and
+        // Vite emits <script crossorigin>, so the page's request carries an
+        // Origin header the precached entry was not stored under. Safe because
+        // the filename is content-hashed — the bytes can't differ by origin.
+        const cached = await cache.match(req, { ignoreVary: true });
         if (cached) return cached;
         const res = await fetch(req);
         if (res.ok) cache.put(req, res.clone()).catch(() => {});
@@ -82,14 +140,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 4. Cross-origin imagery — stale-while-revalidate.
+  // 4. Cross-origin imagery — stale-while-revalidate, in the capped IMG_CACHE.
   if (url.origin !== self.location.origin) {
     event.respondWith(
-      caches.open(CACHE).then(async (cache) => {
+      caches.open(IMG_CACHE).then(async (cache) => {
         const cached = await cache.match(req);
         const fetchPromise = fetch(req)
           .then((res) => {
-            if (res.ok) cache.put(req, res.clone()).catch(() => {});
+            if (res.ok) {
+              cache.put(req, res.clone())
+                .then(() => trimCache(IMG_CACHE, IMG_CACHE_MAX))
+                .catch(() => {});
+            }
             return res;
           })
           .catch(() => cached);

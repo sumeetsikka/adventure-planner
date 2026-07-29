@@ -36,7 +36,7 @@ export const destinations: Destination[] = [
     brief:
       'The most visited city on earth rewards a slow stay of three to four days rather than a breathless checklist sprint. Day one covers the essential icons: the Eiffel Tower at dusk, Montmartre and Sacre-Coeur at golden hour, and a Seine river cruise. Day two: the Louvre (pre-book, arrive at opening), the Tuileries Garden, and the Palais Royal arcades. Day three: Musee d\'Orsay for the Impressionists, Saint-Germain-des-Pres cafe culture, and the covered Galerie Vivienne passage. A fourth day unlocks the Marais district\'s galleries and falafel, the Canal Saint-Martin for a picnic, and the city\'s finest bistrot cooking in the 11th arrondissement.',
     tags: ['Eiffel Tower', 'Louvre', 'Bistros', 'Cafe Culture'],
-    recommendedDays: [5, 7],
+    recommendedDays: [3, 4],
     mustVisit: true,
   },
   {

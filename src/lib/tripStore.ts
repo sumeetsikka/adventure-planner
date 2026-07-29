@@ -35,11 +35,28 @@ function safeRead<T>(key: string, fallback: T): T {
   }
 }
 
-function safeWrite(key: string, value: unknown): void {
+/** Fired when a write is rejected for lack of space. `App` listens and warns —
+ *  silently swallowing this meant users lost saved trips with no signal at all. */
+export const STORAGE_FULL_EVENT = 'adventure-planner:storage-full';
+
+function isQuotaError(err: unknown): boolean {
+  return (
+    err instanceof DOMException &&
+    // 22 is the legacy code; Firefox reports NS_ERROR_DOM_QUOTA_REACHED (1014).
+    (err.name === 'QuotaExceededError' || err.name === 'NS_ERROR_DOM_QUOTA_REACHED' || err.code === 22)
+  );
+}
+
+function safeWrite(key: string, value: unknown): boolean {
   try {
     localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    /* quota / privacy mode — ignore */
+    return true;
+  } catch (err) {
+    // Privacy mode also throws here; only surface the case the user can act on.
+    if (isQuotaError(err)) {
+      try { window.dispatchEvent(new CustomEvent(STORAGE_FULL_EVENT)); } catch { /* non-browser */ }
+    }
+    return false;
   }
 }
 
@@ -99,9 +116,47 @@ export function renameTrip(id: string, name: string): void {
   safeWrite(STORAGE_KEY, next);
 }
 
+/**
+ * Every localStorage key that belongs to a single trip. Kept here so deleting a
+ * trip can purge all of it — previously only the trip record was removed, which
+ * left the travel wallet (passport and insurance numbers) on the device
+ * indefinitely, invisible to a user who reasonably believed it was gone.
+ *
+ * Journal is the odd one out: it predates the trip-id scheme and keys off
+ * `<countryId>-<departureDate>` with no `adventure-planner:` namespace, so it
+ * needs the trip's config to derive.
+ */
+function perTripKeys(trip: SavedTrip | null, id: string): string[] {
+  const keys = [
+    `adventure-planner:wallet:${id}`,
+    `adventure-planner:expenses:${id}`,
+    `adventure-planner:readiness:${id}`,
+    `adventure-planner:packing:${id}`,
+    `adventure-planner:booked:${id}`,
+    `adventure-planner:booking-notes:${id}`,
+    `adventure-planner:chat:${id}`,
+  ];
+  if (trip) {
+    const journalId = `${trip.config.country?.id ?? 'trip'}-${trip.config.departureDate}`;
+    const prefix = `journal:${journalId}:day`;
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith(prefix)) keys.push(k);
+      }
+    } catch { /* privacy mode — nothing to purge */ }
+  }
+  return keys;
+}
+
 export function deleteTrip(id: string): void {
+  // Resolve before removing the record — the journal key derives from its config.
+  const trip = getTrip(id);
   const trips = listTrips().filter((t) => t.id !== id);
   safeWrite(STORAGE_KEY, trips);
+  for (const key of perTripKeys(trip, id)) {
+    try { localStorage.removeItem(key); } catch { /* ignore */ }
+  }
   if (getActiveTripId() === id) setActiveTripId(null);
 }
 

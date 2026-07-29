@@ -1,5 +1,5 @@
-import { useState, lazy, Suspense } from 'react';
-import type { ResultsTab, TravelConfig, GenerationResults } from '../../types';
+import { useState, useCallback, lazy, Suspense } from 'react';
+import type { ResultsTab, TravelConfig, GenerationResults, ItineraryDay, DestinationActivities, DestinationRestaurants } from '../../types';
 import { formatDateAU, addDaysISO } from '../../lib/dateUtils';
 import { openEmailWithTrip } from '../../lib/emailTrip';
 import { searchFlights, searchHotels, generateBudget, generateTips, generatePacking, generateWeather, generateVisa, generateCurrency, generateNearby, generateTransport } from '../../lib/api';
@@ -43,6 +43,45 @@ function TabFallback() {
   );
 }
 
+// --- Undo support -----------------------------------------------------------
+// Every plan edit flows through onUpdateResults, so we detect a *removal* by
+// counting the removable items in just the keys that changed. Several shapes
+// group items by destination, so removing one shrinks an INNER array without
+// changing the top-level length — those need a deep count, or the removal
+// registers as "nothing changed" and no undo is offered.
+function itemCount(key: keyof GenerationResults, value: GenerationResults[keyof GenerationResults] | undefined): number {
+  if (!Array.isArray(value)) return 0;
+  switch (key) {
+    case 'itinerary':
+      return (value as ItineraryDay[]).reduce(
+        (n, d) => n + (d.activities?.length || 0) + (d.timeline?.length || 0), 0);
+    case 'activities':
+      return (value as DestinationActivities[]).reduce((n, g) => n + (g.activities?.length || 0), 0);
+    case 'restaurants':
+      return (value as DestinationRestaurants[]).reduce((n, g) => n + (g.restaurants?.length || 0), 0);
+    default:
+      return value.length;
+  }
+}
+
+function removedItemCount(prev: GenerationResults, partial: Partial<GenerationResults>): number {
+  let before = 0, after = 0;
+  for (const key of Object.keys(partial) as (keyof GenerationResults)[]) {
+    before += itemCount(key, prev[key]);
+    after += itemCount(key, partial[key]);
+  }
+  return before - after;
+}
+
+/** Type-safe copy of the named keys — the previous values to restore on undo. */
+function pickKeys<K extends keyof GenerationResults>(
+  obj: GenerationResults, keys: K[],
+): Pick<GenerationResults, K> {
+  const out = {} as Pick<GenerationResults, K>;
+  for (const k of keys) out[k] = obj[k];
+  return out;
+}
+
 interface Props {
   config: TravelConfig;
   results: GenerationResults;
@@ -57,7 +96,7 @@ function generateICS(results: GenerationResults, config: TravelConfig): string {
     lines.push('BEGIN:VEVENT');
     lines.push(`DTSTART;VALUE=DATE:${dateStr}`);
     lines.push(`SUMMARY:Day ${day.day}: ${day.title}`);
-    lines.push(`DESCRIPTION:${day.activities.join('\\n')}`);
+    lines.push(`DESCRIPTION:${(day.activities || []).join('\\n')}`);
     lines.push(`LOCATION:${day.location}`);
     lines.push('END:VEVENT');
   }
@@ -98,6 +137,22 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
   const [activeTab, setActiveTab] = useState<ResultsTab>('dashboard');
   const [pdfBusy, setPdfBusy] = useState(false);
   const toast = useToast();
+
+  // Undo-aware wrapper around every plan edit. When an update removes items
+  // (remove a stop, a restaurant, an activity, a chat-driven deletion), it
+  // snapshots the prior values of the changed keys and offers a one-tap Undo —
+  // previously every ✕ mutated the plan instantly with no way back.
+  const handleUpdate = useCallback((partial: Partial<GenerationResults>) => {
+    const removed = removedItemCount(results, partial);
+    if (removed <= 0) { onUpdateResults(partial); return; }
+    const snapshot = pickKeys(results, Object.keys(partial) as (keyof GenerationResults)[]);
+    onUpdateResults(partial);
+    toast(
+      removed === 1 ? 'Removed' : `Removed ${removed} items`,
+      'default',
+      { label: 'Undo', onClick: () => onUpdateResults(snapshot) },
+    );
+  }, [results, onUpdateResults, toast]);
 
   const totalDays = Math.round(
     (new Date(config.returnDate).getTime() - new Date(config.departureDate).getTime()) /
@@ -213,14 +268,14 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
           {activeTab === 'itinerary' && (
             <ItineraryTab itinerary={results.itinerary} config={config} hotels={results.hotels}
               flights={results.flights} transport={results.transport} weather={results.weather}
-              onUpdate={(itinerary) => onUpdateResults({ itinerary })} />
+              onUpdate={(itinerary) => handleUpdate({ itinerary })} />
           )}
           {activeTab === 'flights' && (results.flights.length > 0
             ? <FlightsTab flights={results.flights} config={config} />
             : <RetryButton label="flights" onRetry={async () => { const d = await searchFlights(config); onUpdateResults({ flights: d }); }} />
           )}
           {activeTab === 'hotels' && (results.hotels.length > 0
-            ? <HotelsTab hotels={results.hotels} destinations={config.destinations} config={config} onUpdate={(hotels) => onUpdateResults({ hotels })} />
+            ? <HotelsTab hotels={results.hotels} destinations={config.destinations} config={config} onUpdate={(hotels) => handleUpdate({ hotels })} />
             : <RetryButton label="hotels" onRetry={async () => { const d = await searchHotels(config); onUpdateResults({ hotels: d }); }} />
           )}
           {activeTab === 'transport' && (results.transport.length > 0
@@ -234,7 +289,7 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
             <RouteMapTab config={config} results={results} />
           )}
           {activeTab === 'budget' && (results.budget.length > 0
-            ? <BudgetTab budget={results.budget} config={config} flights={results.flights} transport={results.transport} hotels={results.hotels} itinerary={results.itinerary} onUpdate={(budget) => onUpdateResults({ budget })} />
+            ? <BudgetTab budget={results.budget} config={config} flights={results.flights} transport={results.transport} hotels={results.hotels} itinerary={results.itinerary} onUpdate={(budget) => handleUpdate({ budget })} />
             : <RetryButton label="budget" onRetry={async () => { const d = await generateBudget(config); onUpdateResults({ budget: d }); }} />
           )}
           {activeTab === 'tips' && (results.tips.length > 0
@@ -264,15 +319,15 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
           {activeTab === 'checklist' && <ChecklistTab config={config} />}
           {activeTab === 'wallet' && <WalletTab config={config} />}
           {activeTab === 'photos' && <PhotosTab destinations={config.destinations} />}
-          {activeTab === 'chat' && <ChatTab config={config} results={results} onUpdateResults={onUpdateResults} />}
+          {activeTab === 'chat' && <ChatTab config={config} results={results} onUpdateResults={handleUpdate} />}
           {activeTab === 'events' && <EventsTab config={config} />}
           {activeTab === 'journal' && <JournalTab config={config} results={results} />}
           {activeTab === 'taste' && (results.restaurants && results.restaurants.length > 0
-            ? <TasteTab restaurants={results.restaurants} config={config} itinerary={results.itinerary} onUpdate={(restaurants) => onUpdateResults({ restaurants })} onUpdateItinerary={(itinerary) => onUpdateResults({ itinerary })} />
+            ? <TasteTab restaurants={results.restaurants} config={config} itinerary={results.itinerary} onUpdate={(restaurants) => handleUpdate({ restaurants })} onUpdateItinerary={(itinerary) => handleUpdate({ itinerary })} />
             : <RetryButton label="restaurants" onRetry={async () => { const d = await import('../../lib/api').then(m => m.generateRestaurants(config)); onUpdateResults({ restaurants: d }); }} />
           )}
           {activeTab === 'do' && (results.activities && results.activities.length > 0
-            ? <DoTab activities={results.activities} config={config} itinerary={results.itinerary} onUpdate={(activities) => onUpdateResults({ activities })} onUpdateItinerary={(itinerary) => onUpdateResults({ itinerary })} />
+            ? <DoTab activities={results.activities} config={config} itinerary={results.itinerary} onUpdate={(activities) => handleUpdate({ activities })} onUpdateItinerary={(itinerary) => handleUpdate({ itinerary })} />
             : <RetryButton label="activities" onRetry={async () => { const d = await import('../../lib/api').then(m => m.generateActivities(config)); onUpdateResults({ activities: d }); }} />
           )}
           </Suspense>

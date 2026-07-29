@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { TravelConfig, ChatMessage, ChatAction, GenerationResults } from '../../types';
 import { generateActivityAlternatives, generateRestaurantAlternatives, generateHotelAlternatives } from '../../lib/api';
+import { getActiveTripId } from '../../lib/tripStore';
+import { usePersistentState } from '../../lib/usePersistentState';
 
 interface Props {
   config: TravelConfig;
@@ -33,7 +35,10 @@ const ACTION_SUGGESTIONS = [
 ];
 
 export default function ChatTab({ config, results, onUpdateResults }: Props) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // Persisted per trip — the conversation is the tab's entire value, and it was
+  // being wiped every time the user looked at another tab to check an answer.
+  const tripId = getActiveTripId() || 'default';
+  const [messages, setMessages] = usePersistentState<ChatMessage[]>(`adventure-planner:chat:${tripId}`, []);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);

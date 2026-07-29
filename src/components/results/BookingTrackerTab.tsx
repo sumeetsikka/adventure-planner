@@ -5,6 +5,8 @@ import { formatDateAU } from '../../lib/dateUtils';
 import { getFlightLinks, getHotelLinks } from '../../lib/bookingLinks';
 import { parseBookingEmail, type ParsedBooking } from '../../lib/api';
 import { tapHaptic } from '../../lib/haptics';
+import { getActiveTripId } from '../../lib/tripStore';
+import { usePersistentState, usePersistentSet } from '../../lib/usePersistentState';
 
 interface Props {
   config: TravelConfig;
@@ -22,13 +24,16 @@ interface BookingItem {
 const EASE = [0.16, 1, 0.3, 1] as const;
 
 export default function BookingTrackerTab({ config, results }: Props) {
-  const [booked, setBooked] = useState<Set<string>>(new Set());
+  // Persisted per trip. This is the tab whose whole purpose is remembering what
+  // you've booked, so losing it on a tab switch defeated the feature entirely.
+  const tripId = getActiveTripId() || 'default';
+  const [booked, setBooked] = usePersistentSet(`adventure-planner:booked:${tripId}`);
   const [emailText, setEmailText] = useState('');
   const [parsing, setParsing] = useState(false);
   const [parseError, setParseError] = useState('');
   const [parsed, setParsed] = useState<ParsedBooking | null>(null);
   const [parsedMatchId, setParsedMatchId] = useState<string | null>(null);
-  const [savedNotes, setSavedNotes] = useState<ParsedBooking[]>([]);
+  const [savedNotes, setSavedNotes] = usePersistentState<ParsedBooking[]>(`adventure-planner:booking-notes:${tripId}`, []);
   const [statusMsg, setStatusMsg] = useState('');
 
   const toggle = (id: string) => {

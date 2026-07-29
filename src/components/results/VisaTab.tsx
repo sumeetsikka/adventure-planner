@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import type { VisaInfo } from '../../types';
 import { mapsUrl, telUrl } from '../../lib/deepLinks';
+import { EstimateNote } from '../shared/EstimateBadge';
 
 interface Props {
   visa: VisaInfo | null;
@@ -132,7 +133,12 @@ export default function VisaTab({ visa, travellers = 1, departureDate }: Props) 
               Apply for e-visa
               <span aria-hidden>→</span>
             </a>
-            <p className="font-display-soft italic text-[var(--text-muted)] text-xs mt-3">Opens the <span className="text-[var(--cream)]">official</span> portal in a new tab.</p>
+            {/* Never call this link "official" — `evisa_url` is AI-generated and
+                unverified, and visa-scam sites are an active industry. Tell the
+                user to confirm the destination before entering any details. */}
+            <p className="font-display-soft italic text-[var(--text-muted)] text-xs mt-3">
+              AI-suggested link — check it's the government site before entering personal details or paying.
+            </p>
           </div>
         )}
       </div>
@@ -315,6 +321,10 @@ export default function VisaTab({ visa, travellers = 1, departureDate }: Props) 
           </div>
         )}
       </div>
+
+      {/* Entry rules are the highest-consequence thing the model guesses at —
+          getting this wrong means being refused boarding. */}
+      <EstimateNote what="visa and entry requirements" />
     </motion.div>
   );
 }
