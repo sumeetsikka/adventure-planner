@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import type { Country, Destination, VibeOption, TravelConfig, GenerationResults, AppView, WizardStep, TravellerProfile, TripMode } from './types';
 import { searchFlights, searchHotels, generateItinerary, generateBudget, generateTips, generateDestinations, generatePacking, generateWeather, generateVisa, generateCurrency, generateNearby, generateTransport, generateRestaurants, generateActivities } from './lib/api';
-import { getDestinationsForCountry } from './data/destinations';
+import { loadDestinationsForCountry } from './data/destinations';
 import CountryPicker from './components/wizard/CountryPicker';
 import DestinationPicker from './components/wizard/DestinationPicker';
 import TravelDetails from './components/wizard/TravelDetails';
@@ -113,8 +113,13 @@ function AppInner() {
     const trip = getTrip(id);
     if (!trip) return;
     setSelectedCountry(trip.config.country);
-    const dests = getDestinationsForCountry(trip.config.country.id) ?? trip.config.destinations;
-    setCountryDestinations(dests);
+    // Use the trip's saved destinations immediately, then upgrade to the full
+    // curated list once its chunk loads. The landing view is My Trips, not the
+    // picker, so the async upgrade is never visibly late.
+    setCountryDestinations(trip.config.destinations);
+    loadDestinationsForCountry(trip.config.country.id).then((full) => {
+      if (full) setCountryDestinations(full);
+    });
     setSelectedDests(trip.config.destinations);
     setDepartureDate(trip.config.departureDate);
     setReturnDate(trip.config.returnDate);
@@ -145,8 +150,10 @@ function AppInner() {
     const country = countries.find(c => c.id === trip.c);
     if (!country) return;
 
-    // Load destinations
-    const dests = getDestinationsForCountry(country.id);
+    // The shared link carries only destination IDs, so we must resolve the
+    // country's data (now an async chunk) before we can match them.
+    (async () => {
+    const dests = await loadDestinationsForCountry(country.id);
     if (!dests) return;
 
     // Match destination IDs
@@ -174,6 +181,7 @@ function AppInner() {
       setView('wizard');
       setStep(2);
     }, 100);
+    })();
   }, []);
 
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
@@ -223,8 +231,12 @@ function AppInner() {
   const loadTrip = (trip: SavedTrip) => {
     setActiveTripId(trip.id);
     setSelectedCountry(trip.config.country);
-    const dests = getDestinationsForCountry(trip.config.country.id) ?? trip.config.destinations;
-    setCountryDestinations(dests);
+    // Saved destinations render immediately; the full curated list upgrades in
+    // when its chunk arrives (see the restore effect above for the rationale).
+    setCountryDestinations(trip.config.destinations);
+    loadDestinationsForCountry(trip.config.country.id).then((full) => {
+      if (full) setCountryDestinations(full);
+    });
     setSelectedDests(trip.config.destinations);
     setDepartureDate(trip.config.departureDate);
     setReturnDate(trip.config.returnDate);
@@ -273,19 +285,21 @@ function AppInner() {
     setTripMode(undefined);
     setStep(1);
     setSelectedCountry(country);
-    const prebuilt = getDestinationsForCountry(country.id);
-    if (prebuilt) {
-      setCountryDestinations(prebuilt);
-      setView('wizard');
-      return;
-    }
+    // Country data is now a per-country chunk. Show the wizard's loading state
+    // while it fetches (usually a few ms) so the picker doesn't render empty.
     setLoadingDestinations(true);
     setView('wizard');
     try {
+      const prebuilt = await loadDestinationsForCountry(country.id);
+      if (prebuilt) {
+        setCountryDestinations(prebuilt);
+        return;
+      }
+      // Not a country we ship — generate destinations via the LLM.
       const generated = await generateDestinations(country);
       setCountryDestinations(generated);
     } catch (err) {
-      console.error('Failed to generate destinations:', err);
+      console.error('Failed to load destinations:', err);
       setCountryDestinations([]);
     } finally {
       setLoadingDestinations(false);

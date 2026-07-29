@@ -60,7 +60,7 @@ The wizard has three steps: **Country → Destinations → Details → Generate*
 
 | 👤 Traveller | 🛠️ Admin |
 |---|---|
-| Each country shows a curated list of destinations. Tap **Add to trip** on as many as you want — they re-order automatically into an optimal route. **Know more** opens a detailed synopsis (Wikipedia + AI). | Prebuilt destinations: `src/data/destinations.ts`. Each `Destination` has `id`, `name`, `emoji`, `colour`, `airport` (IATA), `region`, `brief`, `tags`, `recommendedDays: [min, max]`. The order in the array determines wizard order; routing logic in `src/lib/routePlanner.ts` reorders for shortest path. |
+| Each country shows a curated list of destinations. Tap **Add to trip** on as many as you want — they re-order automatically into an optimal route. **Know more** opens a detailed synopsis (Wikipedia + AI). | Prebuilt destinations live in `src/data/countries/<id>.ts` (one file per country). Each `Destination` has `id`, `name`, `emoji`, `colour`, `airport` (IATA), `region`, `brief`, `tags`, `recommendedDays: [min, max]`. **These files are code-split** — `loadDestinationsForCountry(id)` in `src/data/destinations.ts` dynamic-imports the one country the user picks (via `import.meta.glob`), so the ~6k lines of prose stay out of the first-paint bundle. The country picker's "N stops" badge reads a tiny eager `destinationCounts` map (`src/data/destinationCounts.ts`) instead. **When you add or remove a destination in a country file, update `destinationCounts.ts`** (regenerate: count `recommendedDays:` per file). The array order determines wizard order; routing in `src/lib/routePlanner.ts` reorders for shortest path. |
 | Tap **← All Countries** to step back. | `onBackToCountries` in `App.tsx` triggers `handleBackToCountries()` which clears destinations and steps to the country picker. |
 
 ### 2.3 Travel details
@@ -413,6 +413,15 @@ Future sessions: when you edit code that maps to a section here, also update `GU
 ## 15. Changelog
 
 > Add newest entries at the top. Date format: YYYY-MM-DD.
+
+### 2026-07-01 — Phase 4: code-split the country data (first paint ~58% smaller)
+All 29 country files — ~6,000 lines of destination prose between them — were statically imported by `src/data/destinations.ts`, so every one of them shipped in the first-paint bundle for a user who then picks exactly one country.
+
+- **Per-country chunks.** `destinations.ts` now uses `import.meta.glob('./countries/*.ts')` and exposes `loadDestinationsForCountry(id)` (async, memoised) — Vite splits each country into its own chunk, and only the picked country is fetched. The old synchronous `getDestinationsForCountry` is gone; the four `App.tsx` call sites and `DestinationPicker`'s "extend your journey" load now await it. The country-tap path shows the wizard's existing loading state while the (small) chunk arrives.
+- **The picker badge stays sync.** The country grid renders a "N stops" count on every tile, which can't wait on an async load — so a tiny eager `destinationCounts` map (`src/data/destinationCounts.ts`, 29 numbers) feeds `getDestinationCount(id)`. Keep it in sync when editing a country's destinations.
+- **Measured, not estimated:** first-paint `index.js` went **691 KB → 332 KB raw, ~218 KB → 91 KB gzip** (−58%, ~127 KB off the wire). A user picking Japan now loads 91 KB + a 6.9 KB country chunk instead of 218 KB.
+
+*Verified at runtime on a production build: zero country chunks at startup; picking Japan fetched `japan-*.js` on demand and rendered all 18 destinations; picker badges show the right counts (Vietnam 22, Japan 18). `tsc -b`, `eslint src/`, `vite build` all clean, console clean.*
 
 ### 2026-07-01 — Phase 3: undo for plan edits
 The audit called the absence of undo "the single highest-leverage cross-cutting fix" — every ✕ mutated the plan instantly with no way back. There is now one undo primitive covering all of it.

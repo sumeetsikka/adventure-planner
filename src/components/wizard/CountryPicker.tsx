@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { countries } from '../../data/countries';
-import { getDestinationsForCountry } from '../../data/destinations';
+import { getDestinationCount } from '../../data/destinations';
 import { useWikiImage } from '../../lib/useWikiImage';
 import { isInWishlist, toggleWishlist } from '../../lib/wishlist';
 import type { Country } from '../../types';
@@ -206,7 +206,7 @@ export default function CountryPicker({ onSelect, onInspire, onWishlist, onMyTri
 }
 
 function CountryTile({ country, onSelect }: { country: Country; onSelect: (c: Country) => void }) {
-  const destCount = getDestinationsForCountry(country.id)?.length ?? 0;
+  const destCount = getDestinationCount(country.id);
   const photo = useWikiImage(country.name, 'country');
   const [saved, setSaved] = useState<boolean>(() => isInWishlist(country.id));
 
