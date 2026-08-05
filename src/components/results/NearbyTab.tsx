@@ -5,6 +5,7 @@ import { getDestinationPhoto } from '../../lib/imagery';
 import { buildDayPlans, destinationDayRanges, dayRangeForDestination } from '../../lib/planStitch';
 import { PlaceActions } from '../shared/PlaceLink';
 import DayRangeChip from '../shared/DayRangeChip';
+import PlacePhoto from '../shared/PlacePhoto';
 import { EstimateNote } from '../shared/EstimateBadge';
 
 interface Props {
@@ -148,12 +149,13 @@ export default function NearbyTab({ nearby, config, itinerary = [] }: Props) {
                     className="surface-soft rounded-3xl overflow-hidden flex flex-col group"
                   >
                     <div className="relative h-44 overflow-hidden">
-                      <img
-                        src={getDestinationPhoto(place.name, 600, 400)}
+                      {/* Real photo of the actual place when Places can match it;
+                          the stock image is the fallback, not the default. */}
+                      <PlacePhoto
+                        query={`${place.name}, ${place.destination}`}
+                        fallbackSrc={getDestinationPhoto(place.name, 600, 400)}
                         alt={place.name}
-                        loading="lazy"
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                        onError={(e) => { const img = e.currentTarget; if (img.dataset.fell) return; img.dataset.fell = '1'; img.src = `https://picsum.photos/seed/${encodeURIComponent(place.name)}/600/400`; }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
                       {(place.category || place.trip_length) && (

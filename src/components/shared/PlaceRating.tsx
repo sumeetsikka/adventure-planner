@@ -27,11 +27,58 @@ export default function PlaceRating({ query }: { query: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
-  if (!data || !data.available || (data.rating == null && data.openNow == null && data.wheelchair == null)) {
+  const shutDown = data?.businessStatus === 'CLOSED_PERMANENTLY' || data?.businessStatus === 'CLOSED_TEMPORARILY';
+
+  // A shut-down venue must surface even when Google returns nothing else about
+  // it — that warning is the single most valuable thing this component can say,
+  // so it deliberately bypasses the "no facts worth showing" guard below.
+  if (!data || !data.available || (!shutDown && data.rating == null && data.openNow == null && data.wheelchair == null)) {
     return null;
   }
 
+  if (shutDown) {
+    const permanent = data.businessStatus === 'CLOSED_PERMANENTLY';
+    return (
+      <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-2 mb-1">
+        <span
+          className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-full"
+          style={{ background: 'color-mix(in srgb, var(--terracotta) 16%, transparent)', color: 'var(--terracotta)' }}
+          title="Verified against Google Places"
+        >
+          <span aria-hidden>⚠</span>
+          {permanent ? 'Permanently closed' : 'Temporarily closed'}
+        </span>
+        <span className="text-[11px] text-[var(--text-muted)]">
+          {permanent ? 'Google says this has shut down — pick something else.' : 'Google says this is shut right now — check before you go.'}
+        </span>
+        {data.mapsUri && (
+          <a
+            href={data.mapsUri}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="text-[10px] tracking-wide uppercase text-[var(--text-muted)] hover:text-[var(--cream)] underline-offset-2 hover:underline"
+          >
+            Maps ↗
+          </a>
+        )}
+      </div>
+    );
+  }
+
   const priceStr = data.priceLevel ? '$'.repeat(Math.min(4, Math.max(1, data.priceLevel))) : null;
+
+  // Google returns hours as ["Monday: 9:00 AM – 5:00 PM", …] starting Monday;
+  // getDay() is Sunday-based, so remap. Showing TODAY's hours is the useful slice —
+  // "Open now" answers this second, this answers "will it still be open when I get there".
+  const todayHours = (() => {
+    if (!Array.isArray(data.hours) || data.hours.length < 7) return null;
+    const idx = (new Date().getDay() + 6) % 7;
+    const line = data.hours[idx];
+    if (typeof line !== 'string') return null;
+    const parts = line.split(': ');
+    return parts.length > 1 ? parts.slice(1).join(': ') : line;
+  })();
 
   return (
     <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-2 mb-1">
@@ -55,6 +102,14 @@ export default function PlaceRating({ query }: { query: string }) {
       {data.openNow != null && (
         <span className={`text-[11px] font-medium ${data.openNow ? 'text-[var(--sage)]' : 'text-[var(--terracotta)]'}`}>
           {data.openNow ? 'Open now' : 'Closed now'}
+        </span>
+      )}
+      {todayHours && (
+        <span
+          className="text-[11px] text-[var(--text-muted)]"
+          title={Array.isArray(data.hours) ? data.hours.join('\n') : undefined}
+        >
+          Today {todayHours}
         </span>
       )}
       {data.wheelchair && (

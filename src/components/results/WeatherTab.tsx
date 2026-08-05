@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import type { WeatherInfo, WeatherDay } from '../../types';
+import { VerifiedBadge } from '../shared/EstimateBadge';
 
 interface Props {
   weather: WeatherInfo[];
@@ -177,6 +178,9 @@ export default function WeatherTab({ weather }: Props) {
   }
 
   const hasAnyForecast = weather.some((w) => w.forecast && w.forecast.length > 0);
+  // Only a genuine forecast earns the verified marker. Older saved trips have no
+  // `source` field at all, so require it explicitly rather than defaulting to true.
+  const isRealForecast = weather.some((w) => w.source === 'forecast');
 
   return (
     <motion.div
@@ -191,6 +195,18 @@ export default function WeatherTab({ weather }: Props) {
         </h2>
         <div className="divider my-5 max-w-[120px]" />
         <p className="text-[var(--text-muted)] text-sm max-w-xl">Expected conditions across the places you’re bound for.</p>
+        {/* Weather is one of the app's few REAL data sources — but only when the
+            trip is inside Open-Meteo's forecast window. Beyond that these are last
+            year's actuals for the same dates, which must not be badged verified. */}
+        <div className="flex items-center gap-2 mt-3">
+          {isRealForecast
+            ? <VerifiedBadge source="the Open-Meteo forecast" />
+            : (
+              <span className="text-[11px] text-[var(--text-dim)]">
+                Typical conditions — last year’s actuals for these dates, not a forecast.
+              </span>
+            )}
+        </div>
       </div>
 
       {/* Top summary row — existing destination cards */}

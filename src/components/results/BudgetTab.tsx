@@ -6,6 +6,7 @@ import { fetchRate, CURRENCY_SYMBOLS } from '../../lib/fx';
 import { buildDayPlans, perDayCosts } from '../../lib/planStitch';
 import { formatDayLabel, todayISO } from '../../lib/dateUtils';
 import { getActiveTripId } from '../../lib/tripStore';
+import { YoursBadge } from '../shared/EstimateBadge';
 import {
   listExpenses, addExpense, removeExpense, totalSpent, settleUp,
   EXPENSE_CATEGORIES, type Expense, type ExpenseCategory,
@@ -744,7 +745,9 @@ function SpendTracker({
       className="surface-card rounded-3xl p-7 mb-10"
     >
       <div className="flex items-baseline justify-between mb-1.5 gap-3 flex-wrap">
-        <p className="eyebrow">Spend tracker</p>
+        {/* This panel sits directly below the AI's budget estimate. Marking it
+            "Yours" is what stops the two being read as the same kind of number. */}
+        <p className="eyebrow flex items-center gap-2">Spend tracker <YoursBadge /></p>
         <span className="text-[10px] text-[var(--text-dim)] tracking-wider uppercase">Log it as you go · saves on this device</span>
       </div>
       <h3 className="font-display text-2xl text-[var(--cream)] leading-tight mb-6">

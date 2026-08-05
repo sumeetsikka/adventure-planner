@@ -119,7 +119,7 @@ Results are split into 4 groups in the nav.
 | 👤 Traveller | 🛠️ Admin |
 |---|---|
 | Each leg shows a **Day N badge** + the full date (🗓️ Wed 1 Jul) tying it to the itinerary, plus price, duration, stops, CO₂ estimate, airlines, and **Skyscanner / Google Flights / Webjet** deep-links pre-filled with your dates and travellers. | `getFlightLinks()` in `src/lib/bookingLinks.ts`. Day badge via `tripDayNumber()`; date label via `formatDayLabel()` (both in `dateUtils.ts`). CO₂ via `flightCO2kg()` in `src/lib/carbon.ts`. |
-| **🔔 Track price** toggles a watch on this flight. Saved across sessions. | `priceWatch.ts` lib — localStorage `adventure-planner:price-watch`. UI in `FlightsTab.tsx → WatchToggle`. The actual price-monitoring backend isn't built yet — this captures intent only. |
+| **☆ Shortlist** marks the flight you're leaning towards. Saved across sessions. | `priceWatch.ts` lib — localStorage `adventure-planner:price-watch` (key kept for back-compat). UI in `FlightsTab.tsx → WatchToggle`. **This was “🔔 Track price” until 2026-07-30 and promised alerts that could never arrive** — there is no polling layer and `listWatched` was never called by anything. Scoped down to what actually works. `basePrice` is still recorded, so real monitoring can be layered on later; **don't reintroduce alert language until the backend exists.** |
 
 ### 3.5 Hotels
 
@@ -223,7 +223,7 @@ Results are split into 4 groups in the nav.
 | 👤 Traveller | 🛠️ Admin |
 |---|---|
 | **Theme toggle** (🌙 / ☀) at top right. Light theme is default. | `ThemeToggle.tsx` writes `data-theme="dark"` on `<html>` and toggles state. CSS tokens swap via `[data-theme="dark"]` in `src/index.css`. |
-| **Language** — English only today; scaffold ready for Spanish, Japanese, Mandarin, French, German. | `src/lib/i18n.ts`. To enable a language: populate its block in `STRINGS`, add it to `AVAILABLE_LANGUAGES`, and the user picker (once built) will surface it. |
+| **Language** — English only. | The `i18n.ts` scaffold was **deleted** (2026-07-30): 97 lines, zero importers, one language in the picker — it described a feature that was never wired to anything. Reintroduce it properly if/when a second language is actually being shipped. |
 | **Install as app** — your browser will offer this. iOS Safari: Share → Add to Home Screen. Android Chrome: Install icon in URL bar. | PWA manifest in `public/manifest.json` (not `.webmanifest` — the file has always been `.json`). Icons are real PNGs: `icon-192`/`icon-512` (`any`), `icon-maskable-512` (Android's 20% safe zone), and `apple-touch-icon.png` at 180px — iOS Safari ignores SVG here and falls back to a screenshot of the page. Install prompt UX in `InstallPrompt.tsx` (`adventure-planner:install-dismissed` localStorage flag). |
 
 ---
@@ -311,14 +311,17 @@ A debounced auto-commit hook (`.claude/scripts/auto-commit.sh`) commits clean in
 | `server/lib/prompts.ts` | All LLM system prompts. The most-tweaked one is `ITINERARY_SYSTEM` — the hour-by-hour timeline contract lives here. |
 | `api/[route].ts` | Route handlers. `personalisationHint()`, `budgetHint()`, `modeDirective()`, `profilesHint()` are appended to user messages to shape generation. `ORIGIN_CITY_BY_IATA` maps the user's chosen origin IATA to a city name for the prompts (so itinerary/flights actually use the chosen origin instead of hard-coding Melbourne). Add new origin airports here if you extend `originAirports.ts`. |
 | `server/lib/dateSchedule.ts` | The destination-by-destination schedule logic (`computeSchedule`, `fixFlightDates`, `fixHotelDates`). Adjust if you change trip-length semantics. |
-| `src/lib/i18n.ts` | i18n scaffold. To add a language: fill its block in `STRINGS`, add to `AVAILABLE_LANGUAGES`. |
+| `src/lib/usePersistentState.ts` | `usePersistentState` / `usePersistentSet` — useState that survives a tab switch (tabs unmount on navigation). Used by Packing, Bookings and Chat. |
 | `src/lib/readiness.ts` | The pre-trip readiness checklist (now includes an eSIM/connectivity item, T−7, linking to Airalo). Add an item: append to `buildReadinessItems()` with a `daysBefore` deadline + extend `ReadinessItemId`. |
 | `src/lib/expenses.ts` | Trip spend tracker storage + math (`addExpense`, `totalSpent`, `settleUp`). localStorage per trip. |
 | `src/lib/travelWallet.ts` | Travel-document vault storage + `maskValue` + `passportExpiryWarning`. localStorage per trip, **device-only — never transmitted**. |
 | `src/lib/placeCache.ts` + `src/components/shared/PlaceRating.tsx` | Live Google-Places data layer. Cache dedupes/persists; `PlaceRating` is a drop-in badge that renders nothing when the key is absent. Backend = `handlePlaceDetails` in `api/[route].ts`. Add the badge to any card with `<PlaceRating query="Name, City" />`. |
 | `src/lib/emergency.ts` | Offline emergency-numbers dataset per country + `embassySearchUrl()`. Keep in sync when adding countries. |
 | `src/lib/planEdit.ts` | Pure itinerary transforms — `addStopToDay()` powers the "＋ Plan" pool→plan loop. |
-| `src/lib/priceWatch.ts` | Watch-list lib. Wire new "Track" buttons by importing `{ isWatched, toggleWatch, *WatchId }`. |
+| `src/lib/priceWatch.ts` | Shortlist lib. Wire new shortlist buttons by importing `{ isWatched, toggleWatch, *WatchId }`. |
+| `src/lib/openingHours.ts` | Parses Google's `weekdayDescriptions` (split service, past-midnight closing, dash/space variants) and answers "is this stop within opening hours?". Pure functions, no network. Tests: `npx tsx src/lib/openingHours.test.ts`. |
+| `src/lib/hoursConflicts.ts` | Feeds the Itinerary conflict rail with verified closed-venue and outside-hours warnings. **Cache-only** — reads `peekPlace`, never triggers a Places lookup. |
+| `src/components/shared/PlacePhoto.tsx` | `<img>` that prefers a REAL Google Places photo of the venue, falling back to the stock imagery in `imagery.ts`. Key-optional. |
 | `src/lib/planStitch.ts` | The plan-stitching layer. `buildDayPlans()` joins flights/hotels/transport/itinerary by date; `dayMoves()` builds the per-day move chips. Use this anywhere you need "what happens on day N". |
 | `src/lib/dateUtils.ts` | Date helpers. `tripDayNumber()`, `formatDayLabel()`, `isDateInStay()`, `parseLocalDate()` (timezone-safe). Use these instead of raw `new Date('YYYY-MM-DD')` (which parses as UTC and can be a day off). |
 | `src/lib/deepLinks.ts` | Map/navigation/ride/phone deep-links. `dayRouteUrl(stops)` = multi-stop walking route; `mapsUrl`/`directionsUrl` = single place. iOS → Apple Maps, else Google. |
@@ -413,6 +416,76 @@ Future sessions: when you edit code that maps to a section here, also update `GU
 ## 15. Changelog
 
 > Add newest entries at the top. Date format: YYYY-MM-DD.
+
+### 2026-07-30 — Phase 8: per-field provenance — say which numbers are real
+Because this app generates nearly everything, it can do the one thing neither an OTA nor an AI startup will: **label every fact by where it came from.** Three markers, one visual language, in `src/components/shared/EstimateBadge.tsx`:
+
+| Marker | Means | Used on |
+|---|---|---|
+| **Verified** | a real feed | Weather (Open-Meteo forecast only) |
+| **est.** | the model's guess | Do activity prices, Hotels nightly rate |
+| **Yours** | you entered it | Budget spend tracker |
+
+- **The specific problem this fixes:** a Do or Hotels card shows a Google rating badged "Live" directly above an invented price. With no marker on the price, **the verified badge implicitly vouches for the whole card.** Marking the estimate is what keeps the verified badge meaningful. A compact `est.` variant sits beside a number without shouting; the full pill is for panels with room.
+- **Weather only claims verified when it has earned it.** New `WeatherInfo.source: 'forecast' | 'historical'`. Inside Open-Meteo's ~14-day window it's a genuine forecast and gets the badge; beyond that it's last year's actuals re-stamped onto the trip dates (see Phase 5) and instead says *"Typical conditions — last year's actuals for these dates, not a forecast."* Older saved trips have no `source` field, so the check requires it explicitly rather than defaulting to verified.
+- **`EstimateBadge` is no longer dead code.** It was written, never imported, and sat unused for the whole life of the trust layer.
+- **Deliberately not marked:** Currency already has its own correct live-vs-estimated indicator (ECB timestamp), so it wasn't churned. Flights already read "per person · est.".
+
+*Verified at runtime on a production build with two seeded trips — one `source: 'forecast'`, one `source: 'historical'` — confirming the badge appears on the real forecast and is replaced by the caveat on historical data. All three markers confirmed rendering. Gates: `tsc -b`, `eslint src/`, `vite build`, 27/27 unit assertions.*
+
+*Still open: `lat`/`lng` returned but the Map still plots city centroids; tab consolidation (23 → 7) not started; the ground pass is cache-only so coverage depends on browsing.*
+
+### 2026-07-30 — Phase 7: the ground pass — checking the plan against reality
+The two most-documented failures of AI itineraries are recommending a venue that has **permanently closed** (~24% of itineraries) and scheduling you somewhere **outside its opening hours** (~52%). The plan can't know either on its own; Google Places does, and the app was already calling it.
+
+- **Closed-venue warning.** Added `businessStatus` to the Places field mask (free — that call is already top-tier) and `PlaceRating` now renders a prominent **⚠ Permanently closed / Temporarily closed** badge with a "pick something else" line. It deliberately **bypasses the component's "no facts worth showing" early return**: a shut-down venue must surface even when Google returns nothing else about it.
+- **Opening-hours conflicts in the Itinerary.** New `hoursConflicts.ts` feeds the existing conflict rail: *"Kyoto Railway Museum is scheduled for 20:00, outside its opening hours — Google lists it as open 9:00 AM – 5:00 PM that day."* Also catches "closed on the day you've planned it".
+- **Cache-only by design.** `findHoursConflicts` reads `peekPlace` and **never triggers a lookup**. Field tier prices the whole Places response, so a background sweep over every stop would spend real money silently. Coverage grows as the traveller browses (each card warms the cache), and a stop we know nothing about produces **no claim at all** — it only ever reports what it can prove. Both directions are verified below.
+- **New `openingHours.ts` + a test.** Parsing Google's `weekdayDescriptions` is genuinely fiddly: split restaurant service (`11:00 AM – 2:00 PM, 5:00 – 9:00 PM`), closing past midnight (`5:00 PM – 2:00 AM`), four different dash characters, and thin/narrow/non-breaking spaces. Run the tests with:
+
+```bash
+npx tsx src/lib/openingHours.test.ts
+```
+
+  The project has no test framework and one module didn't justify adding a dependency, so it's a plain assertion script that exits non-zero on failure. **It earned its place immediately** — it caught a bug where `5:00 – 9:00 PM` was read as **5 AM**, because `"5:00"` parses happily as a 24-hour time so the meridiem-inheritance branch never ran. Evening restaurant service silently became a dawn slot. `tsconfig.app.json` now excludes `src/**/*.test.ts` (the test uses Node's `process`, not the DOM).
+
+*Verified at runtime on a production build, both directions: with the cache warmed, a museum scheduled at 20:00 against 9–5 hours is flagged and a permanently-closed venue is called out; with the cache empty, **no claim is made at all** while the itinerary renders normally. 27/27 unit assertions pass. Gates: `tsc -b`, `eslint src/`, `vite build` clean.*
+
+*Still open: `lat`/`lng` are returned but the Map still plots city centroids only; tab consolidation (23 → 7) not started; no per-field provenance labelling yet.*
+
+### 2026-07-30 — Phase 6: consume the real place data, and stop promising alerts
+Phase 5 added `location`, `formattedAddress`, `regularOpeningHours` and `photos` to the Places response — but nothing read them, which is the same "built and never fed" pattern Phase 5 existed to fix. This consumes them.
+
+- **Real opening hours on cards.** `PlaceRating` now shows **“Today 9:00 AM – 5:00 PM”** next to Open/Closed, with the full week in the tooltip. Google returns `weekdayDescriptions` Monday-first while `getDay()` is Sunday-based, so the index is remapped. This matters more than it looks: the most-documented failure of AI itineraries is scheduling you somewhere closed.
+- **Real photos of real places.** New `PlacePhoto` component prefers the Places photo of the actual venue and keeps the stock loremflickr/picsum image as fallback only. Wired into **Nearby**, where cards name specific attractions. *Tradeoff:* this adds a Places lookup per nearby place (~2–3 per destination, deduped and session-cached, and skipped entirely with no key). Deliberately not applied to every image surface — see the SKU warning in `handlePlaceDetails`.
+- **“🔔 Track price” → “☆ Shortlist”.** The bell promised alerts nothing could send: there is no polling layer, `listWatched` was never called, and the module doc claimed a Dashboard section that doesn't exist. Rather than delete a genuinely useful intent-capture, it's scoped to what works today — marking your preferred flight. Storage key unchanged so existing saves survive.
+
+*Verified at runtime on a production build with the Places endpoint stubbed to the new field shape: the query fires (`"Nara Park, Kyoto"`), the real photo replaces the stock image, and today's hours render with the correct weekday and all 7 days in the tooltip. Gates: `tsc -b`, `eslint src/`, `vite build` clean — including a real `react-hooks/set-state-in-effect` error the linter caught in the first draft of `PlacePhoto`.*
+
+*Still open: the returned `lat`/`lng` are not yet used by the Map (which still plots city centroids only); tab consolidation (23 → 7) not started; no ground pass verifying that scheduled stops are actually open.*
+
+### 2026-07-30 — Phase 5: turn on the features that were already built
+A feature audit found a systemic pattern: **finished UI that could never render, because the data layer never asked for the field it reads.** The filter chips, types and plumbing were all working — nothing fed them. Fixing it was ~35 words of prompt text plus one URL query string.
+
+| Was dark | Reads | Now requested by |
+|---|---|---|
+| Taste **dietary filter** | `r.dietary_options` | `RESTAURANTS_SYSTEM` |
+| Do **time + weather filters** | `a.fits`, `a.weather` | `ACTIVITIES_SYSTEM` |
+| Weather **per-day strip, golden hour, UV** | `day.sunrise`, `uv_index` | Open-Meteo `daily=` params |
+| Visa **embassy + vaccinations** | `visa.embassy` | `VISA_SYSTEM` |
+
+The dietary one mattered most: a traveller declares a nut allergy in the wizard, the app passes it to the model in prose, and the filter that would show them safe restaurants could never appear.
+
+- **Weather forecast dates are re-stamped onto the trip.** Beyond the ~14-day window the app queries *last year's* dates, so the raw series is labelled 2025-xx-xx. Day `i` is now re-stamped to `departure + i` — otherwise the strip renders the wrong weekday and can't line up with the itinerary. Sunrise/sunset/UV are astronomical and carry over; temp/rain stay indicative, which the summary already discloses.
+- **Emergency numbers are no longer LLM-generated.** `VisaTab` rendered an invented `emergency_phone` as tap-to-call while a curated, hand-checked dataset sat unused in `emergency.ts`. It now reads `getEmergencyNumbers(countryId)` (112 fallback), and `VISA_SYSTEM` deliberately **does not** request the field — asking a model to invent a safety-critical number is not a risk worth taking.
+- **Results now open as soon as the itinerary is ready.** Every generator already wrote into state as it resolved; only the *view* was gated on `await Promise.all`, so the plan sat finished in memory while the user watched a typewriter. ~60s → ~15s. The remaining 12 sections stream in behind a new `SectionPending` state — needed because an ungenerated tab previously showed **“Retry”**, which would have been wrong and would have fired a duplicate LLM call. An explicit `isGenerating` flag distinguishes "in flight" from "this saved trip simply has no flights", since `progress` is all-false in both cases.
+- **Opening the app no longer reorders My Trips.** `saveTrip` stamped `updatedAt` unconditionally; boot hydration fired autosave, so every trip read “Updated just now”. It now compares config/results/name and skips both the stamp and the write when nothing changed.
+- **Google Places: use what we already pay for.** Added `location`, `formattedAddress`, `regularOpeningHours` and `photos` to the field mask, and the handler now returns real coordinates, address, hours and a photo URL (built server-side so the key never reaches the client). Free *on this call* — it already requested `rating`/`priceLevel`/`openingHours`, so it was billed at the top tier regardless. **Do not copy this mask into a bulk pass over every place without re-checking SKUs**: field tier prices the whole response and the universal $200 credit ended in 2025.
+- **Deleted `src/lib/i18n.ts`** — 97 lines, zero importers.
+
+*Verified at runtime on a production build: all four previously-dark features render when fed; a loaded saved trip correctly shows Retry (not a false “still writing”); `updatedAt` survives a reload with zero drift while a real edit still bumps it. Gates: `tsc -b`, `eslint src/`, `vite build` clean.*
+
+*Still open from the audit: “🔔 Track price” remains write-only (`listWatched` is never called) — build it or delete it; the Places extras are returned but not yet consumed by the Map or imagery; tab consolidation (23 → 7) not started.*
 
 ### 2026-07-01 — Phase 4: code-split the country data (first paint ~58% smaller)
 All 29 country files — ~6,000 lines of destination prose between them — were statically imported by `src/data/destinations.ts`, so every one of them shipped in the first-paint bundle for a user who then picks exactly one country.

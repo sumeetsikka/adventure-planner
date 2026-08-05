@@ -232,6 +232,11 @@ export interface WeatherInfo {
   description: string;
   what_to_pack: string;
   forecast?: WeatherDay[];  // daily breakdown — optional, fall back to existing fields
+  /** Where the numbers came from. `forecast` is a real Open-Meteo forecast (trips
+   *  within ~14 days); `historical` is last year's actuals for the same dates,
+   *  re-stamped onto this trip. The distinction matters — only one of them can
+   *  honestly be labelled verified. */
+  source?: 'forecast' | 'historical';
 }
 
 export interface VisaInfo {

@@ -2,11 +2,16 @@ import { motion } from 'framer-motion';
 import type { VisaInfo } from '../../types';
 import { mapsUrl, telUrl } from '../../lib/deepLinks';
 import { EstimateNote } from '../shared/EstimateBadge';
+import { getEmergencyNumbers } from '../../lib/emergency';
 
 interface Props {
   visa: VisaInfo | null;
   travellers?: number;
   departureDate?: string;
+  /** Country id — resolves the CURATED emergency number. The visa payload is
+   *  LLM-generated, and an invented emergency number rendered as tap-to-call is
+   *  not a risk worth taking when a hand-checked dataset already exists. */
+  countryId?: string;
 }
 
 const EASE = [0.16, 1, 0.3, 1] as const;
@@ -53,7 +58,10 @@ function VaxBadge({ rec }: { rec: 'required' | 'recommended' | 'consider' }) {
   );
 }
 
-export default function VisaTab({ visa, travellers = 1, departureDate }: Props) {
+export default function VisaTab({ visa, travellers = 1, departureDate, countryId }: Props) {
+  // Curated, hand-checked — never the LLM's guess (falls back to GSM-universal 112).
+  const emergency = getEmergencyNumbers(countryId);
+  const emergencyNumber = emergency.general || emergency.police;
   if (!visa) {
     return (
       <div className="text-center py-24">
@@ -234,19 +242,19 @@ export default function VisaTab({ visa, travellers = 1, departureDate }: Props) 
       )}
 
       {/* Emergency contacts */}
-      {(visa.emergency_phone || visa.embassy?.phone) && (
+      {(emergencyNumber || visa.embassy?.phone) && (
         <div className="surface-soft rounded-3xl p-7 mb-6">
           <p className="eyebrow mb-4">In an emergency</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {visa.emergency_phone && (
+            {emergencyNumber && (
               <a
-                href={telUrl(visa.emergency_phone)}
+                href={telUrl(emergencyNumber)}
                 className="flex items-center gap-4 rounded-2xl border border-[var(--terracotta)]/40 bg-[var(--ink-3)] px-5 py-4 hover:bg-[var(--ink-2)] transition"
               >
                 <span className="text-2xl text-[var(--terracotta)]" aria-hidden>☎</span>
                 <div>
                   <p className="eyebrow mb-1">Local emergency</p>
-                  <p className="font-display text-xl text-[var(--cream)] leading-none">{visa.emergency_phone}</p>
+                  <p className="font-display text-xl text-[var(--cream)] leading-none">{emergencyNumber}</p>
                 </div>
               </a>
             )}

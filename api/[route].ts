@@ -121,14 +121,26 @@ async function handlePlaceDetails(body: any) {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': apiKey,
         // Field mask keeps the request to the cheap SKU tier + only what we render.
+        // NOTE ON COST: field tier sets the price of the WHOLE response, and this
+        // call already requests rating/priceLevel/openingHours — all top-tier — so
+        // it is billed at that tier regardless. Adding location (Essentials) and
+        // photos (Pro) therefore costs nothing extra *here*. Do not copy this mask
+        // into a bulk pass over every place in a plan without re-checking SKUs.
         'X-Goog-FieldMask': [
           'places.displayName',
           'places.rating',
           'places.userRatingCount',
           'places.priceLevel',
           'places.currentOpeningHours.openNow',
+          'places.regularOpeningHours.weekdayDescriptions',
           'places.googleMapsUri',
           'places.accessibilityOptions.wheelchairAccessibleEntrance',
+          'places.location',
+          'places.formattedAddress',
+          'places.photos',
+          // The single highest-value verification field: roughly a quarter of
+          // AI-generated itineraries name a venue that has permanently closed.
+          'places.businessStatus',
         ].join(','),
       },
       body: JSON.stringify({ textQuery: query, maxResultCount: 1 }),
@@ -147,6 +159,13 @@ async function handlePlaceDetails(body: any) {
       PRICE_LEVEL_VERY_EXPENSIVE: 4,
     };
 
+    // Photo resource names need the key to become URLs, so build them server-side —
+    // the client never sees GOOGLE_PLACES_API_KEY.
+    const photoName = Array.isArray(place.photos) ? place.photos[0]?.name : undefined;
+    const photoUrl = photoName
+      ? `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=800&key=${apiKey}`
+      : undefined;
+
     return {
       available: true,
       name: place.displayName?.text,
@@ -156,6 +175,14 @@ async function handlePlaceDetails(body: any) {
       openNow: place.currentOpeningHours?.openNow,
       wheelchair: place.accessibilityOptions?.wheelchairAccessibleEntrance,
       mapsUri: place.googleMapsUri,
+      // OPERATIONAL | CLOSED_TEMPORARILY | CLOSED_PERMANENTLY
+      businessStatus: place.businessStatus,
+      // Verified extras — real coordinates, real hours, a real photo of the place.
+      lat: place.location?.latitude,
+      lng: place.location?.longitude,
+      address: place.formattedAddress,
+      hours: place.regularOpeningHours?.weekdayDescriptions,
+      photoUrl,
     };
   } catch {
     // Timeouts / network / parse failures all degrade to the link fallback.
@@ -448,7 +475,9 @@ async function handleWeather(config: any) {
         if (!geoData.results?.length) return fallback;
 
         const { latitude, longitude } = geoData.results[0];
-        const wxRes = await fetch(`${apiUrl}?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,relative_humidity_2m_mean&start_date=${startDate}&end_date=${endDate}&timezone=auto`);
+        // sunrise/sunset/uv_index_max feed WeatherDay — the per-day strip, golden-hour
+        // and UV panels were fully built but never rendered because these were never requested.
+        const wxRes = await fetch(`${apiUrl}?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,relative_humidity_2m_mean,sunrise,sunset,uv_index_max&start_date=${startDate}&end_date=${endDate}&timezone=auto`);
         const wxData = await wxRes.json();
         const daily = wxData.daily || {};
         const clean = (arr: any[]) => (arr || []).filter((v: any) => v !== null && !isNaN(v));
@@ -468,9 +497,55 @@ async function handleWeather(config: any) {
 
         const historicalNote = useForecast ? '' : ' Based on last year\'s data for the same dates.';
 
+        // Per-day breakdown. Open-Meteo returns sunrise/sunset as ISO datetimes
+        // ("2026-09-01T06:14"); WeatherDay wants bare HH:MM.
+        const hhmm = (iso: unknown) =>
+          typeof iso === 'string' && iso.includes('T') ? iso.split('T')[1].slice(0, 5) : undefined;
+        const describeDay = (dayHigh: number, dayRain: number) =>
+          dayRain >= 10 ? 'Wet — plan indoor options.'
+          : dayRain >= 2 ? 'Showers possible.'
+          : dayHigh > 30 ? 'Hot and clear.'
+          : dayHigh > 20 ? 'Warm and pleasant.'
+          : dayHigh > 10 ? 'Cool.' : 'Cold.';
+
+        // For trips beyond the ~14-day forecast window we query LAST year's dates,
+        // so the returned series is labelled 2025-xx-xx. Re-stamp each entry onto
+        // the real trip date (day i = departure + i) — otherwise the strip renders
+        // the wrong weekday and can't line up with the itinerary. Sunrise/sunset/UV
+        // are astronomical and carry over almost exactly; temp/rain are indicative,
+        // which the summary description already discloses.
+        const dates: string[] = Array.isArray(daily.time) ? daily.time : [];
+        const tripDayISO = (i: number) => {
+          const base = Date.parse(`${config.departureDate}T00:00:00`);
+          if (!Number.isFinite(base)) return dates[i];
+          return new Date(base + i * 86_400_000).toISOString().slice(0, 10);
+        };
+        const forecast = dates.map((_date: string, i: number) => {
+          const date = useForecast ? dates[i] : tripDayISO(i);
+          const dHigh = Number(daily.temperature_2m_max?.[i]);
+          const dLow = Number(daily.temperature_2m_min?.[i]);
+          const dRain = Number(daily.precipitation_sum?.[i]);
+          const uv = Number(daily.uv_index_max?.[i]);
+          return {
+            date,
+            temp_high_c: Number.isFinite(dHigh) ? Math.round(dHigh) : high,
+            temp_low_c: Number.isFinite(dLow) ? Math.round(dLow) : low,
+            rainfall_mm: Number.isFinite(dRain) ? Math.round(dRain) : 0,
+            description: describeDay(
+              Number.isFinite(dHigh) ? dHigh : high,
+              Number.isFinite(dRain) ? dRain : 0,
+            ),
+            sunrise: hhmm(daily.sunrise?.[i]),
+            sunset: hhmm(daily.sunset?.[i]),
+            uv_index: Number.isFinite(uv) ? Math.round(uv * 10) / 10 : undefined,
+          };
+        }).filter((day) => !!day.date);
+
         return { destination: d.name, month: travelMonth, temp_high_c: high, temp_low_c: low, rainfall_mm: rain, humidity_percent: hum,
           description: (high > 30 ? 'Hot conditions.' : high > 20 ? 'Warm and pleasant.' : high > 10 ? 'Cool, layers needed.' : 'Cold weather.') + historicalNote,
-          what_to_pack: high > 28 ? 'Light breathable clothing, sunscreen, hat.' : high > 15 ? 'Light layers, one warm layer for evenings.' : 'Warm layers, jacket.' };
+          what_to_pack: high > 28 ? 'Light breathable clothing, sunscreen, hat.' : high > 15 ? 'Light layers, one warm layer for evenings.' : 'Warm layers, jacket.',
+          source: useForecast ? 'forecast' : 'historical',
+          ...(forecast.length > 0 ? { forecast } : {}) };
       } catch { return fallback; }
     })
   );
@@ -523,12 +598,14 @@ const RESTAURANTS_SYSTEM = `You are a food editor for a luxury travel magazine. 
         "signature_dish": "1-3 word dish name",
         "neighbourhood": "neighbourhood/area",
         "why": "1 sentence why this restaurant",
-        "reservation_link": "https://... if known (OpenTable/Resy/Tabelog/local), otherwise omit"
+        "reservation_link": "https://... if known (OpenTable/Resy/Tabelog/local), otherwise omit",
+        "dietary_options": ["vegetarian" | "vegan" | "halal" | "kosher" | "gluten-free" | "nut-free"]
       }
     ]
   }
 ]
-Rules: REAL restaurants only — do not invent names. Mix price tiers (1 $, 2 $$, 1 $$$, 1 $$$$ ideally). Use proper nouns. Do NOT include placeholder text. If unsure on reservation_link, omit the field entirely.`;
+Rules: REAL restaurants only — do not invent names. Mix price tiers (1 $, 2 $$, 1 $$$, 1 $$$$ ideally). Use proper nouns. Do NOT include placeholder text. If unsure on reservation_link, omit the field entirely.
+ALWAYS include "dietary_options" — list every diet the restaurant can genuinely accommodate, using ONLY the exact values above. Use [] if it caters to none. This drives a dietary filter travellers rely on, including for allergies, so be conservative: only claim what the restaurant actually offers.`;
 
 async function handleRestaurants(config: any) {
   const countryName = config.country?.name || 'the destination';
@@ -580,12 +657,15 @@ const ACTIVITIES_SYSTEM = `You are a travel editor curating things to do. For ea
         "difficulty": "easy" | "moderate" | "hard" (optional, only for adventure/nature),
         "best_time": "Sunrise" | "Morning" | "Afternoon" | "Evening" | "Year-round",
         "why": "1 sentence why this activity",
-        "booking_link": "https://... if known (Klook/Viator/GetYourGuide/official site), otherwise omit"
+        "booking_link": "https://... if known (Klook/Viator/GetYourGuide/official site), otherwise omit",
+        "weather": "sunny" | "any" | "indoor" | "all-weather",
+        "fits": ["morning" | "afternoon" | "evening" | "full-day"]
       }
     ]
   }
 ]
-Rules: REAL activities tied to the destination — temples, hikes, classes, tours, museums. Mix free and paid. Include at least one local/cultural experience and one outdoor/active option per destination. Do NOT invent. Omit booking_link if unsure.`;
+Rules: REAL activities tied to the destination — temples, hikes, classes, tours, museums. Mix free and paid. Include at least one local/cultural experience and one outdoor/active option per destination. Do NOT invent. Omit booking_link if unsure.
+ALWAYS include "weather" and "fits", using ONLY the exact values above. "weather" is what the activity NEEDS: "sunny" for things ruined by rain (beaches, viewpoints, hikes), "indoor" for museums and galleries, "all-weather" for covered venues that work rain or shine, "any" otherwise. "fits" lists every time-of-day the activity genuinely works — these power the traveller's time and weather filters.`;
 
 async function handleActivities(config: any) {
   const countryName = config.country?.name || 'the destination';

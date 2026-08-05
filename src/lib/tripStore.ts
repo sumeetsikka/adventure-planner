@@ -93,14 +93,33 @@ export function saveTrip(trip: Partial<SavedTrip> & { config: TravelConfig; resu
   const id = trip.id ?? getActiveTripId() ?? uid();
   const existing = trips.find((t) => t.id === id);
 
+  const name = trip.name ?? existing?.name ?? defaultTripName(trip.config);
+
+  // Only bump updatedAt when something actually changed. The app rehydrates the
+  // last trip on boot, which fires the autosave effect — stamping unconditionally
+  // meant merely OPENING the app re-sorted My Trips (it orders by updatedAt) and
+  // relabelled every trip "Updated just now", destroying the only recency signal.
+  const unchanged =
+    !!existing &&
+    existing.name === name &&
+    JSON.stringify(existing.config) === JSON.stringify(trip.config) &&
+    JSON.stringify(existing.results) === JSON.stringify(trip.results);
+
   const merged: SavedTrip = {
     id,
     createdAt: existing?.createdAt ?? now,
-    updatedAt: now,
-    name: trip.name ?? existing?.name ?? defaultTripName(trip.config),
+    updatedAt: unchanged ? existing.updatedAt : now,
+    name,
     config: trip.config,
     results: trip.results,
   };
+
+  // Nothing changed — skip the write entirely rather than re-serialising the
+  // whole 30-trip array on every hydration.
+  if (unchanged) {
+    setActiveTripId(id);
+    return merged;
+  }
 
   const next = [merged, ...trips.filter((t) => t.id !== id)];
   // Cap at 30 trips to avoid unbounded growth

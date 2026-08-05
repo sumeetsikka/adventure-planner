@@ -21,5 +21,8 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  /* Test files run under tsx (Node), not the browser build — they use `process`
+     and would otherwise fail the app's DOM-only type-check. */
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"]
 }

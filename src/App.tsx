@@ -202,6 +202,10 @@ function AppInner() {
   const [travellerProfiles, setTravellerProfiles] = useState<TravellerProfile[] | undefined>(undefined);
   const [tripMode, setTripMode] = useState<TripMode | undefined>(undefined);
 
+  // True only while a generation run is in flight. `progress` alone can't tell us
+  // that — it's all-false both before generating AND when a saved trip is opened,
+  // which would make every empty section look like it was still being written.
+  const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState({
     route: false, flights: false, hotels: false, itinerary: false, budget: false, tips: false,
     packing: false, weather: false, visa: false, currency: false, nearby: false, transport: false, restaurants: false, activities: false,
@@ -344,6 +348,7 @@ function AppInner() {
       travellerProfiles: data ? data.travellerProfiles : travellerProfiles,
       tripMode: data ? data.tripMode : tripMode,
     };
+    setIsGenerating(true);
     setView('loading');
     setProgress({ route: false, flights: false, hotels: false, itinerary: false, budget: false, tips: false, packing: false, weather: false, visa: false, currency: false, nearby: false, transport: false, restaurants: false, activities: false });
     setResults({ ...EMPTY_RESULTS });
@@ -361,9 +366,17 @@ function AppInner() {
     // otherwise a total outage looks identical to a successful generation.
     const failed: string[] = [];
 
-    // Batch 1: core content
+    // Batch 1: core content. The itinerary is the thing the traveller is actually
+    // waiting for, so we show the results view the moment it lands and let the
+    // remaining 12 sections stream into their tabs behind per-tab loading states.
+    // Previously everything was gated on Promise.all below, which meant staring at
+    // the loading screen for ~60s while the plan sat finished in memory.
     const p1 = generateItinerary(config)
-      .then((d) => { setResults((r) => ({ ...r, itinerary: d })); setProgress((p) => ({ ...p, itinerary: true })); })
+      .then((d) => {
+        setResults((r) => ({ ...r, itinerary: d }));
+        setProgress((p) => ({ ...p, itinerary: true }));
+        if (d && d.length > 0) setView('results');
+      })
       .catch(() => { failed.push('itinerary'); setProgress((p) => ({ ...p, itinerary: true })); });
 
     await stagger(STAGGER_MS);
@@ -441,6 +454,7 @@ function AppInner() {
 
     const tasks = [p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13];
     await Promise.all(tasks);
+    setIsGenerating(false);
 
     // Every section failed — almost always a missing LLM key or no connection.
     // Navigating to results here would present a fully-chromed but entirely
@@ -453,7 +467,10 @@ function AppInner() {
     if (failed.length > 0) {
       toast(`${failed.length} section${failed.length > 1 ? 's' : ''} couldn't be generated.`, 'error');
     }
-    setView('results');
+    // Usually a no-op — the itinerary already navigated us here. This catches the
+    // case where the itinerary itself failed but other sections succeeded, so the
+    // traveller still gets the parts of the plan that worked.
+    setView((v) => (v === 'loading' ? 'results' : v));
   }, [selectedDests, departureDate, returnDate, travellers, ages, vibes, selectedCountry, origin, homeCurrency, budgetPerPerson, travellerProfiles, tripMode, toast]);
 
   const handleStartOver = () => {
@@ -538,7 +555,7 @@ function AppInner() {
 
   if (view === 'results') {
     const config = buildConfig();
-    return <div className={`min-h-screen ${bg}`}>{themeToggle}<ResultsView config={config} results={results} onStartOver={handleStartOver} onUpdateResults={(partial) => setResults((r) => ({ ...r, ...partial }))} /></div>;
+    return <div className={`min-h-screen ${bg}`}>{themeToggle}<ResultsView config={config} results={results} onStartOver={handleStartOver} onUpdateResults={(partial) => setResults((r) => ({ ...r, ...partial }))} progress={isGenerating ? progress : undefined} /></div>;
   }
 
   return (

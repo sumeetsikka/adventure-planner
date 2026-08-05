@@ -8,7 +8,7 @@ import PlaceRating from '../shared/PlaceRating';
 import { getDestinationPhoto } from '../../lib/imagery';
 import { generateHotelAlternatives } from '../../lib/api';
 import { PlaceActions } from '../shared/PlaceLink';
-import { EstimateNote } from '../shared/EstimateBadge';
+import { EstimateNote, EstimateBadge } from '../shared/EstimateBadge';
 
 const AMENITY_META: Record<HotelAmenity, { label: string; icon: string }> = {
   wifi: { label: 'Free Wi-Fi', icon: '⌁' },
@@ -321,6 +321,9 @@ export default function HotelsTab({ hotels, config, onUpdate }: Props) {
                           <div className="flex items-baseline gap-2 mb-4 pb-4 border-b border-[var(--line)]">
                             <span className="font-display text-xl text-[var(--gold)]">{h.price_per_night_aud}</span>
                             <span className="text-[var(--text-dim)] text-[10px] uppercase tracking-wider">per night</span>
+                            {/* PlaceRating's verified badge sits directly above —
+                                mark the rate so that badge doesn't cover it too. */}
+                            <EstimateBadge compact />
                           </div>
 
                           {h.amenities && h.amenities.length > 0 && (

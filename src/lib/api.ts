@@ -112,6 +112,17 @@ export interface PlaceDetails {
   openNow?: boolean;
   wheelchair?: boolean;
   mapsUri?: string;
+  // Verified extras from the same (already top-tier) Places call — real
+  // coordinates for mapping, the real address, real opening hours, and a real
+  // photo of the place rather than the stock imagery used elsewhere.
+  lat?: number;
+  lng?: number;
+  address?: string;
+  hours?: string[];
+  photoUrl?: string;
+  /** OPERATIONAL | CLOSED_TEMPORARILY | CLOSED_PERMANENTLY. The AI recommends
+   *  venues that have shut down; this is how we catch it. */
+  businessStatus?: 'OPERATIONAL' | 'CLOSED_TEMPORARILY' | 'CLOSED_PERMANENTLY';
 }
 
 export async function fetchPlaceDetails(query: string): Promise<PlaceDetails> {

@@ -87,6 +87,11 @@ interface Props {
   results: GenerationResults;
   onStartOver: () => void;
   onUpdateResults: (results: Partial<GenerationResults>) => void;
+  /** Per-section generation progress. Results open as soon as the itinerary is
+   *  ready, so a section with no data yet is usually still in flight rather than
+   *  failed — this is what tells those two states apart. Absent (e.g. a trip
+   *  loaded from storage) means nothing is generating. */
+  progress?: Partial<Record<string, boolean>>;
 }
 
 function generateICS(results: GenerationResults, config: TravelConfig): string {
@@ -114,12 +119,26 @@ function downloadFile(content: string, filename: string, type: string) {
   URL.revokeObjectURL(url);
 }
 
-function RetryButton({ label, onRetry }: { label: string; onRetry: () => Promise<void> }) {
+/** Shown while a section is still being generated. Since results now open as soon
+ *  as the itinerary is ready, most tabs are legitimately mid-flight on arrival —
+ *  offering "Retry" there would be wrong and would fire a duplicate LLM call. */
+function SectionPending({ label }: { label: string }) {
+  return (
+    <div className="text-center py-16" role="status" aria-live="polite">
+      <div className="w-6 h-6 mx-auto mb-5 border border-[var(--text-dim)] border-t-[var(--gold)] rounded-full animate-spin" />
+      <p className="text-[var(--cream)] font-medium mb-2">Still writing your {label}…</p>
+      <p className="text-[var(--text-muted)] text-sm">The rest of your plan is ready — this section will appear here shortly.</p>
+    </div>
+  );
+}
+
+function RetryButton({ label, onRetry, pending }: { label: string; onRetry: () => Promise<void>; pending?: boolean }) {
   const [retrying, setRetrying] = useState(false);
   const handleClick = async () => {
     setRetrying(true);
     try { await onRetry(); } finally { setRetrying(false); }
   };
+  if (pending) return <SectionPending label={label} />;
   return (
     <div className="text-center py-16">
       <span className="text-5xl block mb-4">{label === 'flights' ? '✈️' : label === 'hotels' ? '🏨' : label === 'transport' ? '🚆' : label === 'tips' ? '📋' : label === 'packing' ? '🧳' : label === 'weather' ? '🌤️' : label === 'visa' ? '🛂' : label === 'currency' ? '💱' : label === 'nearby' ? '📍' : '🔄'}</span>
@@ -133,7 +152,9 @@ function RetryButton({ label, onRetry }: { label: string; onRetry: () => Promise
   );
 }
 
-export default function ResultsView({ config, results, onStartOver, onUpdateResults }: Props) {
+export default function ResultsView({ config, results, onStartOver, onUpdateResults, progress }: Props) {
+  // A section is "pending" only while a generation run is actually underway.
+  const isPending = (key: string) => progress ? progress[key] === false : false;
   const [activeTab, setActiveTab] = useState<ResultsTab>('dashboard');
   const [pdfBusy, setPdfBusy] = useState(false);
   const toast = useToast();
@@ -272,15 +293,15 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
           )}
           {activeTab === 'flights' && (results.flights.length > 0
             ? <FlightsTab flights={results.flights} config={config} />
-            : <RetryButton label="flights" onRetry={async () => { const d = await searchFlights(config); onUpdateResults({ flights: d }); }} />
+            : <RetryButton label="flights" pending={isPending('flights')} onRetry={async () => { const d = await searchFlights(config); onUpdateResults({ flights: d }); }} />
           )}
           {activeTab === 'hotels' && (results.hotels.length > 0
             ? <HotelsTab hotels={results.hotels} destinations={config.destinations} config={config} onUpdate={(hotels) => handleUpdate({ hotels })} />
-            : <RetryButton label="hotels" onRetry={async () => { const d = await searchHotels(config); onUpdateResults({ hotels: d }); }} />
+            : <RetryButton label="hotels" pending={isPending('hotels')} onRetry={async () => { const d = await searchHotels(config); onUpdateResults({ hotels: d }); }} />
           )}
           {activeTab === 'transport' && (results.transport.length > 0
             ? <TransportTab transport={results.transport} />
-            : <RetryButton label="transport" onRetry={async () => { const d = await generateTransport(config); onUpdateResults({ transport: d }); }} />
+            : <RetryButton label="transport" pending={isPending('transport')} onRetry={async () => { const d = await generateTransport(config); onUpdateResults({ transport: d }); }} />
           )}
           {activeTab === 'bookings' && (
             <BookingTrackerTab config={config} results={results} />
@@ -290,31 +311,31 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
           )}
           {activeTab === 'budget' && (results.budget.length > 0
             ? <BudgetTab budget={results.budget} config={config} flights={results.flights} transport={results.transport} hotels={results.hotels} itinerary={results.itinerary} onUpdate={(budget) => handleUpdate({ budget })} />
-            : <RetryButton label="budget" onRetry={async () => { const d = await generateBudget(config); onUpdateResults({ budget: d }); }} />
+            : <RetryButton label="budget" pending={isPending('budget')} onRetry={async () => { const d = await generateBudget(config); onUpdateResults({ budget: d }); }} />
           )}
           {activeTab === 'tips' && (results.tips.length > 0
             ? <TipsTab tips={results.tips} />
-            : <RetryButton label="tips" onRetry={async () => { const d = await generateTips(config); onUpdateResults({ tips: d }); }} />
+            : <RetryButton label="tips" pending={isPending('tips')} onRetry={async () => { const d = await generateTips(config); onUpdateResults({ tips: d }); }} />
           )}
           {activeTab === 'packing' && (results.packing.length > 0
             ? <PackingTab packing={results.packing} />
-            : <RetryButton label="packing" onRetry={async () => { const d = await generatePacking(config); onUpdateResults({ packing: d }); }} />
+            : <RetryButton label="packing" pending={isPending('packing')} onRetry={async () => { const d = await generatePacking(config); onUpdateResults({ packing: d }); }} />
           )}
           {activeTab === 'weather' && (results.weather.length > 0
             ? <WeatherTab weather={results.weather} />
-            : <RetryButton label="weather" onRetry={async () => { const d = await generateWeather(config); onUpdateResults({ weather: d }); }} />
+            : <RetryButton label="weather" pending={isPending('weather')} onRetry={async () => { const d = await generateWeather(config); onUpdateResults({ weather: d }); }} />
           )}
           {activeTab === 'visa' && (results.visa
-            ? <VisaTab visa={results.visa} travellers={config.travellers} departureDate={config.departureDate} />
-            : <RetryButton label="visa" onRetry={async () => { const d = await generateVisa(config); onUpdateResults({ visa: d }); }} />
+            ? <VisaTab visa={results.visa} travellers={config.travellers} departureDate={config.departureDate} countryId={config.country?.id} />
+            : <RetryButton label="visa" pending={isPending('visa')} onRetry={async () => { const d = await generateVisa(config); onUpdateResults({ visa: d }); }} />
           )}
           {activeTab === 'currency' && (results.currency
             ? <CurrencyTab currency={results.currency} country={config.country?.name} />
-            : <RetryButton label="currency" onRetry={async () => { const d = await generateCurrency(config); onUpdateResults({ currency: d }); }} />
+            : <RetryButton label="currency" pending={isPending('currency')} onRetry={async () => { const d = await generateCurrency(config); onUpdateResults({ currency: d }); }} />
           )}
           {activeTab === 'nearby' && (results.nearby.length > 0
             ? <NearbyTab nearby={results.nearby} destinations={config.destinations} config={config} itinerary={results.itinerary} />
-            : <RetryButton label="nearby" onRetry={async () => { const d = await generateNearby(config); onUpdateResults({ nearby: d }); }} />
+            : <RetryButton label="nearby" pending={isPending('nearby')} onRetry={async () => { const d = await generateNearby(config); onUpdateResults({ nearby: d }); }} />
           )}
           {activeTab === 'checklist' && <ChecklistTab config={config} />}
           {activeTab === 'wallet' && <WalletTab config={config} />}
@@ -324,11 +345,11 @@ export default function ResultsView({ config, results, onStartOver, onUpdateResu
           {activeTab === 'journal' && <JournalTab config={config} results={results} />}
           {activeTab === 'taste' && (results.restaurants && results.restaurants.length > 0
             ? <TasteTab restaurants={results.restaurants} config={config} itinerary={results.itinerary} onUpdate={(restaurants) => handleUpdate({ restaurants })} onUpdateItinerary={(itinerary) => handleUpdate({ itinerary })} />
-            : <RetryButton label="restaurants" onRetry={async () => { const d = await import('../../lib/api').then(m => m.generateRestaurants(config)); onUpdateResults({ restaurants: d }); }} />
+            : <RetryButton label="restaurants" pending={isPending('restaurants')} onRetry={async () => { const d = await import('../../lib/api').then(m => m.generateRestaurants(config)); onUpdateResults({ restaurants: d }); }} />
           )}
           {activeTab === 'do' && (results.activities && results.activities.length > 0
             ? <DoTab activities={results.activities} config={config} itinerary={results.itinerary} onUpdate={(activities) => handleUpdate({ activities })} onUpdateItinerary={(itinerary) => handleUpdate({ itinerary })} />
-            : <RetryButton label="activities" onRetry={async () => { const d = await import('../../lib/api').then(m => m.generateActivities(config)); onUpdateResults({ activities: d }); }} />
+            : <RetryButton label="activities" pending={isPending('activities')} onRetry={async () => { const d = await import('../../lib/api').then(m => m.generateActivities(config)); onUpdateResults({ activities: d }); }} />
           )}
           </Suspense>
           </ErrorBoundary>

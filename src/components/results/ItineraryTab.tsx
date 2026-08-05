@@ -6,6 +6,7 @@ import { formatDateAU, addDaysISO, formatDayLabel, weekdayShort } from '../../li
 import { VIBE_LABELS } from '../../lib/constants';
 import { getDestinationPhoto } from '../../lib/imagery';
 import { findConflicts, findNudges } from '../../lib/conflicts';
+import { findHoursConflicts } from '../../lib/hoursConflicts';
 import { buildDayPlans, dayMoves, type DayPlan } from '../../lib/planStitch';
 import { dayRouteUrl } from '../../lib/deepLinks';
 import { PlaceActions } from '../shared/PlaceLink';
@@ -83,7 +84,11 @@ export default function ItineraryTab({ itinerary, config, hotels, onUpdate, flig
   };
 
   const conflicts = useMemo(
-    () => findConflicts(config, itinerary, flights, hotels, transport),
+    () => [
+      ...findConflicts(config, itinerary, flights, hotels, transport),
+      // Verified against Google Places, from cache only — see hoursConflicts.ts.
+      ...findHoursConflicts(config, itinerary),
+    ],
     [config, itinerary, flights, hotels, transport]
   );
 
