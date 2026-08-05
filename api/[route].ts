@@ -544,6 +544,7 @@ async function handleWeather(config: any) {
         return { destination: d.name, month: travelMonth, temp_high_c: high, temp_low_c: low, rainfall_mm: rain, humidity_percent: hum,
           description: (high > 30 ? 'Hot conditions.' : high > 20 ? 'Warm and pleasant.' : high > 10 ? 'Cool, layers needed.' : 'Cold weather.') + historicalNote,
           what_to_pack: high > 28 ? 'Light breathable clothing, sunscreen, hat.' : high > 15 ? 'Light layers, one warm layer for evenings.' : 'Warm layers, jacket.',
+          source: useForecast ? 'forecast' : 'historical',
           ...(forecast.length > 0 ? { forecast } : {}) };
       } catch { return fallback; }
     })

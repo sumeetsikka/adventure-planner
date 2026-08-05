@@ -9,7 +9,7 @@ import { addDaysISO, formatDayLabel } from '../../lib/dateUtils';
 import DayRangeChip from '../shared/DayRangeChip';
 import AddToDay, { type DayOption } from '../shared/AddToDay';
 import PlaceRating from '../shared/PlaceRating';
-import { EstimateNote } from '../shared/EstimateBadge';
+import { EstimateNote, EstimateBadge } from '../shared/EstimateBadge';
 
 interface Props {
   activities: DestinationActivities[];
@@ -406,7 +406,11 @@ function ActivityCard({ activity: a, place, onRemove, planDays = [], onPlan }: {
         </div>
         <div className="flex items-start gap-2 shrink-0">
           <div className="text-right">
-            <p className="font-display text-base text-[var(--gold)] leading-none">{a.price_estimate_aud}</p>
+            {/* The card shows a verified Google rating just above; without this
+                marker that badge implicitly vouches for the invented price too. */}
+            <p className="font-display text-base text-[var(--gold)] leading-none">
+              {a.price_estimate_aud} <EstimateBadge compact />
+            </p>
             {a.duration && (
               <p className="text-[10px] tracking-wider uppercase text-[var(--text-dim)] mt-1">{a.duration}</p>
             )}

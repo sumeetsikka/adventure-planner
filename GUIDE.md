@@ -417,6 +417,24 @@ Future sessions: when you edit code that maps to a section here, also update `GU
 
 > Add newest entries at the top. Date format: YYYY-MM-DD.
 
+### 2026-07-30 — Phase 8: per-field provenance — say which numbers are real
+Because this app generates nearly everything, it can do the one thing neither an OTA nor an AI startup will: **label every fact by where it came from.** Three markers, one visual language, in `src/components/shared/EstimateBadge.tsx`:
+
+| Marker | Means | Used on |
+|---|---|---|
+| **Verified** | a real feed | Weather (Open-Meteo forecast only) |
+| **est.** | the model's guess | Do activity prices, Hotels nightly rate |
+| **Yours** | you entered it | Budget spend tracker |
+
+- **The specific problem this fixes:** a Do or Hotels card shows a Google rating badged "Live" directly above an invented price. With no marker on the price, **the verified badge implicitly vouches for the whole card.** Marking the estimate is what keeps the verified badge meaningful. A compact `est.` variant sits beside a number without shouting; the full pill is for panels with room.
+- **Weather only claims verified when it has earned it.** New `WeatherInfo.source: 'forecast' | 'historical'`. Inside Open-Meteo's ~14-day window it's a genuine forecast and gets the badge; beyond that it's last year's actuals re-stamped onto the trip dates (see Phase 5) and instead says *"Typical conditions — last year's actuals for these dates, not a forecast."* Older saved trips have no `source` field, so the check requires it explicitly rather than defaulting to verified.
+- **`EstimateBadge` is no longer dead code.** It was written, never imported, and sat unused for the whole life of the trust layer.
+- **Deliberately not marked:** Currency already has its own correct live-vs-estimated indicator (ECB timestamp), so it wasn't churned. Flights already read "per person · est.".
+
+*Verified at runtime on a production build with two seeded trips — one `source: 'forecast'`, one `source: 'historical'` — confirming the badge appears on the real forecast and is replaced by the caveat on historical data. All three markers confirmed rendering. Gates: `tsc -b`, `eslint src/`, `vite build`, 27/27 unit assertions.*
+
+*Still open: `lat`/`lng` returned but the Map still plots city centroids; tab consolidation (23 → 7) not started; the ground pass is cache-only so coverage depends on browsing.*
+
 ### 2026-07-30 — Phase 7: the ground pass — checking the plan against reality
 The two most-documented failures of AI itineraries are recommending a venue that has **permanently closed** (~24% of itineraries) and scheduling you somewhere **outside its opening hours** (~52%). The plan can't know either on its own; Google Places does, and the app was already calling it.
 
