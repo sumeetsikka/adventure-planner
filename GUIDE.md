@@ -417,6 +417,15 @@ Future sessions: when you edit code that maps to a section here, also update `GU
 
 > Add newest entries at the top. Date format: YYYY-MM-DD.
 
+### 2026-08-05 — QA fix: offline boot was broken by hyphenated asset hashes
+Found by a full QA pass on merged `main`, on a build that happened to expose it. **Offline boot — the Phase 1 headline feature — was failing on roughly 15% of chunks, main entry included.**
+
+- **Root cause.** `isHashedAsset()` matched `-[A-Za-z0-9_]{8,}\.(js|css)$`, which excludes `-` from the hash body. But Vite hashes are **base64url**, so they can contain `-` and `_`: this build's entry chunk was `index-C-Io5iGd.js`. Such a chunk wasn't recognised as a hashed asset, so it skipped the cache-first branch entirely and fell through to the network-with-fallback rule — which offline just fails. 11 of 75 chunks in that build carried a hyphenated hash.
+- **Second defect, same request.** The catch-all fallback used `caches.match(req)` without `ignoreVary`, so even the fallback missed (assets are served with `Vary: Origin`), and it could resolve to `undefined` — returning that from `respondWith` fails the request outright instead of deferring to the browser. Now uses `ignoreVary` and always resolves to a `Response`.
+- **Why the original verification missed it.** Phase 1's offline test passed genuinely — that build's entry hash simply contained no hyphen. The bug was latent and build-dependent, which is exactly the kind of thing only a repeated runtime test on a different build catches.
+
+*Re-verified on the exact build that failed: fresh profile → one online load → server killed → app boots from cache, 12/12 JS assets served, no offline stub, console clean.*
+
 ### 2026-07-30 — Phase 8: per-field provenance — say which numbers are real
 Because this app generates nearly everything, it can do the one thing neither an OTA nor an AI startup will: **label every fact by where it came from.** Three markers, one visual language, in `src/components/shared/EstimateBadge.tsx`:
 
