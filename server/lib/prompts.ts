@@ -165,7 +165,15 @@ The object must have:
 - documents_needed (string array): list of required documents
 - how_to_apply (string): brief explanation of the application process
 - important_notes (string array): 2-3 key things Australians should know
+- passport_validity_required_months (number): months of passport validity required beyond the date of entry (commonly 6)
+- blank_pages_required (number, optional): blank passport pages required on arrival
+- onward_ticket_required (boolean, optional): whether proof of onward/return travel is checked
+- exit_fee_aud (string, optional): departure tax payable at the airport, if any
+- evisa_url (string, optional): the OFFICIAL government application URL. Omit entirely unless you are certain — a wrong link here sends travellers to visa scam sites.
+- embassy (object, optional): { city, address, phone, email, website } for the Australian embassy or consulate
+- vaccinations (array, optional): [{ name, recommendation: "required" | "recommended" | "consider" }] — "required" only for genuine entry requirements such as yellow fever certificates
 
+Omit any optional field you are not confident about rather than guessing.
 For Australian passport holders only. Return ONLY valid JSON object, no markdown backticks.`;
 
 export const CURRENCY_SYSTEM = `You are a travel finance expert. Generate currency and payment information as a SINGLE JSON object (not an array) for the specified country.

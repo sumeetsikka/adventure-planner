@@ -223,7 +223,7 @@ Results are split into 4 groups in the nav.
 | 👤 Traveller | 🛠️ Admin |
 |---|---|
 | **Theme toggle** (🌙 / ☀) at top right. Light theme is default. | `ThemeToggle.tsx` writes `data-theme="dark"` on `<html>` and toggles state. CSS tokens swap via `[data-theme="dark"]` in `src/index.css`. |
-| **Language** — English only today; scaffold ready for Spanish, Japanese, Mandarin, French, German. | `src/lib/i18n.ts`. To enable a language: populate its block in `STRINGS`, add it to `AVAILABLE_LANGUAGES`, and the user picker (once built) will surface it. |
+| **Language** — English only. | The `i18n.ts` scaffold was **deleted** (2026-07-30): 97 lines, zero importers, one language in the picker — it described a feature that was never wired to anything. Reintroduce it properly if/when a second language is actually being shipped. |
 | **Install as app** — your browser will offer this. iOS Safari: Share → Add to Home Screen. Android Chrome: Install icon in URL bar. | PWA manifest in `public/manifest.json` (not `.webmanifest` — the file has always been `.json`). Icons are real PNGs: `icon-192`/`icon-512` (`any`), `icon-maskable-512` (Android's 20% safe zone), and `apple-touch-icon.png` at 180px — iOS Safari ignores SVG here and falls back to a screenshot of the page. Install prompt UX in `InstallPrompt.tsx` (`adventure-planner:install-dismissed` localStorage flag). |
 
 ---
@@ -311,7 +311,7 @@ A debounced auto-commit hook (`.claude/scripts/auto-commit.sh`) commits clean in
 | `server/lib/prompts.ts` | All LLM system prompts. The most-tweaked one is `ITINERARY_SYSTEM` — the hour-by-hour timeline contract lives here. |
 | `api/[route].ts` | Route handlers. `personalisationHint()`, `budgetHint()`, `modeDirective()`, `profilesHint()` are appended to user messages to shape generation. `ORIGIN_CITY_BY_IATA` maps the user's chosen origin IATA to a city name for the prompts (so itinerary/flights actually use the chosen origin instead of hard-coding Melbourne). Add new origin airports here if you extend `originAirports.ts`. |
 | `server/lib/dateSchedule.ts` | The destination-by-destination schedule logic (`computeSchedule`, `fixFlightDates`, `fixHotelDates`). Adjust if you change trip-length semantics. |
-| `src/lib/i18n.ts` | i18n scaffold. To add a language: fill its block in `STRINGS`, add to `AVAILABLE_LANGUAGES`. |
+| `src/lib/usePersistentState.ts` | `usePersistentState` / `usePersistentSet` — useState that survives a tab switch (tabs unmount on navigation). Used by Packing, Bookings and Chat. |
 | `src/lib/readiness.ts` | The pre-trip readiness checklist (now includes an eSIM/connectivity item, T−7, linking to Airalo). Add an item: append to `buildReadinessItems()` with a `daysBefore` deadline + extend `ReadinessItemId`. |
 | `src/lib/expenses.ts` | Trip spend tracker storage + math (`addExpense`, `totalSpent`, `settleUp`). localStorage per trip. |
 | `src/lib/travelWallet.ts` | Travel-document vault storage + `maskValue` + `passportExpiryWarning`. localStorage per trip, **device-only — never transmitted**. |
@@ -413,6 +413,29 @@ Future sessions: when you edit code that maps to a section here, also update `GU
 ## 15. Changelog
 
 > Add newest entries at the top. Date format: YYYY-MM-DD.
+
+### 2026-07-30 — Phase 5: turn on the features that were already built
+A feature audit found a systemic pattern: **finished UI that could never render, because the data layer never asked for the field it reads.** The filter chips, types and plumbing were all working — nothing fed them. Fixing it was ~35 words of prompt text plus one URL query string.
+
+| Was dark | Reads | Now requested by |
+|---|---|---|
+| Taste **dietary filter** | `r.dietary_options` | `RESTAURANTS_SYSTEM` |
+| Do **time + weather filters** | `a.fits`, `a.weather` | `ACTIVITIES_SYSTEM` |
+| Weather **per-day strip, golden hour, UV** | `day.sunrise`, `uv_index` | Open-Meteo `daily=` params |
+| Visa **embassy + vaccinations** | `visa.embassy` | `VISA_SYSTEM` |
+
+The dietary one mattered most: a traveller declares a nut allergy in the wizard, the app passes it to the model in prose, and the filter that would show them safe restaurants could never appear.
+
+- **Weather forecast dates are re-stamped onto the trip.** Beyond the ~14-day window the app queries *last year's* dates, so the raw series is labelled 2025-xx-xx. Day `i` is now re-stamped to `departure + i` — otherwise the strip renders the wrong weekday and can't line up with the itinerary. Sunrise/sunset/UV are astronomical and carry over; temp/rain stay indicative, which the summary already discloses.
+- **Emergency numbers are no longer LLM-generated.** `VisaTab` rendered an invented `emergency_phone` as tap-to-call while a curated, hand-checked dataset sat unused in `emergency.ts`. It now reads `getEmergencyNumbers(countryId)` (112 fallback), and `VISA_SYSTEM` deliberately **does not** request the field — asking a model to invent a safety-critical number is not a risk worth taking.
+- **Results now open as soon as the itinerary is ready.** Every generator already wrote into state as it resolved; only the *view* was gated on `await Promise.all`, so the plan sat finished in memory while the user watched a typewriter. ~60s → ~15s. The remaining 12 sections stream in behind a new `SectionPending` state — needed because an ungenerated tab previously showed **“Retry”**, which would have been wrong and would have fired a duplicate LLM call. An explicit `isGenerating` flag distinguishes "in flight" from "this saved trip simply has no flights", since `progress` is all-false in both cases.
+- **Opening the app no longer reorders My Trips.** `saveTrip` stamped `updatedAt` unconditionally; boot hydration fired autosave, so every trip read “Updated just now”. It now compares config/results/name and skips both the stamp and the write when nothing changed.
+- **Google Places: use what we already pay for.** Added `location`, `formattedAddress`, `regularOpeningHours` and `photos` to the field mask, and the handler now returns real coordinates, address, hours and a photo URL (built server-side so the key never reaches the client). Free *on this call* — it already requested `rating`/`priceLevel`/`openingHours`, so it was billed at the top tier regardless. **Do not copy this mask into a bulk pass over every place without re-checking SKUs**: field tier prices the whole response and the universal $200 credit ended in 2025.
+- **Deleted `src/lib/i18n.ts`** — 97 lines, zero importers.
+
+*Verified at runtime on a production build: all four previously-dark features render when fed; a loaded saved trip correctly shows Retry (not a false “still writing”); `updatedAt` survives a reload with zero drift while a real edit still bumps it. Gates: `tsc -b`, `eslint src/`, `vite build` clean.*
+
+*Still open from the audit: “🔔 Track price” remains write-only (`listWatched` is never called) — build it or delete it; the Places extras are returned but not yet consumed by the Map or imagery; tab consolidation (23 → 7) not started.*
 
 ### 2026-07-01 — Phase 4: code-split the country data (first paint ~58% smaller)
 All 29 country files — ~6,000 lines of destination prose between them — were statically imported by `src/data/destinations.ts`, so every one of them shipped in the first-paint bundle for a user who then picks exactly one country.

@@ -112,6 +112,14 @@ export interface PlaceDetails {
   openNow?: boolean;
   wheelchair?: boolean;
   mapsUri?: string;
+  // Verified extras from the same (already top-tier) Places call — real
+  // coordinates for mapping, the real address, real opening hours, and a real
+  // photo of the place rather than the stock imagery used elsewhere.
+  lat?: number;
+  lng?: number;
+  address?: string;
+  hours?: string[];
+  photoUrl?: string;
 }
 
 export async function fetchPlaceDetails(query: string): Promise<PlaceDetails> {
