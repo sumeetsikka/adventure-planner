@@ -119,7 +119,7 @@ Results are split into 4 groups in the nav.
 | 👤 Traveller | 🛠️ Admin |
 |---|---|
 | Each leg shows a **Day N badge** + the full date (🗓️ Wed 1 Jul) tying it to the itinerary, plus price, duration, stops, CO₂ estimate, airlines, and **Skyscanner / Google Flights / Webjet** deep-links pre-filled with your dates and travellers. | `getFlightLinks()` in `src/lib/bookingLinks.ts`. Day badge via `tripDayNumber()`; date label via `formatDayLabel()` (both in `dateUtils.ts`). CO₂ via `flightCO2kg()` in `src/lib/carbon.ts`. |
-| **🔔 Track price** toggles a watch on this flight. Saved across sessions. | `priceWatch.ts` lib — localStorage `adventure-planner:price-watch`. UI in `FlightsTab.tsx → WatchToggle`. The actual price-monitoring backend isn't built yet — this captures intent only. |
+| **☆ Shortlist** marks the flight you're leaning towards. Saved across sessions. | `priceWatch.ts` lib — localStorage `adventure-planner:price-watch` (key kept for back-compat). UI in `FlightsTab.tsx → WatchToggle`. **This was “🔔 Track price” until 2026-07-30 and promised alerts that could never arrive** — there is no polling layer and `listWatched` was never called by anything. Scoped down to what actually works. `basePrice` is still recorded, so real monitoring can be layered on later; **don't reintroduce alert language until the backend exists.** |
 
 ### 3.5 Hotels
 
@@ -318,7 +318,8 @@ A debounced auto-commit hook (`.claude/scripts/auto-commit.sh`) commits clean in
 | `src/lib/placeCache.ts` + `src/components/shared/PlaceRating.tsx` | Live Google-Places data layer. Cache dedupes/persists; `PlaceRating` is a drop-in badge that renders nothing when the key is absent. Backend = `handlePlaceDetails` in `api/[route].ts`. Add the badge to any card with `<PlaceRating query="Name, City" />`. |
 | `src/lib/emergency.ts` | Offline emergency-numbers dataset per country + `embassySearchUrl()`. Keep in sync when adding countries. |
 | `src/lib/planEdit.ts` | Pure itinerary transforms — `addStopToDay()` powers the "＋ Plan" pool→plan loop. |
-| `src/lib/priceWatch.ts` | Watch-list lib. Wire new "Track" buttons by importing `{ isWatched, toggleWatch, *WatchId }`. |
+| `src/lib/priceWatch.ts` | Shortlist lib. Wire new shortlist buttons by importing `{ isWatched, toggleWatch, *WatchId }`. |
+| `src/components/shared/PlacePhoto.tsx` | `<img>` that prefers a REAL Google Places photo of the venue, falling back to the stock imagery in `imagery.ts`. Key-optional. |
 | `src/lib/planStitch.ts` | The plan-stitching layer. `buildDayPlans()` joins flights/hotels/transport/itinerary by date; `dayMoves()` builds the per-day move chips. Use this anywhere you need "what happens on day N". |
 | `src/lib/dateUtils.ts` | Date helpers. `tripDayNumber()`, `formatDayLabel()`, `isDateInStay()`, `parseLocalDate()` (timezone-safe). Use these instead of raw `new Date('YYYY-MM-DD')` (which parses as UTC and can be a day off). |
 | `src/lib/deepLinks.ts` | Map/navigation/ride/phone deep-links. `dayRouteUrl(stops)` = multi-stop walking route; `mapsUrl`/`directionsUrl` = single place. iOS → Apple Maps, else Google. |
@@ -413,6 +414,17 @@ Future sessions: when you edit code that maps to a section here, also update `GU
 ## 15. Changelog
 
 > Add newest entries at the top. Date format: YYYY-MM-DD.
+
+### 2026-07-30 — Phase 6: consume the real place data, and stop promising alerts
+Phase 5 added `location`, `formattedAddress`, `regularOpeningHours` and `photos` to the Places response — but nothing read them, which is the same "built and never fed" pattern Phase 5 existed to fix. This consumes them.
+
+- **Real opening hours on cards.** `PlaceRating` now shows **“Today 9:00 AM – 5:00 PM”** next to Open/Closed, with the full week in the tooltip. Google returns `weekdayDescriptions` Monday-first while `getDay()` is Sunday-based, so the index is remapped. This matters more than it looks: the most-documented failure of AI itineraries is scheduling you somewhere closed.
+- **Real photos of real places.** New `PlacePhoto` component prefers the Places photo of the actual venue and keeps the stock loremflickr/picsum image as fallback only. Wired into **Nearby**, where cards name specific attractions. *Tradeoff:* this adds a Places lookup per nearby place (~2–3 per destination, deduped and session-cached, and skipped entirely with no key). Deliberately not applied to every image surface — see the SKU warning in `handlePlaceDetails`.
+- **“🔔 Track price” → “☆ Shortlist”.** The bell promised alerts nothing could send: there is no polling layer, `listWatched` was never called, and the module doc claimed a Dashboard section that doesn't exist. Rather than delete a genuinely useful intent-capture, it's scoped to what works today — marking your preferred flight. Storage key unchanged so existing saves survive.
+
+*Verified at runtime on a production build with the Places endpoint stubbed to the new field shape: the query fires (`"Nara Park, Kyoto"`), the real photo replaces the stock image, and today's hours render with the correct weekday and all 7 days in the tooltip. Gates: `tsc -b`, `eslint src/`, `vite build` clean — including a real `react-hooks/set-state-in-effect` error the linter caught in the first draft of `PlacePhoto`.*
+
+*Still open: the returned `lat`/`lng` are not yet used by the Map (which still plots city centroids only); tab consolidation (23 → 7) not started; no ground pass verifying that scheduled stops are actually open.*
 
 ### 2026-07-30 — Phase 5: turn on the features that were already built
 A feature audit found a systemic pattern: **finished UI that could never render, because the data layer never asked for the field it reads.** The filter chips, types and plumbing were all working — nothing fed them. Fixing it was ~35 words of prompt text plus one URL query string.

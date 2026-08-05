@@ -246,14 +246,17 @@ function WatchToggle({ flight }: { flight: FlightLeg }) {
         setWatched(now);
       }}
       aria-pressed={watched}
-      aria-label={watched ? 'Stop tracking this flight\'s price' : 'Track this flight\'s price'}
+      aria-label={watched ? 'Remove this flight from your shortlist' : 'Add this flight to your shortlist'}
       className={`text-[11px] font-medium px-3 py-1.5 rounded-full border transition-all ${
         watched
           ? 'border-[var(--terracotta)] bg-[var(--terracotta)]/10 text-[var(--terracotta)]'
           : 'border-[var(--line-strong)] text-[var(--text-muted)] hover:text-[var(--cream)]'
       }`}
     >
-      {watched ? '🔔 Tracking' : '🔔 Track price'}
+      {/* Not "Track price" — there is no price-monitoring backend, so a bell here
+          promised alerts that could never arrive. This marks your preferred
+          option, which is what the stored data actually supports. */}
+      {watched ? '★ Shortlisted' : '☆ Shortlist'}
     </button>
   );
 }

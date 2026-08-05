@@ -1,15 +1,21 @@
 /**
- * Price tracking — local-only watch list for flights and hotels.
+ * Shortlist — local-only "this is the one I'm leaning towards" marker for
+ * flights and hotels.
  *
- * MVP behaviour:
- *  - User taps "Track" on a flight or hotel card → item added to watch list.
- *  - Watch list lives in localStorage; surfaces in the Dashboard "watching"
- *    section so users can see what they're monitoring.
- *  - Each item records its baseline price (the LLM estimate) and the date it
- *    was added.
- *  - Real price-monitoring would require a backend cron + provider price-feeds.
- *    For now this is a UI scaffold that captures intent; we can add the
- *    polling layer later without changing the UI contract.
+ * HISTORY / NAMING: this shipped as "🔔 Track price" with a bell icon, and the
+ * doc here claimed the list "surfaces in the Dashboard watching section". Neither
+ * was true — no Dashboard section existed, `listWatched` was never called by
+ * anything, and there is no polling layer, so the bell promised alerts that could
+ * never fire. The storage and the captured intent are genuinely useful, so rather
+ * than delete it the FEATURE was scoped down to what actually works today: a
+ * shortlist you can see on the card.
+ *
+ * Real price monitoring needs a backend cron plus provider price feeds. If that
+ * ever lands, `basePrice` (the estimate at time of shortlisting) is already
+ * recorded, so alerts can be layered on without changing this contract — but do
+ * not reintroduce alert language in the UI until the polling actually exists.
+ *
+ * The storage key stays `adventure-planner:price-watch` so existing saves survive.
  */
 
 const STORAGE_KEY = 'adventure-planner:price-watch';
