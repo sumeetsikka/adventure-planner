@@ -319,6 +319,8 @@ A debounced auto-commit hook (`.claude/scripts/auto-commit.sh`) commits clean in
 | `src/lib/emergency.ts` | Offline emergency-numbers dataset per country + `embassySearchUrl()`. Keep in sync when adding countries. |
 | `src/lib/planEdit.ts` | Pure itinerary transforms — `addStopToDay()` powers the "＋ Plan" pool→plan loop. |
 | `src/lib/priceWatch.ts` | Shortlist lib. Wire new shortlist buttons by importing `{ isWatched, toggleWatch, *WatchId }`. |
+| `src/lib/openingHours.ts` | Parses Google's `weekdayDescriptions` (split service, past-midnight closing, dash/space variants) and answers "is this stop within opening hours?". Pure functions, no network. Tests: `npx tsx src/lib/openingHours.test.ts`. |
+| `src/lib/hoursConflicts.ts` | Feeds the Itinerary conflict rail with verified closed-venue and outside-hours warnings. **Cache-only** — reads `peekPlace`, never triggers a Places lookup. |
 | `src/components/shared/PlacePhoto.tsx` | `<img>` that prefers a REAL Google Places photo of the venue, falling back to the stock imagery in `imagery.ts`. Key-optional. |
 | `src/lib/planStitch.ts` | The plan-stitching layer. `buildDayPlans()` joins flights/hotels/transport/itinerary by date; `dayMoves()` builds the per-day move chips. Use this anywhere you need "what happens on day N". |
 | `src/lib/dateUtils.ts` | Date helpers. `tripDayNumber()`, `formatDayLabel()`, `isDateInStay()`, `parseLocalDate()` (timezone-safe). Use these instead of raw `new Date('YYYY-MM-DD')` (which parses as UTC and can be a day off). |
@@ -414,6 +416,24 @@ Future sessions: when you edit code that maps to a section here, also update `GU
 ## 15. Changelog
 
 > Add newest entries at the top. Date format: YYYY-MM-DD.
+
+### 2026-07-30 — Phase 7: the ground pass — checking the plan against reality
+The two most-documented failures of AI itineraries are recommending a venue that has **permanently closed** (~24% of itineraries) and scheduling you somewhere **outside its opening hours** (~52%). The plan can't know either on its own; Google Places does, and the app was already calling it.
+
+- **Closed-venue warning.** Added `businessStatus` to the Places field mask (free — that call is already top-tier) and `PlaceRating` now renders a prominent **⚠ Permanently closed / Temporarily closed** badge with a "pick something else" line. It deliberately **bypasses the component's "no facts worth showing" early return**: a shut-down venue must surface even when Google returns nothing else about it.
+- **Opening-hours conflicts in the Itinerary.** New `hoursConflicts.ts` feeds the existing conflict rail: *"Kyoto Railway Museum is scheduled for 20:00, outside its opening hours — Google lists it as open 9:00 AM – 5:00 PM that day."* Also catches "closed on the day you've planned it".
+- **Cache-only by design.** `findHoursConflicts` reads `peekPlace` and **never triggers a lookup**. Field tier prices the whole Places response, so a background sweep over every stop would spend real money silently. Coverage grows as the traveller browses (each card warms the cache), and a stop we know nothing about produces **no claim at all** — it only ever reports what it can prove. Both directions are verified below.
+- **New `openingHours.ts` + a test.** Parsing Google's `weekdayDescriptions` is genuinely fiddly: split restaurant service (`11:00 AM – 2:00 PM, 5:00 – 9:00 PM`), closing past midnight (`5:00 PM – 2:00 AM`), four different dash characters, and thin/narrow/non-breaking spaces. Run the tests with:
+
+```bash
+npx tsx src/lib/openingHours.test.ts
+```
+
+  The project has no test framework and one module didn't justify adding a dependency, so it's a plain assertion script that exits non-zero on failure. **It earned its place immediately** — it caught a bug where `5:00 – 9:00 PM` was read as **5 AM**, because `"5:00"` parses happily as a 24-hour time so the meridiem-inheritance branch never ran. Evening restaurant service silently became a dawn slot. `tsconfig.app.json` now excludes `src/**/*.test.ts` (the test uses Node's `process`, not the DOM).
+
+*Verified at runtime on a production build, both directions: with the cache warmed, a museum scheduled at 20:00 against 9–5 hours is flagged and a permanently-closed venue is called out; with the cache empty, **no claim is made at all** while the itinerary renders normally. 27/27 unit assertions pass. Gates: `tsc -b`, `eslint src/`, `vite build` clean.*
+
+*Still open: `lat`/`lng` are returned but the Map still plots city centroids only; tab consolidation (23 → 7) not started; no per-field provenance labelling yet.*
 
 ### 2026-07-30 — Phase 6: consume the real place data, and stop promising alerts
 Phase 5 added `location`, `formattedAddress`, `regularOpeningHours` and `photos` to the Places response — but nothing read them, which is the same "built and never fed" pattern Phase 5 existed to fix. This consumes them.

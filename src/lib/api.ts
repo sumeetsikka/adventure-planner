@@ -120,6 +120,9 @@ export interface PlaceDetails {
   address?: string;
   hours?: string[];
   photoUrl?: string;
+  /** OPERATIONAL | CLOSED_TEMPORARILY | CLOSED_PERMANENTLY. The AI recommends
+   *  venues that have shut down; this is how we catch it. */
+  businessStatus?: 'OPERATIONAL' | 'CLOSED_TEMPORARILY' | 'CLOSED_PERMANENTLY';
 }
 
 export async function fetchPlaceDetails(query: string): Promise<PlaceDetails> {

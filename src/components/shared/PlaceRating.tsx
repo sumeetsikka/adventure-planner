@@ -27,8 +27,43 @@ export default function PlaceRating({ query }: { query: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
-  if (!data || !data.available || (data.rating == null && data.openNow == null && data.wheelchair == null)) {
+  const shutDown = data?.businessStatus === 'CLOSED_PERMANENTLY' || data?.businessStatus === 'CLOSED_TEMPORARILY';
+
+  // A shut-down venue must surface even when Google returns nothing else about
+  // it — that warning is the single most valuable thing this component can say,
+  // so it deliberately bypasses the "no facts worth showing" guard below.
+  if (!data || !data.available || (!shutDown && data.rating == null && data.openNow == null && data.wheelchair == null)) {
     return null;
+  }
+
+  if (shutDown) {
+    const permanent = data.businessStatus === 'CLOSED_PERMANENTLY';
+    return (
+      <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-2 mb-1">
+        <span
+          className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-full"
+          style={{ background: 'color-mix(in srgb, var(--terracotta) 16%, transparent)', color: 'var(--terracotta)' }}
+          title="Verified against Google Places"
+        >
+          <span aria-hidden>⚠</span>
+          {permanent ? 'Permanently closed' : 'Temporarily closed'}
+        </span>
+        <span className="text-[11px] text-[var(--text-muted)]">
+          {permanent ? 'Google says this has shut down — pick something else.' : 'Google says this is shut right now — check before you go.'}
+        </span>
+        {data.mapsUri && (
+          <a
+            href={data.mapsUri}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="text-[10px] tracking-wide uppercase text-[var(--text-muted)] hover:text-[var(--cream)] underline-offset-2 hover:underline"
+          >
+            Maps ↗
+          </a>
+        )}
+      </div>
+    );
   }
 
   const priceStr = data.priceLevel ? '$'.repeat(Math.min(4, Math.max(1, data.priceLevel))) : null;

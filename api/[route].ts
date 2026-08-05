@@ -138,6 +138,9 @@ async function handlePlaceDetails(body: any) {
           'places.location',
           'places.formattedAddress',
           'places.photos',
+          // The single highest-value verification field: roughly a quarter of
+          // AI-generated itineraries name a venue that has permanently closed.
+          'places.businessStatus',
         ].join(','),
       },
       body: JSON.stringify({ textQuery: query, maxResultCount: 1 }),
@@ -172,6 +175,8 @@ async function handlePlaceDetails(body: any) {
       openNow: place.currentOpeningHours?.openNow,
       wheelchair: place.accessibilityOptions?.wheelchairAccessibleEntrance,
       mapsUri: place.googleMapsUri,
+      // OPERATIONAL | CLOSED_TEMPORARILY | CLOSED_PERMANENTLY
+      businessStatus: place.businessStatus,
       // Verified extras — real coordinates, real hours, a real photo of the place.
       lat: place.location?.latitude,
       lng: place.location?.longitude,
