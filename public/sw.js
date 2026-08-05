@@ -69,7 +69,14 @@ async function trimCache(cacheName, max) {
 
 function isHashedAsset(url) {
   // Vite output: /assets/index-A1b2C3d4.js , /assets/Foo-X9y8.css
-  return url.pathname.startsWith('/assets/') && /\-[A-Za-z0-9_]{8,}\.(js|css)$/.test(url.pathname);
+  //
+  // The hash is base64url, so it can itself contain "-" and "_" — e.g.
+  // index-C-Io5iGd.js. An earlier version of this pattern excluded "-" from the
+  // hash body, so any chunk whose hash happened to contain one was not treated as
+  // a hashed asset: it skipped the cache-first branch, fell through to the
+  // network-with-fallback rule, and failed outright offline. That silently broke
+  // offline boot on ~15% of chunks, main entry included, depending on the build.
+  return url.pathname.startsWith('/assets/') && /-[A-Za-z0-9_-]{8,}\.(js|css)$/.test(url.pathname);
 }
 
 self.addEventListener('fetch', (event) => {
@@ -162,5 +169,14 @@ self.addEventListener('fetch', (event) => {
   }
 
   // 5. Everything else same-origin (favicon, manifest) — network, cache fallback.
-  event.respondWith(fetch(req).catch(() => caches.match(req)));
+  //    ignoreVary for the same reason as the other cache reads: hosts serve these
+  //    with `Vary: Origin`, so a crossorigin request never matches without it.
+  //    A miss must still resolve to a Response — returning undefined from
+  //    respondWith fails the request outright rather than falling back to the
+  //    browser's own handling.
+  event.respondWith(
+    fetch(req)
+      .catch(() => caches.match(req, { ignoreVary: true }))
+      .then((res) => res || Response.error())
+  );
 });
